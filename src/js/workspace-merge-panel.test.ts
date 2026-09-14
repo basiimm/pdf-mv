@@ -57,6 +57,10 @@ describe('native merge panel lifecycle', () => {
       commit: vi.fn(async () => {}),
       canUndoCommit: vi.fn(() => false),
       undoCommit: vi.fn(async () => null),
+      showPreview: vi.fn(async () => {}),
+      applyPreview: vi.fn(async () => {}),
+      cancelPreview: vi.fn(async () => {}),
+      isPreviewing: vi.fn(() => false),
     };
     vi.stubGlobal(
       'IntersectionObserver',

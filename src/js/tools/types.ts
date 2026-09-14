@@ -50,6 +50,11 @@ export interface ToolDefinition {
   output: ToolOutput;
   /** Short past-tense label for undo and toasts, e.g. "Pages rotated". */
   doneLabel: string;
+  /**
+   * Show the result in the PDF view while settings change (debounced), then
+   * Apply commits it. Only for `revision` tools whose run is reasonably fast.
+   */
+  preview?: boolean;
   /** Omit to operate on the open PDF. */
   input?: { accept: string; multiple: boolean; label: string };
   run(context: ToolRunContext): Promise<File | File[]>;

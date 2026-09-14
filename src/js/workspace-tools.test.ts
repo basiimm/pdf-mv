@@ -19,6 +19,10 @@ function fixture() {
     commit: vi.fn(async () => {}),
     canUndoCommit: vi.fn(() => false),
     undoCommit: vi.fn(async () => null),
+    showPreview: vi.fn(async () => {}),
+    applyPreview: vi.fn(async () => {}),
+    cancelPreview: vi.fn(async () => {}),
+    isPreviewing: vi.fn(() => false),
     editMode: vi.fn(async () => {}),
   };
   return { host, controller: setupWorkspaceTools(host), active: () => active };

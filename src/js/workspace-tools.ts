@@ -11,7 +11,6 @@ import {
   matchesGroup,
   type ToolGroup,
 } from './config/workspace-catalog.js';
-import { createMarkPanel } from './workspace-mark-panel.js';
 import { createSignaturePanel } from './workspace-signature-panel.js';
 import { createMergePanel } from './workspace-merge-panel.js';
 import { createToolPanel } from './tools/panel.js';
@@ -37,6 +36,13 @@ export interface ToolHost {
   /** Apply a tool's output to the same document as an undoable revision. */
   commit(id: string, file: File, label: string): Promise<void>;
   canUndoCommit(id: string): boolean;
+  /** Show generated output in the same view without committing it. */
+  showPreview(id: string, file: File): Promise<void>;
+  /** Commit the visible preview as an undoable revision. */
+  applyPreview(id: string, label: string): Promise<void>;
+  /** Discard the preview and return to the committed document. */
+  cancelPreview(id: string): Promise<void>;
+  isPreviewing(id: string): boolean;
   /** Restore the previous revision; resolves with its label, or null. */
   undoCommit(id: string): Promise<string | null>;
   status(message: string): void;
@@ -528,8 +534,6 @@ export function setupWorkspaceTools(host: ToolHost) {
       if (
         toolId === 'merge-pdf' ||
         toolId === 'sign-pdf' ||
-        toolId === 'add-watermark' ||
-        toolId === 'header-footer' ||
         toolDefinitions.has(toolId)
       ) {
         if (!nativePanels.has(nativeKey)) {
@@ -538,18 +542,16 @@ export function setupWorkspaceTools(host: ToolHost) {
               ? createMergePanel(outputHost, id, sync)
               : toolId === 'sign-pdf'
                 ? createSignaturePanel(outputHost, id, sync)
-                : toolId === 'add-watermark' || toolId === 'header-footer'
-                  ? createMarkPanel(outputHost, id, toolId, sync)
-                  : toolDefinitions.has(toolId)
-                    ? createToolPanel(
-                        outputHost,
-                        id,
-                        toolDefinitions.get(toolId)!,
-                        sync
-                      )
-                    : (() => {
-                        throw new Error('This tool is not available.');
-                      })();
+                : toolDefinitions.has(toolId)
+                  ? createToolPanel(
+                      outputHost,
+                      id,
+                      toolDefinitions.get(toolId)!,
+                      sync
+                    )
+                  : (() => {
+                      throw new Error('This tool is not available.');
+                    })();
           nativePanels.set(nativeKey, instance);
           panel.append(instance.root);
           const native = instance as NativePanel;

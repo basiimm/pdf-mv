@@ -328,11 +328,144 @@ export function createToolPanel(
     }
   }
 
-  primary.addEventListener('click', () => void run());
+  // Live preview: regenerate into the PDF view after settings settle.
+  const livePreview = !!tool.preview && tool.output === 'revision';
+  let previewFresh = false;
+  let previewToken = 0;
+  let previewTimer = 0;
+  let active = true;
+  async function refreshPreview() {
+    if (!livePreview || busy || disposed || !active || !host.hasPdf(id)) return;
+    const token = ++previewToken;
+    previewFresh = false;
+    feedback.replaceChildren(progressBar({ label: 'Updating preview…' }).root);
+    try {
+      const output = await tool.run({
+        files: [await host.snapshot(id)],
+        values: values(),
+        signal: new AbortController().signal,
+        progress: () => {},
+      });
+      if (token !== previewToken || disposed || !active) return;
+      await host.showPreview(id, Array.isArray(output) ? output[0] : output);
+      if (token !== previewToken || disposed) return;
+      previewFresh = true;
+      feedback.replaceChildren(
+        inlineAlert({
+          message: 'Previewing in the document. Apply to keep these changes.',
+          actions: [
+            {
+              label: 'Discard preview',
+              variant: 'quiet',
+              onClick: () => void discardPreview(),
+            },
+          ],
+        })
+      );
+    } catch (error) {
+      if (token !== previewToken || disposed) return;
+      const description = describeWorkspaceError(error, 'preview');
+      feedback.replaceChildren(
+        inlineAlert({
+          tone: 'negative',
+          message: description.message,
+          details: description.details,
+          actions: [
+            {
+              label:
+                description.action === 'fix-settings'
+                  ? 'Keep editing'
+                  : 'Try again',
+              onClick: () =>
+                description.action === 'fix-settings'
+                  ? (
+                      controls.get('pages') ?? controls.values().next().value
+                    )?.focus()
+                  : void refreshPreview(),
+            },
+          ],
+        })
+      );
+    }
+  }
+  async function discardPreview() {
+    previewToken++;
+    previewFresh = false;
+    clearTimeout(previewTimer);
+    if (host.isPreviewing(id)) await host.cancelPreview(id);
+    if (!disposed) feedback.replaceChildren();
+  }
+  function schedulePreview() {
+    if (!livePreview) return;
+    previewFresh = false;
+    clearTimeout(previewTimer);
+    previewTimer = window.setTimeout(() => {
+      void refreshPreview();
+    }, 350);
+  }
+  if (livePreview) {
+    body.addEventListener('input', schedulePreview);
+    body.addEventListener('change', schedulePreview);
+    body.addEventListener('click', (event) => {
+      if ((event.target as Element).closest('.ds-segmented button'))
+        schedulePreview();
+    });
+  }
+
+  primary.addEventListener('click', () => {
+    if (livePreview && previewFresh && host.isPreviewing(id))
+      void applyPreview();
+    else {
+      void (async () => {
+        if (livePreview) await discardPreview();
+        await run();
+      })();
+    }
+  });
+  async function applyPreview() {
+    busy = true;
+    setBusy(primary, true, 'Applying…');
+    try {
+      await host.applyPreview(id, tool.doneLabel);
+      previewFresh = false;
+      feedback.replaceChildren();
+      toast(tool.doneLabel, {
+        action: {
+          label: 'Undo',
+          onClick: () =>
+            void host
+              .undoCommit(id)
+              .then((label) => label && toast(`Undid: ${label}`)),
+        },
+      });
+    } catch (error) {
+      const description = describeWorkspaceError(error, 'apply');
+      feedback.replaceChildren(
+        inlineAlert({
+          tone: 'negative',
+          message: description.message,
+          details: description.details,
+        })
+      );
+    } finally {
+      busy = false;
+      if (!disposed) {
+        setBusy(primary, false, tool.primaryLabel);
+        refresh();
+      }
+    }
+  }
   sync();
+  if (livePreview) schedulePreview();
   return {
     root,
     sync,
+    setActive(value: boolean) {
+      if (value === active) return;
+      active = value;
+      if (!value) void discardPreview();
+      else schedulePreview();
+    },
     sourceFiles: () => [...inputs],
     setFiles(files: File[]) {
       if (tool.input) {
@@ -343,6 +476,8 @@ export function createToolPanel(
     dispose() {
       disposed = true;
       controller?.abort();
+      clearTimeout(previewTimer);
+      if (livePreview && host.isPreviewing(id)) void host.cancelPreview(id);
       root.remove();
     },
   };

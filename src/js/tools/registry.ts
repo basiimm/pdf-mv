@@ -140,3 +140,7 @@ for (const [id, action] of Object.entries(nativeActions)) {
     },
   });
 }
+
+import { register as registerMarks } from './families/marks.js';
+
+registerMarks();
