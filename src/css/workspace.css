@@ -1455,3 +1455,55 @@ button.tool-card:focus-visible {
   max-width: 650px;
   text-wrap: pretty;
 }
+
+.page-heading > div > p {
+  font-size: 16px;
+  line-height: 1.6;
+}
+.sidebar-bottom {
+  padding: 24px 8px 4px;
+}
+.appearance-icons {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--s-inset, #181818);
+}
+.appearance-icons button {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  min-width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--s-muted);
+  background: transparent;
+  cursor: pointer;
+}
+.appearance-icons button:hover {
+  background: var(--s-hover);
+  color: var(--s-text);
+}
+.appearance-icons button[aria-pressed='true'] {
+  background: var(--s-selected);
+  color: var(--s-accent);
+}
+.appearance-icons button:focus-visible {
+  outline: 2px solid var(--s-accent);
+  outline-offset: 2px;
+}
+.appearance-mobile {
+  display: none;
+}
+@media (max-width: 700px) {
+  .appearance-mobile {
+    display: flex;
+    flex-shrink: 0;
+  }
+  .home-footer {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+}
