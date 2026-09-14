@@ -13,15 +13,22 @@ import {
 } from './config/workspace-catalog.js';
 import { createMarkPanel } from './workspace-mark-panel.js';
 import { createActionPanel } from './workspace-action-panel.js';
+import { createSignaturePanel } from './workspace-signature-panel.js';
 import { nativeActions } from './workspace-actions.js';
 
 export interface ToolHost {
   activeId(): string;
+  placeSignature(
+    id: string,
+    image: string,
+    size: { width: number; height: number }
+  ): Promise<void>;
+  cancelSignature(id: string): void;
   editMode(id: string, toolbar: string): Promise<void>;
   hasPdf(id: string): boolean;
   revision(id: string): number;
   createTask(name: string): string;
-  snapshot(id: string): Promise<File>;
+  snapshot(id: string, preserveOriginal?: boolean): Promise<File>;
   attach(id: string, file: File): Promise<void>;
   result(file: File): Promise<void>;
   status(message: string): void;
@@ -70,7 +77,6 @@ export function setupWorkspaceTools(host: ToolHost) {
   // These engines require a large interactive canvas; settings-oriented tools keep the PDF visible.
   const canvasTools = new Set([
     'edit-pdf-text',
-    'sign-pdf',
     'crop-pdf',
     'organize-pdf',
     'pdf-multi-tool',
@@ -318,15 +324,18 @@ export function setupWorkspaceTools(host: ToolHost) {
       }
       const nativeKey = `${id}:${toolId}`;
       if (
+        toolId === 'sign-pdf' ||
         toolId === 'add-watermark' ||
         toolId === 'header-footer' ||
         nativeActions[toolId]
       ) {
         if (!nativePanels.has(nativeKey)) {
           const instance =
-            toolId === 'add-watermark' || toolId === 'header-footer'
-              ? createMarkPanel(outputHost, id, toolId, sync)
-              : createActionPanel(outputHost, id, toolId, sync);
+            toolId === 'sign-pdf'
+              ? createSignaturePanel(outputHost, id, sync)
+              : toolId === 'add-watermark' || toolId === 'header-footer'
+                ? createMarkPanel(outputHost, id, toolId, sync)
+                : createActionPanel(outputHost, id, toolId, sync);
           nativePanels.set(nativeKey, instance);
           panel.append(instance.root);
         }
@@ -440,7 +449,14 @@ export function setupWorkspaceTools(host: ToolHost) {
       ) {
         entry.state = 'Preparing current PDF…';
         try {
-          const file = await host.snapshot(id);
+          const file = await host.snapshot(
+            id,
+            [
+              'digital-sign-pdf',
+              'validate-signature-pdf',
+              'timestamp-pdf',
+            ].includes(entry.tool)
+          );
           entry.sourceName = file.name;
           usedFrames.add(id);
           entry.frame.contentWindow?.postMessage(

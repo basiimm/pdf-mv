@@ -1507,3 +1507,38 @@ button.tool-card:focus-visible {
     gap: 16px;
   }
 }
+
+.signature-panel .signature-modes {
+  display: flex;
+  gap: 4px;
+}
+.signature-panel .signature-modes button {
+  flex: 1;
+  padding: 8px;
+}
+.signature-panel .signature-modes button[aria-pressed='true'] {
+  background: var(--s-selected);
+  color: var(--s-accent);
+}
+.signature-panel .signature-pad {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 8 / 3;
+  background: #fff;
+  border: 1px solid var(--s-border);
+  border-radius: 10px;
+  touch-action: none;
+  cursor: crosshair;
+  margin: 12px 0;
+}
+.signature-panel input[type='text'] {
+  width: 100%;
+  margin: 12px 0;
+}
+.signature-panel > div > .button {
+  margin: 4px 0;
+  width: 100%;
+}
+.signature-panel p {
+  line-height: 1.6;
+}

@@ -945,3 +945,21 @@ html[data-studio-theme] button.tool-card:focus-visible {
   outline: 2px solid var(--s-accent);
   outline-offset: 2px;
 }
+
+/* Certificate operations share the workspace's right settings panel. */
+.workspace-signature-tool #tool-uploader {
+  padding: 12px !important;
+}
+.workspace-signature-tool #tool-uploader .grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+.workspace-signature-tool #tool-uploader input,
+.workspace-signature-tool #tool-uploader select {
+  min-width: 0;
+  max-width: 100%;
+}
+.workspace-signature-tool #cert-drop-zone,
+.workspace-signature-tool #sig-image-drop-zone {
+  padding: 14px !important;
+  min-height: 72px !important;
+}

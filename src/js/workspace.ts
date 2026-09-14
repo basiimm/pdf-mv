@@ -52,6 +52,18 @@ interface HistoryCapability {
   ): void;
 }
 interface AnnotationCapability {
+  getTool(id: string): {
+    id: string;
+    defaults: Record<string, unknown>;
+    behavior?: Record<string, unknown>;
+  };
+  addTool(tool: Record<string, unknown>): void;
+  setToolDefaults(id: string, values: Record<string, unknown>): void;
+  forDocument(id: string): {
+    setActiveTool(tool: string | null): void;
+    getActiveTool(): { id: string } | null;
+  };
+
   onAnnotationEvent(
     callback: (event: { documentId: string; type: string }) => void
   ): void;
@@ -79,6 +91,8 @@ let statusTimer: ReturnType<typeof setTimeout> | undefined;
 let filter = 'Popular Tools';
 let query = '';
 const pendingRedactions = new Map<string, number>();
+const originalFiles = new Map<string, File>();
+let signatureDocument: string | null = null;
 const toolsById = new Map(
   categories
     .flatMap((category) => category.tools)
@@ -335,6 +349,7 @@ async function initializeViewer(): Promise<void> {
       const id = typeof event === 'string' ? event : event.id;
       const next = session.remove(id);
       pendingRedactions.delete(id);
+      originalFiles.delete(id);
       workspaceTools.remove(id);
       activateTab(next);
     });
@@ -427,6 +442,7 @@ async function openFiles(files: File[]): Promise<void> {
           })
           .toPromise();
         await result.task.toPromise();
+        originalFiles.set(id, file);
         const document = session.documents.get(id);
         if (document) document.loading = false;
         activateTab(id);
@@ -672,6 +688,43 @@ const workspaceTools = setupWorkspaceTools({
     activateTab(id);
     return id;
   },
+  async placeSignature(id, image, size) {
+    await initializeViewer();
+    const registry = await viewer!.registry;
+    const annotation = registry
+      .getPlugin('annotation')
+      .provides() as unknown as AnnotationCapability;
+    signatureDocument = id;
+    annotation.setToolDefaults('stamp', {
+      imageSrc: image,
+      imageSize: size,
+      subject: 'Signature',
+    });
+    annotation.forDocument(id).setActiveTool('stamp');
+  },
+  cancelSignature(id) {
+    if (!viewer || signatureDocument !== id) return;
+    signatureDocument = null;
+    void viewer.registry
+      .then((registry) => {
+        if (signatureDocument !== null) return;
+        const annotation = registry
+          .getPlugin('annotation')
+          .provides() as unknown as AnnotationCapability;
+        if (session.documents.has(id) && !session.documents.get(id)?.toolOnly) {
+          const scope = annotation.forDocument(id);
+          if (scope.getActiveTool()?.id === 'stamp') scope.setActiveTool(null);
+        }
+        annotation.setToolDefaults('stamp', {
+          imageSrc: undefined,
+          imageSize: undefined,
+          subject: undefined,
+        });
+      })
+      .catch(() => {
+        /* The viewer may already have disposed the closing document. */
+      });
+  },
   async editMode(id, toolbar) {
     await initializeViewer();
     const registry = await viewer!.registry;
@@ -685,10 +738,12 @@ const workspaceTools = setupWorkspaceTools({
     };
     ui.setActiveToolbar('top', 'secondary', toolbar, id);
   },
-  async snapshot(id) {
+  async snapshot(id, preserveOriginal = false) {
     if ((pendingRedactions.get(id) ?? 0) > 0)
       throw new Error('Apply pending redactions before using another tool.');
     const doc = session.documents.get(id)!;
+    if (preserveOriginal && doc.revision === 0 && originalFiles.has(id))
+      return originalFiles.get(id)!;
     return new File(
       [await exporter!.forDocument(id).saveAsCopy().toPromise()],
       doc.name,
@@ -713,6 +768,7 @@ const workspaceTools = setupWorkspaceTools({
         })
         .toPromise();
       await result.task.toPromise();
+      originalFiles.set(id, file);
       doc.toolOnly = false;
     } finally {
       doc.loading = false;

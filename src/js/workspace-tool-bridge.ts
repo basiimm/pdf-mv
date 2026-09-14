@@ -3,6 +3,12 @@ const embedded =
   new URLSearchParams(location.search).get('workspace') === '1';
 if (embedded) {
   document.documentElement.classList.add('workspace-embedded-tool');
+  if (
+    /\/(digital-sign-pdf|validate-signature-pdf|timestamp-pdf)\.html$/.test(
+      location.pathname
+    )
+  )
+    document.documentElement.classList.add('workspace-signature-tool');
   const send = (message: object) =>
     window.parent.postMessage(message, location.origin);
   const primaryInput = () =>
@@ -48,7 +54,11 @@ if (embedded) {
       send({ type: 'studio-tool-source', file: event.target.files[0] });
   });
   document.addEventListener('drop', (event) => {
-    if (event.dataTransfer?.files[0])
+    if (
+      event.dataTransfer?.files[0] &&
+      event.target instanceof Node &&
+      document.getElementById('drop-zone')?.contains(event.target)
+    )
       send({ type: 'studio-tool-source', file: event.dataTransfer.files[0] });
   });
   document.addEventListener(

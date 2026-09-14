@@ -30,7 +30,7 @@ Reviewed 14 September 2026. The catalog contains 118 engines, consolidated into 
 | Compress PDF             | Reduce the file size of your PDF.                                                                      | Optimize & repair      | Settings beside PDF (embedded engine) | [compress-pdf](src/js/logic/compress-pdf-page.ts)                     |
 | PDF Editor               | Annotate, highlight, redact, comment, add shapes/images, search, and view PDFs.                        | Read & annotate        | Native viewer controls                | [edit-pdf](src/js/logic/edit-pdf-page.ts)                             |
 | JPG to PDF               | Create a PDF from one or more JPG images.                                                              | Convert                | Native viewer controls                | [jpg-to-pdf](src/js/logic/jpg-to-pdf-page.ts)                         |
-| Sign PDF                 | Draw, type, or upload your signature.                                                                  | Signatures             | Large canvas inside app tab           | [sign-pdf](src/js/logic/sign-pdf-page.ts)                             |
+| Sign PDF                 | Draw, type, or upload your signature.                                                                  | Signatures             | Native sidebar in shared PDF viewer   | [signature panel](src/js/workspace-signature-panel.ts)                |
 | Crop PDF                 | Trim the margins of every page in your PDF.                                                            | Page layout            | Large canvas inside app tab           | [crop-pdf](src/js/logic/crop-pdf-page.ts)                             |
 | Extract Pages            | Save a selection of pages as new files.                                                                | Organize pages         | Native viewer controls                | [extract-pages](src/js/logic/extract-pages-page.ts)                   |
 | Duplicate & Organize     | Duplicate, reorder, and delete pages.                                                                  | Organize pages         | Large canvas inside app tab           | [organize-pdf](src/js/logic/organize-pdf-page.ts)                     |
@@ -160,3 +160,9 @@ Reviewed 14 September 2026. The catalog contains 118 engines, consolidated into 
 - Office and some advanced conversions load large browser engines on demand. Output quality still depends on the source format and content; format availability is not a fidelity guarantee.
 - PDF processing returns a copy. It does not add a cross-engine undo history to the original document.
 - Older browser instances keep their previously loaded workspace code. A fresh grouped-workspace preview was opened separately to preserve existing document sessions.
+
+## Signature workspace integration
+
+Handwritten signing now uses the default viewer with Draw, Type and Upload controls in the right panel. Page placement uses the existing image annotation tool; PDF upload stays in the panel. Certificate signing, validation and timestamp settings remain embedded beside the same PDF, with compact file and certificate controls. Unedited PDFs retain original bytes when passed to these certificate tools.
+
+Validation: all 944 tests passed. Browser checks covered signature-first PDF upload, typed/drawn/image placement, native viewer continuity, and the certificate action layouts. An exported test PDF was independently checked for a stamp annotation. Corrected image sizing was visually checked after detecting an initial appearance clipping issue. No real certificate or external timestamp service was exercised during this UI integration.
