@@ -9,6 +9,7 @@ export interface ToolField {
   value: string;
   type?:
     | 'text'
+    | 'textarea'
     | 'password'
     | 'number'
     | 'color'
@@ -81,6 +82,8 @@ export interface ToolDefinition {
    * re-export. Required for signatures: re-saving would invalidate them.
    */
   preserveOriginal?: boolean;
+  /** 'none' for tools that create a document from their fields alone (e.g. Markdown). */
+  document?: 'none';
   /** Omit to operate on the open PDF. */
   input?: { accept: string; multiple: boolean; label: string };
   /**

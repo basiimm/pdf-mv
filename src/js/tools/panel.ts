@@ -10,6 +10,7 @@ import {
   segmented,
   selectField,
   setBusy,
+  textArea,
   textField,
   toast,
   dropZone,
@@ -62,6 +63,18 @@ function control(field: ToolField): Control {
           ?.focus(),
       setDisabled: (v) =>
         s.root.querySelectorAll('button').forEach((b) => (b.disabled = v)),
+    };
+  }
+  if (field.type === 'textarea') {
+    const t = textArea({ label: field.label, value: field.value, help: field.help, rows: 8 });
+    return {
+      element: t.root,
+      get value() {
+        return t.control.value;
+      },
+      setValue: (v: string) => (t.control.value = v),
+      focus: () => t.control.focus(),
+      setDisabled: (v) => (t.control.disabled = v),
     };
   }
   const f =
@@ -251,7 +264,9 @@ export function createToolPanel(
     void inspect();
     const ready = tool.input
       ? inputs.length > 0
-      : host.hasPdf(id) &&
+      : tool.document === 'none'
+        ? true
+        : host.hasPdf(id) &&
         (!tool.extraInput || tool.extraInput.optional || inputs.length > 0);
     primary.disabled = busy || !ready;
     essentials.hidden = !ready;
@@ -310,6 +325,8 @@ export function createToolPanel(
     try {
       const files = tool.input
         ? [...inputs]
+        : tool.document === 'none'
+          ? []
         : [await host.snapshot(id, tool.preserveOriginal), ...inputs];
       const output = await tool.run({
         files,
