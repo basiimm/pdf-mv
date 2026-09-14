@@ -1,4 +1,5 @@
 import type { ToolHost } from './workspace-tools.js';
+import { renderWorkspaceError } from './workspace-errors.js';
 
 let signatureFont: Promise<FontFace> | undefined;
 function loadSignatureFont() {
@@ -27,6 +28,19 @@ export function createSignaturePanel(
   root.className = 'native-mark-panel signature-panel';
   const status = document.createElement('p');
   status.setAttribute('role', 'status');
+  let disposed = false,
+    placing = false;
+  function recover(
+    error: unknown,
+    message: string,
+    retry: () => void,
+    label = 'Try again'
+  ) {
+    if (disposed) return;
+    renderWorkspaceError(status, error, 'apply', retry);
+    status.querySelector('p')!.textContent = message;
+    status.querySelector('button')!.textContent = label;
+  }
   const intro = document.createElement('p');
   intro.textContent =
     'Create your signature, then click a page to place it. You can move and resize it before downloading.';
@@ -134,7 +148,9 @@ export function createSignaturePanel(
     status.textContent = '';
   });
   const place = button('Place signature', async () => {
-    if (!host.hasPdf(id)) return;
+    if (!host.hasPdf(id) || disposed || placing) return;
+    placing = true;
+    place.disabled = true;
     try {
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Signature canvas is unavailable.');
@@ -186,11 +202,23 @@ export function createSignaturePanel(
         width: placed.width,
         height: placed.height,
       });
+      if (disposed) return;
       status.textContent =
         'Click the document to place your signature. Use the viewer to move, resize or undo it.';
     } catch (error) {
-      status.textContent =
-        error instanceof Error ? error.message : 'Could not place signature.';
+      recover(
+        error,
+        'We could not place this signature. Your document and signature are still available. Try again, or keep editing.',
+        () => place.click()
+      );
+    } finally {
+      placing = false;
+      if (!disposed)
+        place.disabled = !(mode === 'type'
+          ? name.value.trim()
+          : mode === 'upload'
+            ? image
+            : hasInk);
     }
   });
   place.classList.add('button-primary');
@@ -205,6 +233,7 @@ export function createSignaturePanel(
   }
   let renderVersion = 0;
   async function render() {
+    if (disposed) return;
     const version = ++renderVersion;
     host.cancelSignature(id);
     const ctx = canvas.getContext('2d');
@@ -242,10 +271,14 @@ export function createSignaturePanel(
       status.textContent = 'Loading signature font…';
       try {
         await loadSignatureFont();
-      } catch {
+      } catch (error) {
         if (version === renderVersion)
-          status.textContent =
-            'Could not load the signature font. Try typing again.';
+          recover(
+            error,
+            'The signature font could not load. Your name is still available. Check your connection and try again, or use Draw or Upload.',
+            () => void render(),
+            'Retry font loading'
+          );
         return;
       }
       if (version !== renderVersion) return;
@@ -269,11 +302,13 @@ export function createSignaturePanel(
         h = image.naturalHeight * scale;
       ctx.drawImage(image, (800 - w) / 2, (300 - h) / 2, w, h);
     }
-    place.disabled = !(mode === 'type'
-      ? name.value.trim()
-      : mode === 'upload'
-        ? image
-        : hasInk);
+    place.disabled =
+      placing ||
+      !(mode === 'type'
+        ? name.value.trim()
+        : mode === 'upload'
+          ? image
+          : hasInk);
   }
   for (const value of ['draw', 'type', 'upload']) {
     const b = button(value[0].toUpperCase() + value.slice(1), () => {
@@ -334,7 +369,12 @@ export function createSignaturePanel(
     const file = upload.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      status.textContent = 'Choose an image under 10 MB.';
+      recover(
+        new Error('Signature image exceeds 10 MB'),
+        'Choose a PNG, JPEG or WebP image under 10 MB. Your current signature is retained.',
+        () => uploadButton.click(),
+        'Choose another image'
+      );
       return;
     }
     const url = URL.createObjectURL(file);
@@ -342,12 +382,18 @@ export function createSignaturePanel(
     try {
       img.src = url;
       await img.decode();
+      if (disposed) return;
       image = img;
       render();
       status.textContent =
         'Image ready. Transparent PNG gives the cleanest result.';
-    } catch {
-      status.textContent = 'Could not read this image. Try PNG, JPEG or WebP.';
+    } catch (error) {
+      recover(
+        error,
+        'We could not read this image. Try PNG, JPEG or WebP. Your current signature is retained.',
+        () => uploadButton.click(),
+        'Choose another image'
+      );
     } finally {
       URL.revokeObjectURL(url);
     }
@@ -361,8 +407,8 @@ export function createSignaturePanel(
       sync();
       refresh();
     } catch (error) {
-      status.textContent =
-        error instanceof Error ? error.message : 'Could not open PDF.';
+      if (!disposed)
+        renderWorkspaceError(status, error, 'open', () => open.click());
     } finally {
       open.disabled = false;
     }
@@ -395,6 +441,7 @@ export function createSignaturePanel(
     root,
     sync,
     dispose() {
+      disposed = true;
       renderVersion++;
       host.cancelSignature(id);
       image = null;

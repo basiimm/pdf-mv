@@ -1,12 +1,12 @@
 #text-editor-app {
-  --ecbg: #111827;
-  --ecpanel: #1f2937;
-  --ecpanel2: #374151;
-  --ecline: #4b5563;
-  --ectext: #f3f4f6;
-  --ecmuted: #9ca3af;
-  --ecaccent: #6366f1;
-  --ecstage: #374151;
+  --ecbg: var(--s-bg, #161616);
+  --ecpanel: var(--s-surface, #202020);
+  --ecpanel2: var(--s-raised, #292929);
+  --ecline: var(--s-control-border, #505050);
+  --ectext: var(--s-text, #f2f2f2);
+  --ecmuted: var(--s-muted, #b6b6b6);
+  --ecaccent: var(--s-primary-fill, #1a7f37);
+  --ecstage: var(--s-canvas, #101010);
   position: fixed;
   inset: 0;
   z-index: 40;
@@ -50,7 +50,7 @@
   user-select: none;
 }
 #text-editor-app .btn:hover {
-  background: #4b5563;
+  background: var(--s-selected, #203b29);
 }
 #text-editor-app .btn:disabled {
   opacity: 0.4;
@@ -281,7 +281,7 @@
 }
 #text-editor-app .editor.pristine [contenteditable] ::selection,
 #text-editor-app .editor.pristine [contenteditable]::selection {
-  background: rgba(99, 102, 241, 0.28);
+  background: rgb(26 127 55 / 0.28);
 }
 
 #text-editor-app .edit-move {
@@ -292,7 +292,7 @@
   background: transparent;
 }
 #text-editor-app .edit-move:hover {
-  background: rgba(99, 102, 241, 0.18);
+  background: rgb(26 127 55 / 0.18);
 }
 
 #text-editor-app .edit-chrome,
@@ -308,14 +308,14 @@
 #text-editor-app .multi-box {
   position: absolute;
   border: 1.5px solid var(--ecaccent);
-  background: rgba(99, 102, 241, 0.06);
+  background: rgb(26 127 55 / 0.06);
   pointer-events: auto;
   cursor: move;
 }
 #text-editor-app .marquee {
   position: absolute;
   border: 1px dashed var(--ecaccent);
-  background: rgba(99, 102, 241, 0.08);
+  background: rgb(26 127 55 / 0.08);
   pointer-events: none;
 }
 
@@ -450,7 +450,7 @@
 
 #text-editor-app .textsel {
   position: absolute;
-  background: rgba(99, 102, 241, 0.28);
+  background: rgb(26 127 55 / 0.28);
   pointer-events: none;
 }
 
@@ -583,7 +583,7 @@
 }
 #text-editor-app #toast {
   border: 1px solid var(--ecline);
-  background: rgba(17, 24, 39, 0.92);
+  background: var(--ecpanel);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
@@ -599,7 +599,7 @@
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  background: rgba(31, 41, 55, 0.94);
+  background: var(--ecpanel);
   border: 1px solid var(--ecline);
   border-radius: 999px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
@@ -768,7 +768,7 @@
   align-items: center;
   gap: 8px;
   padding: 5px 10px;
-  background: rgba(31, 41, 55, 0.94);
+  background: var(--ecpanel);
   border: 1px solid var(--ecline);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
@@ -1009,7 +1009,7 @@
   bottom: 14px;
   z-index: 6;
   padding: 6px 12px;
-  background: rgba(31, 41, 55, 0.94);
+  background: var(--ecpanel);
   border: 1px solid var(--ecline);
   border-radius: 8px;
   font-size: 12px;
@@ -1043,7 +1043,7 @@
   cursor: pointer;
 }
 #text-editor-app .toolright button[data-tool]:hover {
-  background: #4b5563;
+  background: var(--s-selected, #203b29);
 }
 #text-editor-app .toolright button[data-tool].on {
   background: var(--ecaccent);
@@ -1095,7 +1095,7 @@
   z-index: 40;
   min-width: 170px;
   padding: 6px;
-  background: #262f3f;
+  background: var(--ecpanel);
   border: 1px solid var(--ecline);
   border-radius: 12px;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
@@ -1166,7 +1166,7 @@
   right: 12px;
   bottom: 12px;
   z-index: 6;
-  background: rgba(31, 41, 55, 0.94);
+  background: var(--ecpanel);
   border: 1px solid var(--ecline);
   border-radius: 999px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
@@ -1285,7 +1285,7 @@
   line-height: 1;
 }
 #text-editor-app .stepbtn:hover {
-  background: #4b5563;
+  background: var(--s-selected, #203b29);
   color: var(--ectext);
 }
 #text-editor-app .stepper:has(.num:disabled) .stepbtn {
@@ -1340,7 +1340,7 @@
   min-width: 180px;
   padding: 4px;
   border-radius: 10px;
-  background: #232b3a;
+  background: var(--ecpanel);
 }
 #text-editor-app .ecmenu hr {
   border: none;
@@ -2360,4 +2360,9 @@
     text-wrap: pretty;
     z-index: 55;
   }
+}
+
+/* Filled editor actions retain readable labels in both appearances. */
+#text-editor-app .btn.big {
+  color: #fff;
 }

@@ -5,6 +5,7 @@ import {
 } from './config/workspace-tool-visuals.js';
 import { createToolCard } from './workspace-tool-card.js';
 import { setupWorkspaceTools } from './workspace-tools.js';
+import { describeWorkspaceError } from './workspace-errors.js';
 import { viewerTheme } from './studio-theme.js';
 import { createIcons, icons } from 'lucide';
 import {
@@ -264,19 +265,23 @@ function renderWorkspace(): void {
 }
 function renderOpenDocuments(): void {
   const section = el('open-documents-section');
-  section.hidden = session.documents.size === 0;
+  const documents = [...session.documents.values()].filter(
+    (document) => !document.toolOnly
+  );
+  section.hidden = documents.length === 0;
+  el('home-panel').classList.toggle('has-open-documents', documents.length > 0);
   el('open-documents-count').textContent =
-    `${session.documents.size} ${session.documents.size === 1 ? 'document' : 'documents'}`;
+    `${documents.length} ${documents.length === 1 ? 'document' : 'documents'}`;
   const grid = el('open-documents-grid');
   grid.replaceChildren();
-  for (const document of session.documents.values()) {
+  for (const document of documents) {
     const card = window.document.createElement('button');
     card.className = 'open-document-card';
     card.innerHTML = `${icon('file-text')}<span class="open-document-details"><span class="open-document-name"></span><span class="open-document-meta"></span></span><i class="card-arrow" data-lucide="arrow-up-right"></i>`;
     card.querySelector('.open-document-name')!.textContent = document.name;
     card.querySelector('.open-document-meta')!.textContent = document.loading
       ? 'Opening…'
-      : `${formatSize(document.size)}${document.dirty ? ' · Edited' : ' · Ready to work'}`;
+      : `${formatSize(document.size)}${document.dirty ? ' · Edited' : ''}`;
     card.onclick = () => activateTab(document.id);
     grid.append(card);
   }
@@ -396,26 +401,36 @@ async function initializeViewer(): Promise<void> {
   });
   return viewerReady;
 }
-async function openFiles(files: File[]): Promise<void> {
+async function openFiles(
+  files: File[],
+  throwOnFailure = false
+): Promise<boolean> {
   const pdfs = files.filter(
     (file) => file.type === 'application/pdf' || /\.pdf$/i.test(file.name)
   );
   if (!pdfs.length) {
     showStatus('Choose a PDF file to open in your workspace.', true);
-    return;
+    if (throwOnFailure) throw new Error('Choose a PDF file to open.');
+    return false;
   }
   if (opening) {
     showStatus('Your PDFs are still opening. Try again in a moment.');
-    return;
+    if (throwOnFailure)
+      throw new Error('Your PDFs are still opening. Try again in a moment.');
+    return false;
   }
   if (session.documents.size + pdfs.length > 20) {
     showStatus(
       'This workspace holds 20 documents. Close a tab before opening more.',
       true
     );
-    return;
+    if (throwOnFailure)
+      throw new Error('Close a tab before opening another PDF.');
+    return false;
   }
   opening = true;
+  const failures: unknown[] = [];
+  let opened = 0;
   showStatus('Preparing your PDF workspace…', false, true);
   try {
     await initializeViewer();
@@ -446,6 +461,7 @@ async function openFiles(files: File[]): Promise<void> {
         const document = session.documents.get(id);
         if (document) document.loading = false;
         activateTab(id);
+        opened++;
       } catch (error) {
         await manager!
           .closeDocument(id)
@@ -454,10 +470,8 @@ async function openFiles(files: File[]): Promise<void> {
         session.remove(id);
         renderWorkspace();
         console.error('PDF open failed', error);
-        showStatus(
-          `Could not open ${file.name}. ${error instanceof Error ? error.message : 'The file may be damaged or password protected.'}`,
-          true
-        );
+        failures.push(error);
+        showStatus(describeWorkspaceError(error, 'open').message, true);
       }
     }
     if (!el('workspace-status').classList.contains('error'))
@@ -465,16 +479,14 @@ async function openFiles(files: File[]): Promise<void> {
         `${pdfs.length === 1 ? 'Your PDF is' : 'Your PDFs are'} ready. Download a copy to keep any edits.`
       );
   } catch (error) {
-    showStatus(
-      error instanceof Error
-        ? error.message
-        : 'The PDF viewer could not start. Reload and try again.',
-      true
-    );
+    failures.push(error);
+    showStatus(describeWorkspaceError(error, 'open').message, true);
   } finally {
     opening = false;
     renderWorkspace();
   }
+  if (!opened && failures.length && throwOnFailure) throw failures[0];
+  return opened > 0;
 }
 async function downloadDocument(id: string): Promise<boolean> {
   const document = session.documents.get(id);
@@ -776,11 +788,12 @@ const workspaceTools = setupWorkspaceTools({
     }
   },
   async result(file) {
-    await openFiles([file]);
+    await openFiles([file], true);
   },
   status: (message) => showStatus(message, true),
 });
 for (const id of ['tab-open', 'hero-open']) el(id).onclick = chooseFiles;
+el('tool-empty-open').onclick = () => workspaceTools.chooseSource();
 el('overview-link').onclick = () => {
   query = '';
   el<HTMLInputElement>('tool-search').value = '';
@@ -789,6 +802,106 @@ el('overview-link').onclick = () => {
 };
 el('library-link').onclick = () => applyFilter('all', true);
 el('editor-tools').onclick = () => workspaceTools.toggle();
+const editorPanel = el('editor-panel');
+const toolsToggle = el('editor-tools');
+const toolsBackdrop = el('tool-drawer-backdrop');
+const toolsPanel = el('workspace-tools');
+const toolsClose = el('document-tools-close');
+const editorBackground = [
+  document.querySelector<HTMLElement>('.tab-strip')!,
+  document.querySelector<HTMLElement>('.document-command-bar')!,
+  document.querySelector<HTMLElement>('.document-canvas-area')!,
+  document.querySelector<HTMLElement>('.editor-footnote')!,
+];
+let toolsOpen = editorPanel.dataset.toolsOpen === 'true';
+let returnToToolsTrigger: HTMLElement | null = null;
+function isPhoneToolsLayout(): boolean {
+  return window.matchMedia('(max-width: 700px)').matches;
+}
+function closeMobileTools(): void {
+  if (!toolsOpen || !isPhoneToolsLayout()) return;
+  const controller = workspaceTools as typeof workspaceTools & {
+    close?: () => void;
+  };
+  if (controller.close) controller.close();
+  else workspaceTools.toggle();
+}
+function syncMobileToolsAccessibility(): void {
+  if (!isPhoneToolsLayout()) {
+    toolsPanel.inert = false;
+    toolsPanel.removeAttribute('aria-hidden');
+    toolsPanel.removeAttribute('aria-modal');
+    toolsPanel.removeAttribute('role');
+    for (const element of editorBackground) {
+      element.inert = false;
+      element.removeAttribute('aria-hidden');
+    }
+    return;
+  }
+  toolsPanel.inert = !toolsOpen;
+  toolsPanel.setAttribute('aria-hidden', String(!toolsOpen));
+  toolsPanel.setAttribute('aria-modal', 'true');
+  toolsPanel.setAttribute('role', 'dialog');
+  toolsPanel.setAttribute('aria-labelledby', 'document-tool-title');
+  for (const element of editorBackground) {
+    element.inert = toolsOpen;
+    element.setAttribute('aria-hidden', String(toolsOpen));
+  }
+}
+toolsToggle.addEventListener('pointerdown', () => {
+  editorPanel.dataset.toolsInput = 'pointer';
+  returnToToolsTrigger = toolsToggle;
+});
+toolsToggle.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    editorPanel.dataset.toolsInput = 'keyboard';
+    returnToToolsTrigger = toolsToggle;
+  }
+});
+toolsBackdrop.onclick = closeMobileTools;
+toolsClose.onclick = closeMobileTools;
+window.addEventListener('keydown', () => {
+  editorPanel.dataset.toolsInput = 'keyboard';
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Tab' || !toolsOpen || !isPhoneToolsLayout()) return;
+  const focusable = Array.from(
+    toolsPanel.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+    )
+  ).filter((element) => !element.hidden && element.getClientRects().length > 0);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
+document.addEventListener('workspace-tools-visibility', (event) => {
+  const detail = (event as CustomEvent<{ open?: boolean }>).detail;
+  toolsOpen = Boolean(detail?.open);
+  toolsBackdrop.hidden = !toolsOpen;
+  syncMobileToolsAccessibility();
+  if (!isPhoneToolsLayout()) return;
+  if (!toolsOpen) {
+    (returnToToolsTrigger ?? toolsToggle).focus({ preventScroll: true });
+    returnToToolsTrigger = null;
+    return;
+  }
+  queueMicrotask(() => {
+    toolsClose.focus({ preventScroll: true });
+  });
+});
+const phoneToolsQuery = window.matchMedia('(max-width: 700px)');
+phoneToolsQuery.addEventListener('change', () => {
+  syncMobileToolsAccessibility();
+  workspaceTools.sync();
+});
+syncMobileToolsAccessibility();
 el('download-document').onclick = () => {
   void downloadDocument(session.activeTab);
 };
@@ -809,6 +922,11 @@ window.addEventListener('keydown', (event) => {
     event.preventDefault();
     chooseFiles();
   }
+  if (event.key === 'Escape' && toolsOpen && isPhoneToolsLayout()) {
+    event.preventDefault();
+    closeMobileTools();
+    return;
+  }
   if (
     event.key === '/' &&
     !typing &&
@@ -820,7 +938,12 @@ window.addEventListener('keydown', (event) => {
   }
 });
 window.addEventListener('beforeunload', (event) => {
-  if (session.hasUnsavedChanges || session.documents.size > 0) {
+  if (
+    session.hasUnsavedChanges ||
+    [...session.documents.values()].some(
+      (document) => !document.toolOnly || workspaceTools.hasWork(document.id)
+    )
+  ) {
     event.preventDefault();
     event.returnValue = '';
   }
@@ -851,11 +974,6 @@ window.addEventListener('drop', (event) => {
     void openFiles(Array.from(event.dataTransfer.files));
 });
 el('tool-count').textContent = String(toolsById.size);
-el('workspace-date').textContent = new Intl.DateTimeFormat(undefined, {
-  weekday: 'short',
-  month: 'short',
-  day: 'numeric',
-}).format(new Date());
 renderFilters();
 renderTools();
 renderWorkspace();

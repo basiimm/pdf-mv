@@ -15,6 +15,9 @@ import { createMarkPanel } from './workspace-mark-panel.js';
 import { createActionPanel } from './workspace-action-panel.js';
 import { createSignaturePanel } from './workspace-signature-panel.js';
 import { nativeActions } from './workspace-actions.js';
+import { createMergePanel } from './workspace-merge-panel.js';
+import { detectConversion } from './workspace-conversion.js';
+import { describeWorkspaceError } from './workspace-errors.js';
 
 export interface ToolHost {
   activeId(): string;
@@ -42,6 +45,16 @@ interface FrameEntry {
   sourceName?: string;
   inputFiles?: File[];
 }
+interface NativePanel {
+  root: HTMLElement;
+  sync(): void;
+  dispose(): void;
+  sourceFiles?(): File[];
+  setFiles?(files: File[]): void;
+  canvasRoot?: HTMLElement;
+  setActive?(active: boolean): void;
+  isPreviewActive?(): boolean;
+}
 export function setupWorkspaceTools(host: ToolHost) {
   const panel = document.getElementById('workspace-tools')!;
   const catalog = document.getElementById('document-tool-list')!;
@@ -53,10 +66,11 @@ export function setupWorkspaceTools(host: ToolHost) {
   const activeFrames = new Map<string, string>();
   const usedFrames = new Set<string>();
   const collapsed = new Set<string>();
-  const nativePanels = new Map<
-    string,
-    ReturnType<typeof createMarkPanel> & { sourceFiles?(): File[] }
-  >();
+  const nativePanels = new Map<string, NativePanel>();
+  const conversionFiles = new Map<string, File[]>();
+  let lastPanelOpen: boolean | undefined;
+  let lastPanelId = '';
+  const visitedDocuments = new Set<string>();
   const controls = document.createElement('div');
   controls.className = 'workspace-group-controls';
   panel.append(controls);
@@ -72,6 +86,59 @@ export function setupWorkspaceTools(host: ToolHost) {
   upload.accept = '.pdf,application/pdf';
   upload.hidden = true;
   panel.append(upload);
+  const convertUpload = document.createElement('input');
+  convertUpload.type = 'file';
+  convertUpload.dataset.conversionSource = 'true';
+  convertUpload.multiple = true;
+  convertUpload.hidden = true;
+  panel.append(convertUpload);
+  let conversionTask = '';
+  function chooseConversion(id: string) {
+    conversionTask = id;
+    convertUpload.value = '';
+    convertUpload.click();
+  }
+  convertUpload.onchange = async () => {
+    const files = Array.from(convertUpload.files ?? []);
+    if (!files.length) return;
+    let id = conversionTask;
+    try {
+      const engine = detectConversion(files);
+      if (host.hasPdf(id)) {
+        id = host.createTask('Convert');
+        groupSelections.set(id, groupById.get('convert')!);
+        collapsed.delete(id);
+      }
+      if (engine.startsWith('pdf-to-')) await host.attach(id, files[0]);
+      conversionFiles.set(id, files);
+      usedFrames.add(id);
+      // A new source must not reuse the previous engine's input or result state.
+      for (const [key, instance] of nativePanels) {
+        if (
+          key.startsWith(id + ':') &&
+          conversionTo.includes(key.slice(id.length + 1))
+        ) {
+          instance.dispose();
+          nativePanels.delete(key);
+        }
+      }
+      for (const [key, entry] of frames) {
+        if (
+          entry.documentId === id &&
+          (conversionTo.includes(entry.tool) ||
+            conversionFrom.includes(entry.tool))
+        ) {
+          entry.frame.remove();
+          frames.delete(key);
+        }
+      }
+      await openEngine(id, engine);
+    } catch (error) {
+      host.status(
+        error instanceof Error ? error.message : 'Could not select this file.'
+      );
+    }
+  };
   let uploadTask = '',
     query = '';
   // These engines require a large interactive canvas; settings-oriented tools keep the PDF visible.
@@ -109,9 +176,7 @@ export function setupWorkspaceTools(host: ToolHost) {
       await host.editMode(uploadTask, 'annotation-toolbar');
       sync();
     } catch (error) {
-      host.status(
-        error instanceof Error ? error.message : 'Could not open this PDF.'
-      );
+      host.status(describeWorkspaceError(error, 'open').message);
     }
   };
   function renderNativeEdit(id: string) {
@@ -209,31 +274,57 @@ export function setupWorkspaceTools(host: ToolHost) {
     controls.hidden = !group;
     if (!group || !chosen) return;
     if (group.id === 'convert') {
+      const files = conversionFiles.get(id);
+      const source = document.createElement('p');
+      source.textContent = files?.length
+        ? files.map((file) => file.name).join(', ')
+        : host.hasPdf(id)
+          ? 'Source: current PDF'
+          : 'Choose files to see compatible conversion options.';
+      controls.append(source);
+      const choose = document.createElement('button');
+      choose.className = 'button button-secondary';
+      choose.dataset.chooseSource = 'true';
+      choose.textContent =
+        files?.length || host.hasPdf(id)
+          ? 'Choose another file'
+          : 'Choose files to convert';
+      choose.onclick = () => chooseConversion(id);
+      controls.append(choose);
+      if (chosen === 'convert-start') return;
       const toPdf = conversionTo.includes(chosen);
-      dropdown(
-        'Conversion',
-        [
-          ['to', 'Create a PDF'],
-          ['from', 'Export a PDF'],
-        ],
-        toPdf ? 'to' : 'from',
-        (direction) =>
-          void openEngine(id, direction === 'to' ? 'jpg-to-pdf' : 'pdf-to-png')
-      );
-      dropdown(
-        toPdf ? 'From format' : 'To format',
-        (toPdf ? conversionTo : conversionFrom).map((key) => [
-          key,
-          formatName(key),
-        ]),
-        chosen,
-        (key) => void openEngine(id, key)
-      );
-      const note = document.createElement('p');
-      note.textContent = toPdf
-        ? 'Output: PDF · Choose the format of your source file.'
-        : 'Input: PDF · Uses this document when one is open.';
-      controls.append(note);
+      if (!toPdf)
+        dropdown(
+          'Output format',
+          conversionFrom.map((key) => [key, formatName(key)]),
+          chosen,
+          (key) => void openEngine(id, key)
+        );
+      else {
+        const output = document.createElement('p');
+        output.textContent = `Detected: ${formatName(chosen)} · Output: PDF`;
+        controls.append(output);
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = 'Input format options';
+        details.append(summary);
+        const previous = controls.lastElementChild;
+        dropdown(
+          'Interpret input as',
+          conversionTo.map((key) => [key, formatName(key)]),
+          chosen,
+          (key) => void openEngine(id, key)
+        );
+        if (controls.lastElementChild !== previous)
+          details.append(controls.lastElementChild!);
+        controls.append(details);
+      }
+      if (chosen.includes('word') || chosen.includes('docx')) {
+        const note = document.createElement('p');
+        note.textContent =
+          'Complex layouts and fonts may change during conversion. Check the result before sharing.';
+        controls.append(note);
+      }
     } else if (group.id === 'watermark') {
       dropdown(
         'Watermark type',
@@ -265,13 +356,45 @@ export function setupWorkspaceTools(host: ToolHost) {
     const id = host.activeId(),
       chosen = selections.get(id),
       group = groupSelections.get(id);
-    panel.hidden = collapsed.has(id);
+    if (
+      !visitedDocuments.has(id) &&
+      host.hasPdf(id) &&
+      !chosen &&
+      window.matchMedia('(max-width: 700px)').matches
+    )
+      collapsed.add(id);
+    visitedDocuments.add(id);
+    panel.hidden = id === 'home' || collapsed.has(id);
     const toggle = document.getElementById('editor-tools')!;
     toggle.setAttribute('aria-expanded', String(!panel.hidden));
     toggle.setAttribute('aria-controls', 'workspace-tools');
+    toggle.setAttribute(
+      'aria-label',
+      window.matchMedia('(max-width: 700px)').matches
+        ? 'Tools'
+        : panel.hidden
+          ? 'Show all tools'
+          : 'Hide all tools'
+    );
+    document
+      .getElementById('editor-panel')
+      ?.setAttribute('data-tools-open', String(!panel.hidden));
+    if (lastPanelOpen !== !panel.hidden || lastPanelId !== id) {
+      lastPanelOpen = !panel.hidden;
+      lastPanelId = id;
+      document.dispatchEvent(
+        new CustomEvent('workspace-tools-visibility', {
+          detail: { open: !panel.hidden },
+        })
+      );
+    }
     const label = toggle.querySelector('span');
     if (label)
-      label.textContent = panel.hidden ? 'Show all tools' : 'Hide all tools';
+      label.textContent = window.matchMedia('(max-width: 700px)').matches
+        ? 'Tools'
+        : panel.hidden
+          ? 'Show all tools'
+          : 'Hide all tools';
     title.textContent = group?.name ?? 'Tools';
     document.getElementById('document-tools-back')!.hidden = !chosen;
     document.getElementById('document-tools-search')!.hidden = !!chosen;
@@ -280,15 +403,61 @@ export function setupWorkspaceTools(host: ToolHost) {
     nativeEdit.hidden = !['edit-pdf', 'add-stamps'].includes(chosen ?? '');
     if (!nativeEdit.hidden) renderNativeEdit(id);
     for (const [key, instance] of nativePanels) {
-      instance.root.hidden = key !== `${id}:${chosen}`;
+      const active = key === `${id}:${chosen}`;
+      instance.root.hidden = !active;
+      instance.setActive?.(active);
       instance.sync();
+      if (instance.canvasRoot)
+        instance.canvasRoot.hidden =
+          !active ||
+          (instance.isPreviewActive ? !instance.isPreviewActive() : false);
     }
-    const useCanvas = !!chosen && canvasTools.has(chosen);
+    const native = nativePanels.get(`${id}:${chosen}`);
+    const selectedFiles =
+      native?.sourceFiles?.() ?? conversionFiles.get(id) ?? [];
+    const emptyCanvas = document.getElementById('tool-empty-canvas');
+    const emptyHeading = emptyCanvas?.querySelector('h2');
+    const emptyText = emptyCanvas?.querySelector('p');
+    const emptyButton = document.getElementById('tool-empty-open');
+    if (group?.id === 'convert') {
+      if (emptyHeading)
+        emptyHeading.textContent = selectedFiles.length
+          ? 'Ready to convert'
+          : 'Start with your file';
+      if (emptyText)
+        emptyText.textContent = selectedFiles.length
+          ? 'Adjust the options in the tool panel, then convert. Your output will be ready to inspect or download.'
+          : 'Choose a PDF, image or document. We will detect its format for you.';
+      if (emptyButton)
+        emptyButton.textContent = selectedFiles.length
+          ? 'Choose another file'
+          : 'Choose files to convert';
+    } else {
+      if (emptyHeading) emptyHeading.textContent = 'Start with your document';
+      if (emptyText)
+        emptyText.textContent =
+          'Choose a file to use with this tool. It will appear here when ready.';
+      if (emptyButton) emptyButton.textContent = 'Choose a PDF';
+    }
+
+    const sourceState = document.getElementById('document-state');
+    if (sourceState && !host.hasPdf(id))
+      sourceState.textContent = selectedFiles.length
+        ? `${selectedFiles.length} ${selectedFiles.length === 1 ? 'file' : 'files'} selected`
+        : 'Choose a file';
+    const useCanvas =
+      !!chosen &&
+      (canvasTools.has(chosen) ||
+        chosen === 'merge-pdf' ||
+        !!native?.isPreviewActive?.());
+    const convertingInput =
+      group?.id === 'convert' && !!chosen && conversionTo.includes(chosen);
     document.getElementById('pdf-viewer')!.hidden =
-      useCanvas || !host.hasPdf(id);
+      useCanvas || !host.hasPdf(id) || convertingInput;
     document.getElementById('tool-empty-canvas')!.hidden =
-      useCanvas || host.hasPdf(id);
-    document.getElementById('download-document')!.hidden = useCanvas;
+      useCanvas || (host.hasPdf(id) && !convertingInput);
+    document.getElementById('download-document')!.hidden =
+      useCanvas || group?.id === 'convert';
     for (const [key, entry] of frames)
       entry.frame.hidden = !chosen || key !== activeFrames.get(id);
     const active = frames.get(activeFrames.get(id) ?? '');
@@ -314,9 +483,22 @@ export function setupWorkspaceTools(host: ToolHost) {
     }
   }
   async function openEngine(id: string, toolId: string) {
+    const previous = selections.get(id);
+    if (
+      previous &&
+      conversionTo.includes(previous) &&
+      conversionTo.includes(toolId)
+    ) {
+      const files = nativePanels.get(`${id}:${previous}`)?.sourceFiles?.();
+      if (files?.length) conversionFiles.set(id, files);
+    }
     selections.set(id, toolId);
     activeFrames.delete(id);
     try {
+      if (toolId === 'convert-start') {
+        sync();
+        return;
+      }
       if (['edit-pdf', 'add-stamps'].includes(toolId)) {
         if (host.hasPdf(id)) await host.editMode(id, 'annotation-toolbar');
         sync();
@@ -324,6 +506,7 @@ export function setupWorkspaceTools(host: ToolHost) {
       }
       const nativeKey = `${id}:${toolId}`;
       if (
+        toolId === 'merge-pdf' ||
         toolId === 'sign-pdf' ||
         toolId === 'add-watermark' ||
         toolId === 'header-footer' ||
@@ -331,13 +514,20 @@ export function setupWorkspaceTools(host: ToolHost) {
       ) {
         if (!nativePanels.has(nativeKey)) {
           const instance =
-            toolId === 'sign-pdf'
-              ? createSignaturePanel(outputHost, id, sync)
-              : toolId === 'add-watermark' || toolId === 'header-footer'
-                ? createMarkPanel(outputHost, id, toolId, sync)
-                : createActionPanel(outputHost, id, toolId, sync);
+            toolId === 'merge-pdf'
+              ? createMergePanel(outputHost, id, sync)
+              : toolId === 'sign-pdf'
+                ? createSignaturePanel(outputHost, id, sync)
+                : toolId === 'add-watermark' || toolId === 'header-footer'
+                  ? createMarkPanel(outputHost, id, toolId, sync)
+                  : createActionPanel(outputHost, id, toolId, sync);
           nativePanels.set(nativeKey, instance);
           panel.append(instance.root);
+          const native = instance as NativePanel;
+          if (native.canvasRoot) canvas.append(native.canvasRoot);
+          const sources = conversionFiles.get(id);
+          if (sources && conversionTo.includes(toolId))
+            native.setFiles?.(sources);
         }
         sync();
         return;
@@ -363,9 +553,11 @@ export function setupWorkspaceTools(host: ToolHost) {
           documentId: id,
           initialized: false,
           state: 'Loading controls…',
-          inputFiles: toolId.startsWith('advanced:')
-            ? nativePanels.get(`${id}:${tool.id}`)?.sourceFiles?.()
-            : undefined,
+          inputFiles: conversionTo.includes(toolId)
+            ? conversionFiles.get(id)
+            : toolId.startsWith('advanced:')
+              ? nativePanels.get(`${id}:${tool.id}`)?.sourceFiles?.()
+              : undefined,
         });
         (canvasTools.has(toolId) ? canvas : panel).append(frame);
         setTimeout(() => {
@@ -387,9 +579,7 @@ export function setupWorkspaceTools(host: ToolHost) {
       sync();
     } catch (error) {
       sync();
-      host.status(
-        error instanceof Error ? error.message : 'Could not open tool.'
-      );
+      host.status(describeWorkspaceError(error, 'open').message);
     }
   }
   async function select(request: string, fromHome = false, search = '') {
@@ -404,7 +594,11 @@ export function setupWorkspaceTools(host: ToolHost) {
     collapsed.delete(id);
     let toolId = groupById.has(request) ? group.members[0] : request;
     if (group.id === 'convert' && groupById.has(request))
-      toolId = host.hasPdf(id) ? 'pdf-to-png' : 'jpg-to-pdf';
+      toolId = host.hasPdf(id)
+        ? 'pdf-to-png'
+        : conversionFiles.has(id)
+          ? detectConversion(conversionFiles.get(id)!)
+          : 'convert-start';
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       toolId =
@@ -426,8 +620,23 @@ export function setupWorkspaceTools(host: ToolHost) {
     );
     if (!entry) return;
     const id = entry.documentId;
+    if (event.data.type === 'studio-tool-back') {
+      if (
+        host.activeId() !== id ||
+        frames.get(activeFrames.get(id) ?? '') !== entry
+      )
+        return;
+      selections.delete(id);
+      groupSelections.delete(id);
+      activeFrames.delete(id);
+      sync();
+      return;
+    }
     if (event.data.type === 'studio-tool-error') {
-      entry.state = String(event.data.message);
+      entry.state = describeWorkspaceError(
+        new Error(String(event.data.message)),
+        'apply'
+      ).message;
       if (host.activeId() === id) sync();
     }
     if (event.data.type === 'studio-tool-ready' && !entry.initialized) {
@@ -525,9 +734,7 @@ export function setupWorkspaceTools(host: ToolHost) {
           )
         );
       } catch (error) {
-        host.status(
-          error instanceof Error ? error.message : 'Could not open the result.'
-        );
+        host.status(describeWorkspaceError(error, 'open').message);
       }
     }
   });
@@ -553,11 +760,51 @@ export function setupWorkspaceTools(host: ToolHost) {
       else collapsed.add(id);
       sync();
     },
+    close() {
+      collapsed.add(host.activeId());
+      sync();
+    },
+    chooseSource() {
+      const id = host.activeId();
+      if (groupSelections.get(id)?.id === 'convert') {
+        chooseConversion(id);
+        return;
+      }
+      const instance = nativePanels.get(`${id}:${selections.get(id)}`);
+      const input =
+        instance?.root.querySelector<HTMLInputElement>('input[type=file]');
+      if (input) {
+        input.value = '';
+        input.click();
+        return;
+      }
+      const entry = frames.get(activeFrames.get(id) ?? '');
+      const embeddedInput =
+        entry?.frame.contentDocument?.querySelector<HTMLInputElement>(
+          'input[type=file]'
+        );
+      if (embeddedInput) {
+        embeddedInput.value = '';
+        embeddedInput.click();
+        return;
+      }
+      uploadTask = id;
+      upload.value = '';
+      upload.click();
+    },
     hasWork(id: string) {
-      return usedFrames.has(id);
+      return (
+        usedFrames.has(id) ||
+        [...nativePanels].some(
+          ([key, instance]) =>
+            key.startsWith(id + ':') && !!instance.sourceFiles?.().length
+        )
+      );
     },
     remove(id: string) {
       collapsed.delete(id);
+      conversionFiles.delete(id);
+      visitedDocuments.delete(id);
       usedFrames.delete(id);
       selections.delete(id);
       groupSelections.delete(id);

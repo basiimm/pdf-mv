@@ -1,5 +1,7 @@
 import type { ToolHost } from './workspace-tools.js';
 import { applyPageMarks, type PageMarks } from './workspace-page-marks.js';
+import { renderWorkspaceError } from './workspace-errors.js';
+import '../css/workspace-mark-preview.css';
 
 export function createMarkPanel(
   host: ToolHost,
@@ -26,6 +28,11 @@ export function createMarkPanel(
     upload.click();
   };
   const form = document.createElement('form');
+  const advanced = document.createElement('details');
+  const advancedTitle = document.createElement('summary');
+  advancedTitle.textContent = 'Appearance';
+  advanced.append(advancedTitle);
+  let fieldTarget: HTMLElement = form;
   const inputs = new Map<string, HTMLInputElement | HTMLSelectElement>();
   function field(
     name: string,
@@ -43,12 +50,13 @@ export function createMarkPanel(
     if (min) input.min = min;
     if (max) input.max = max;
     label.append(input);
-    form.append(label);
+    fieldTarget.append(label);
     inputs.set(name, input);
     return input;
   }
   if (kind === 'add-watermark') {
     field('text', 'Watermark text', 'CONFIDENTIAL');
+    fieldTarget = advanced;
     field('opacity', 'Opacity (%)', '25', 'number', '1', '100');
     field('angle', 'Angle (degrees)', '45', 'number', '-180', '180');
   } else {
@@ -67,9 +75,10 @@ export function createMarkPanel(
     }
     select.value = 'center';
     label.append(select);
-    form.append(label);
+    fieldTarget.append(label);
     inputs.set('align', select);
   }
+  fieldTarget = advanced;
   field(
     'size',
     'Font size (pt)',
@@ -79,13 +88,39 @@ export function createMarkPanel(
     '144'
   );
   field('color', 'Text color', '#555555', 'color');
-  field('pages', 'Pages (blank means all)', '').placeholder = 'e.g. 1, 3-5';
-  const previewPage = field('previewPage', 'Preview page', '1', 'number', '1');
+  form.append(advanced);
+  fieldTarget = form;
+  field('pages', 'Page scope', '').placeholder = 'All pages · or enter 1, 3-5';
+  const scopeHint = document.createElement('p');
+  scopeHint.textContent = 'Leave blank to use all pages.';
+  form.append(scopeHint);
   const status = document.createElement('p');
   status.setAttribute('role', 'status');
   const preview = document.createElement('canvas');
   preview.hidden = true;
   preview.setAttribute('aria-label', 'PDF preview with changes');
+  const canvasRoot = document.createElement('div');
+  canvasRoot.className = 'mark-central-preview';
+  canvasRoot.hidden = true;
+  const previewBar = document.createElement('div');
+  previewBar.className = 'mark-preview-bar';
+  const previewLabel = document.createElement('span');
+  previewLabel.textContent = 'Temporary preview';
+  const previous = document.createElement('button');
+  previous.type = 'button';
+  previous.className = 'button button-secondary';
+  previous.textContent = 'Previous page';
+  const next = document.createElement('button');
+  next.type = 'button';
+  next.className = 'button button-secondary';
+  next.textContent = 'Next page';
+  const pageLabel = document.createElement('span');
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.className = 'button button-secondary';
+  cancel.textContent = 'Back to original';
+  previewBar.append(previewLabel, previous, pageLabel, next, cancel);
+  canvasRoot.append(previewBar, preview);
   const show = document.createElement('button');
   show.type = 'submit';
   show.className = 'button button-secondary';
@@ -93,14 +128,104 @@ export function createMarkPanel(
   const apply = document.createElement('button');
   apply.type = 'button';
   apply.className = 'button button-primary';
-  apply.textContent = 'Apply to a copy';
+  apply.textContent = 'Create edited copy';
   const note = document.createElement('p');
   note.textContent =
     'An edited copy opens in a new app tab. Your original stays available.';
-  form.append(show, status, preview, apply, note);
-  root.append(intro, open, upload, form);
+  const actions = document.createElement('div');
+  actions.className = 'mark-sticky-actions';
+  const stop = document.createElement('button');
+  stop.type = 'button';
+  stop.className = 'button button-secondary';
+  stop.textContent = 'Cancel preview';
+  stop.hidden = true;
+  actions.append(show, stop, apply, note);
+  form.append(actions);
+  root.append(intro, open, upload, form, status);
   let disposed = false,
-    busy = false;
+    busy = false,
+    active = true,
+    generation = 0;
+  let previewActive = false,
+    previewNumber = 1;
+  let loadingTask: import('pdfjs-dist').PDFDocumentLoadingTask | undefined;
+  let previewPdf: import('pdfjs-dist').PDFDocumentProxy | undefined;
+  let renderTask: import('pdfjs-dist').RenderTask | undefined;
+  let pageGeneration = 0;
+  const clearPreview = () => {
+    generation++;
+    pageGeneration++;
+    previewActive = false;
+    canvasRoot.hidden = true;
+    preview.hidden = true;
+    renderTask?.cancel();
+    renderTask = undefined;
+    const task = loadingTask;
+    loadingTask = undefined;
+    previewPdf = undefined;
+    if (task) void task.destroy().catch(() => {});
+    stop.hidden = true;
+    if (!disposed) refresh();
+  };
+  cancel.onclick = () => {
+    clearPreview();
+    status.textContent =
+      'Original document restored. Your settings are retained.';
+  };
+  stop.onclick = () => cancel.click();
+  const handleEscape = (event: KeyboardEvent) => {
+    if (event.key === 'Escape' && (previewActive || busy)) {
+      event.preventDefault();
+      cancel.click();
+      show.focus();
+    }
+  };
+  root.onkeydown = handleEscape;
+  canvasRoot.onkeydown = handleEscape;
+  const renderPage = async (number: number) => {
+    const pdf = previewPdf;
+    if (!pdf || number < 1 || number > pdf.numPages) return;
+    const token = ++pageGeneration;
+    renderTask?.cancel();
+    const page = await pdf.getPage(number);
+    if (disposed || token !== pageGeneration || pdf !== previewPdf) return;
+    const viewport = page.getViewport({
+      scale: 1000 / page.getViewport({ scale: 1 }).width,
+    });
+    const output = document.createElement('canvas');
+    output.width = viewport.width;
+    output.height = viewport.height;
+    const task = page.render({
+      canvas: output,
+      canvasContext: output.getContext('2d')!,
+      viewport,
+    });
+    renderTask = task;
+    await task.promise;
+    if (disposed || token !== pageGeneration || pdf !== previewPdf) return;
+    preview.width = output.width;
+    preview.height = output.height;
+    preview.getContext('2d')!.drawImage(output, 0, 0);
+    preview.hidden = false;
+    previewNumber = number;
+    previous.disabled = number <= 1;
+    next.disabled = number >= pdf.numPages;
+    pageLabel.textContent = `Page ${number} of ${pdf.numPages}`;
+  };
+  const navigate = (delta: number) => {
+    void renderPage(previewNumber + delta).catch((error) => {
+      if (
+        !disposed &&
+        previewActive &&
+        !(
+          error instanceof Error && error.name === 'RenderingCancelledException'
+        )
+      )
+        renderWorkspaceError(status, error, 'preview', () => void run(true));
+    });
+  };
+  previous.onclick = () => navigate(-1);
+  next.onclick = () => navigate(1);
   const sync = () => {
     open.hidden = host.hasPdf(id);
     form.hidden = !host.hasPdf(id);
@@ -121,48 +246,35 @@ export function createMarkPanel(
   });
   async function run(isPreview: boolean) {
     if (busy || !form.reportValidity()) return;
+    clearPreview();
+    const token = generation;
+    const marks = options();
     busy = true;
-    for (const input of inputs.values()) input.disabled = true;
+    stop.hidden = !isPreview;
     show.disabled = apply.disabled = true;
-    status.textContent = isPreview ? 'Preparing preview…' : 'Applying changes…';
-    preview.hidden = true;
+    status.textContent = isPreview
+      ? 'Preparing preview…'
+      : 'Creating edited copy…';
     try {
       const file = await host.snapshot(id);
-      const bytes = await applyPageMarks(await file.arrayBuffer(), options());
-      if (disposed) return;
+      const bytes = await applyPageMarks(await file.arrayBuffer(), marks);
+      if (disposed || token !== generation) return;
       if (isPreview) {
         const pdfjs = await import('pdfjs-dist');
         await import('./utils/setup-pdf-worker.js');
+        if (disposed || token !== generation) return;
         const task = pdfjs.getDocument({ data: bytes });
-        try {
-          const pdf = await task.promise;
-          const n = Number(previewPage.value);
-          if (!Number.isInteger(n) || n < 1 || n > pdf.numPages)
-            throw new Error(
-              `Preview page must be between 1 and ${pdf.numPages}.`
-            );
-          const page = await pdf.getPage(n);
-          const viewport = page.getViewport({
-            scale: 560 / page.getViewport({ scale: 1 }).width,
-          });
-          const output = document.createElement('canvas');
-          output.width = viewport.width;
-          output.height = viewport.height;
-          await page.render({
-            canvas: output,
-            canvasContext: output.getContext('2d')!,
-            viewport,
-          }).promise;
-          if (!disposed) {
-            preview.width = output.width;
-            preview.height = output.height;
-            preview.getContext('2d')!.drawImage(output, 0, 0);
-            preview.hidden = false;
-            status.textContent = `Preview · Page ${n} of ${pdf.numPages}`;
-          }
-        } finally {
-          await task.destroy();
-        }
+        loadingTask = task;
+        previewPdf = await task.promise;
+        if (disposed || token !== generation) return;
+        await renderPage(1);
+        if (disposed || token !== generation) return;
+        previewActive = true;
+        stop.hidden = false;
+        canvasRoot.hidden = !active;
+        status.textContent =
+          'Temporary preview shown in the document area. Create an edited copy when ready.';
+        refresh();
       } else {
         await host.result(
           new File(
@@ -174,15 +286,24 @@ export function createMarkPanel(
             { type: 'application/pdf' }
           )
         );
-        status.textContent = 'Edited copy opened.';
+        if (!disposed) status.textContent = 'Edited copy opened.';
       }
     } catch (error) {
-      if (!disposed)
-        status.textContent =
-          error instanceof Error ? error.message : 'Could not update this PDF.';
+      if (!disposed && token === generation) {
+        clearPreview();
+        renderWorkspaceError(
+          status,
+          error,
+          isPreview ? 'preview' : 'apply',
+          (action) => {
+            if (action === 'choose-file') open.click();
+            else if (action === 'fix-settings') inputs.get('pages')?.focus();
+            else void run(isPreview);
+          }
+        );
+      }
     } finally {
       busy = false;
-      for (const input of inputs.values()) input.disabled = false;
       show.disabled = apply.disabled = false;
     }
   }
@@ -192,18 +313,19 @@ export function createMarkPanel(
   };
   apply.onclick = () => void run(false);
   form.oninput = () => {
-    preview.hidden = true;
+    clearPreview();
     status.textContent = 'Settings changed. Preview to check the result.';
   };
   upload.onchange = async () => {
     const file = upload.files?.[0];
     if (!file) return;
+    clearPreview();
     open.disabled = true;
     try {
       await host.attach(id, file);
       refresh();
-    } catch {
-      host.status('Could not open this PDF.');
+    } catch (error) {
+      renderWorkspaceError(status, error, 'open', () => open.click());
     } finally {
       open.disabled = false;
       sync();
@@ -212,10 +334,20 @@ export function createMarkPanel(
   sync();
   return {
     root,
+    canvasRoot,
     sync,
+    setActive(value: boolean) {
+      const wasActive = active;
+      active = value;
+      if (!value && wasActive) clearPreview();
+      canvasRoot.hidden = !value || !previewActive;
+    },
+    isPreviewActive: () => active && previewActive,
     dispose() {
       disposed = true;
+      clearPreview();
       root.remove();
+      canvasRoot.remove();
     },
   };
 }

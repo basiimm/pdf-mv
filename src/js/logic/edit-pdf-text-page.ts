@@ -402,6 +402,13 @@ function setupDocPanel() {
 let appModule: EditorAppModule | null = null;
 
 function closeEditor() {
+  if (
+    window.parent !== window &&
+    new URLSearchParams(location.search).get('workspace') === '1'
+  ) {
+    window.parent.postMessage({ type: 'studio-tool-back' }, location.origin);
+    return;
+  }
   document.getElementById('text-editor-app')?.setAttribute('hidden', '');
   document.getElementById('uploader')?.classList.remove('hidden');
   document.getElementById('tool-landing')?.classList.remove('hidden');
@@ -880,6 +887,14 @@ function initializePage() {
   });
 
   document.getElementById('exitEditor')?.addEventListener('click', () => {
+    if (
+      window.parent !== window &&
+      new URLSearchParams(location.search).get('workspace') === '1'
+    ) {
+      // Keep the editor mounted so returning to it preserves in-progress edits.
+      window.parent.postMessage({ type: 'studio-tool-back' }, location.origin);
+      return;
+    }
     window.location.reload();
   });
 }

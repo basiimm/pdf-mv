@@ -1,3 +1,4 @@
+import { renderWorkspaceError } from './workspace-errors.js';
 import type { ToolHost } from './workspace-tools.js';
 import {
   nativeActions,
@@ -129,15 +130,14 @@ export function createActionPanel(
       else await host.attach(id, file);
       refresh();
     } catch (error) {
-      status.textContent =
-        error instanceof Error ? error.message : 'Could not open file.';
+      if (!disposed)
+        renderWorkspaceError(status, error, 'open', () => open.click());
     } finally {
       open.disabled = false;
       sync();
     }
   };
-  form.onsubmit = async (event) => {
-    event.preventDefault();
+  async function run() {
     if (busy || !form.reportValidity()) return;
     busy = true;
     apply.disabled = open.disabled = true;
@@ -163,22 +163,34 @@ export function createActionPanel(
       }
     } catch (error) {
       if (!disposed)
-        status.textContent =
-          error instanceof Error
-            ? error.message
-            : 'Could not process this file.';
+        renderWorkspaceError(status, error, 'apply', (recovery) => {
+          if (recovery === 'choose-file') open.click();
+          else if (recovery === 'fix-settings')
+            (fields.get('pages') ?? fields.values().next().value)?.focus();
+          else void run();
+        });
     } finally {
       busy = false;
       apply.disabled = open.disabled = false;
       for (const field of fields.values()) field.disabled = false;
       sync();
     }
+  }
+  form.onsubmit = (event) => {
+    event.preventDefault();
+    void run();
   };
   sync();
   return {
     root,
     sync,
     sourceFiles: () => [...images],
+    setFiles(files: File[]) {
+      if (config.accept) {
+        images = [...files];
+        sync();
+      }
+    },
     dispose() {
       disposed = true;
       images = [];

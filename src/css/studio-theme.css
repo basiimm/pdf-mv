@@ -537,9 +537,11 @@ body[data-studio-tool] .studio-has-files #process-btn {
   background: var(--s-canvas);
 }
 #tool-empty-canvas {
-  margin: auto;
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
   padding: 40px;
-  max-width: 440px;
   color: var(--s-text);
   text-align: center;
 }
@@ -606,6 +608,7 @@ body[data-studio-tool] .studio-has-files #process-btn {
 }
 .workspace-embedded-tool .studio-tool-nav,
 .workspace-embedded-tool .studio-tool-credits,
+.workspace-embedded-tool body footer,
 .workspace-embedded-tool #back-to-tools {
   display: none !important;
 }
@@ -909,6 +912,13 @@ html[data-studio-theme] :is(button, input, select, textarea):disabled {
   min-height: 76px !important;
   padding: 12px !important;
   margin-bottom: 12px !important;
+  background: var(--s-inset) !important;
+  border-color: var(--s-control-border) !important;
+  color: var(--s-text) !important;
+}
+.workspace-embedded-tool nav[aria-label='Breadcrumb'],
+.workspace-embedded-tool nav[aria-label='breadcrumb'] {
+  display: none !important;
 }
 .workspace-embedded-tool #drop-zone > :is(i, svg) {
   display: none !important;
