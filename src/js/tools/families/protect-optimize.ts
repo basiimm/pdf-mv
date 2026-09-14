@@ -122,9 +122,10 @@ export function register(): void {
     id: 'encrypt-pdf',
     description:
       'Protect this PDF with a password using 256-bit AES encryption.',
-    primaryLabel: 'Encrypt PDF',
+    primaryLabel: 'Encrypt and download',
     doneLabel: 'PDF encrypted',
-    output: 'revision',
+    // Encrypted output cannot be shown in the viewer without its password.
+    output: 'download',
     fields: [
       {
         key: 'userPassword',
@@ -190,7 +191,8 @@ export function register(): void {
       'Set what people can do with this PDF, like printing or copying text.',
     primaryLabel: 'Update permissions',
     doneLabel: 'Permissions updated',
-    output: 'revision',
+    // Encrypted output cannot be shown in the viewer without its password.
+    output: 'download',
     fields: [
       {
         key: 'newOwnerPassword',

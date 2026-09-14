@@ -45,6 +45,22 @@ export function describeWorkspaceError(
       details,
     };
   }
+  // Engines throw short, plain-language messages for expected conditions
+  // (no tables found, wrong password). Show those as written.
+  if (
+    error instanceof Error &&
+    details.length <= 160 &&
+    /^[A-Z][^{}<>\n]*[.!]$/.test(details) &&
+    !/https?:|failed:|exception|undefined|null|\bat\s/i.test(details)
+  ) {
+    return {
+      message: details,
+      action: /password/i.test(details) ? 'fix-settings' : 'retry',
+      // Retrying an expected condition changes nothing; offer no action.
+      actionLabel: /password/i.test(details) ? 'Enter password' : '',
+      details: '',
+    };
+  }
   if (
     context === 'open' ||
     /invalid pdf|no pdf header|parse|encrypted|password|corrupt/i.test(details)
@@ -76,12 +92,14 @@ export function renderWorkspaceError(
     inlineAlert({
       tone: 'negative',
       message: description.message,
-      actions: [
-        {
-          label: description.actionLabel,
-          onClick: () => onRecover(description.action),
-        },
-      ],
+      actions: !description.actionLabel
+        ? []
+        : [
+            {
+              label: description.actionLabel,
+              onClick: () => onRecover(description.action),
+            },
+          ],
       details: description.details,
     })
   );

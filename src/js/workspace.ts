@@ -1002,7 +1002,11 @@ const workspaceHost: ToolHost = {
   status: (message) => showStatus(message, true),
 };
 const workspaceTools = setupWorkspaceTools(workspaceHost);
-if (import.meta.env.DEV) Object.assign(window, { __pdfmvHost: workspaceHost });
+if (import.meta.env.DEV)
+  Object.assign(window, {
+    __pdfmvHost: workspaceHost,
+    __pdfmvTools: workspaceTools,
+  });
 for (const id of ['tab-open', 'hero-open']) el(id).onclick = chooseFiles;
 el('tool-empty-open').onclick = () => workspaceTools.chooseSource();
 el('overview-link').onclick = () => {

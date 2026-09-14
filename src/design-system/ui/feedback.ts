@@ -31,12 +31,13 @@ export function inlineAlert(options: InlineAlertOptions): HTMLDivElement {
   root.append(
     el('p', { className: 'ds-alert__message', text: options.message })
   );
-  if (options.actions?.length)
+  const actions = options.actions?.filter((action) => action.label);
+  if (actions?.length)
     root.append(
       el(
         'div',
         { className: 'ds-alert__actions' },
-        options.actions.map((action) =>
+        actions.map((action) =>
           button({
             label: action.label,
             size: 's',

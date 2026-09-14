@@ -63,11 +63,13 @@ describe('protect-optimize family registration', () => {
     }
   );
 
-  it('pdf-to-pdfa is the only new-document output; the rest are revisions', () => {
+  it('archival copies open as new documents, encrypted files download, the rest are revisions', () => {
     for (const id of PROTECT_OPTIMIZE_IDS) {
       const def = toolDefinitions.get(id)!;
       if (id === 'pdf-to-pdfa') {
         expect(def.output).toBe('new-document');
+      } else if (id === 'encrypt-pdf' || id === 'change-permissions') {
+        expect(def.output).toBe('download');
       } else {
         expect(def.output).toBe('revision');
       }
