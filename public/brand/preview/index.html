@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>PDF MV · Logo motion preview</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #141414;
+        --surface: #202020;
+        --text: #f2f2f2;
+        --muted: #a8a8a8;
+        --border: #333;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.6 system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 900px;
+        margin: 8vh auto;
+        padding: 24px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+      }
+      h1 {
+        font-size: 24px;
+        letter-spacing: -0.8px;
+        margin: 0;
+      }
+      p {
+        color: var(--muted);
+        margin: 8px 0 24px;
+      }
+      .stage {
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--surface);
+        overflow: hidden;
+        min-height: 280px;
+      }
+      #animation {
+        width: 100%;
+        aspect-ratio: 2;
+      }
+      nav {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+      }
+      button,
+      a {
+        color: var(--text);
+      }
+      button {
+        font: inherit;
+        cursor: pointer;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 9px;
+        padding: 8px 16px;
+      }
+      button.primary {
+        background: #1a7f37;
+        color: white;
+        border-color: transparent;
+      }
+      button:focus-visible,
+      a:focus-visible,
+      input:focus-visible {
+        outline: 2px solid #3fb950;
+        outline-offset: 4px;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      input {
+        accent-color: #1a7f37;
+      }
+      small {
+        color: var(--muted);
+      }
+      .links {
+        margin-top: 28px;
+        display: flex;
+        gap: 24px;
+      }
+      body.light {
+        color-scheme: light;
+        --bg: #f5f5f5;
+        --surface: #fff;
+        --text: #242424;
+        --muted: #666;
+        --border: #e5e5e5;
+      }
+      @media (max-width: 600px) {
+        main {
+          margin: 2vh auto;
+        }
+        header {
+          align-items: flex-start;
+        }
+        label {
+          width: 100%;
+        }
+        input {
+          flex: 1;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .stage {
+          animation: fade 0.2s ease;
+        }
+        @keyframes fade {
+          from {
+            opacity: 0.7;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>A little lift. A clear mark.</h1>
+        <button id="theme">Light background</button>
+      </header>
+      <p>
+        Your original logo, assembled in six staggered movements. A 2.4-second
+        introduction with a quiet finish.
+      </p>
+      <div class="stage">
+        <div id="animation" role="img" aria-label="Animated PDF MV logo"></div>
+      </div>
+      <nav>
+        <button class="primary" id="replay">Replay animation</button
+        ><button id="pause">Pause</button
+        ><label
+          >Timeline
+          <input
+            id="timeline"
+            aria-label="Animation timeline"
+            type="range"
+            min="0"
+            max="143"
+            value="0" /></label
+        ><small id="status" role="status">Loading preview…</small>
+      </nav>
+      <div class="links">
+        <a href="../pdf-mv-logo.lottie.json" download>Download Lottie JSON</a
+        ><a href="../pdf-mv.svg" download>Original SVG</a
+        ><a href="/workspace.html">Workspace</a>
+      </div>
+      <p><small>Preview only. The README has not been changed.</small></p>
+    </main>
+    <script src="./lottie.min.js"></script>
+    <script>
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+      const timeline = document.querySelector('#timeline');
+      const pause = document.querySelector('#pause');
+      const status = document.querySelector('#status');
+      const animation = lottie.loadAnimation({
+        container: document.querySelector('#animation'),
+        renderer: 'svg',
+        loop: false,
+        autoplay: !reduce.matches,
+        path: '../pdf-mv-logo.lottie.json',
+      });
+      let paused = reduce.matches;
+      function showState() {
+        pause.textContent = paused ? 'Play' : 'Pause';
+      }
+      animation.addEventListener('DOMLoaded', () => {
+        if (reduce.matches) {
+          animation.goToAndStop(143, true);
+          status.textContent = 'Reduced motion · still preview';
+        } else status.textContent = 'Playing';
+        showState();
+      });
+      animation.addEventListener('data_failed', () => {
+        status.textContent = 'Unable to load animation';
+      });
+      animation.addEventListener('enterFrame', (e) => {
+        timeline.value = Math.round(e.currentTime);
+      });
+      animation.addEventListener('complete', () => {
+        paused = true;
+        showState();
+        status.textContent = 'Complete';
+      });
+      document.querySelector('#replay').onclick = () => {
+        if (reduce.matches) {
+          animation.goToAndStop(143, true);
+          status.textContent = 'Reduced motion · still preview';
+          return;
+        }
+        animation.goToAndPlay(0, true);
+        paused = false;
+        showState();
+        status.textContent = 'Playing';
+      };
+      pause.onclick = () => {
+        if (reduce.matches) return;
+        if (paused) {
+          if (animation.currentFrame >= 142) animation.goToAndPlay(0, true);
+          else animation.play();
+        } else animation.pause();
+        paused = !paused;
+        showState();
+        status.textContent = paused ? 'Paused' : 'Playing';
+      };
+      timeline.oninput = () => {
+        animation.goToAndStop(Number(timeline.value), true);
+        paused = true;
+        showState();
+        status.textContent = 'Frame ' + timeline.value;
+      };
+      reduce.addEventListener('change', () => {
+        if (reduce.matches) {
+          animation.goToAndStop(143, true);
+          paused = true;
+          showState();
+          status.textContent = 'Reduced motion · still preview';
+        }
+      });
+      document.querySelector('#theme').onclick = (e) => {
+        const light = document.body.classList.toggle('light');
+        e.target.textContent = light ? 'Dark background' : 'Light background';
+      };
+    </script>
+  </body>
+</html>
