@@ -7,7 +7,9 @@ function fixture() {
   let count = 0;
   const host: ToolHost = {
     activeId: () => active,
-    hasPdf: () => false,
+    placeSignature: vi.fn(async () => {}),
+    cancelSignature: vi.fn(),
+    hasPdf: vi.fn(() => false),
     revision: () => 0,
     createTask: vi.fn(() => (active = `task-${++count}`)),
     snapshot: vi.fn(),
@@ -68,5 +70,37 @@ describe('workspace tool navigation', () => {
     expect(document.getElementById('workspace-tools')!.hidden).toBe(true);
     controller.toggle();
     expect(document.getElementById('workspace-tools')!.hidden).toBe(false);
+  });
+  it('opens signing in the default viewer with a sidebar PDF picker', async () => {
+    const { controller, host } = fixture();
+    await controller.select('signatures', true);
+    const panel = document.querySelector('.signature-panel')!;
+    expect(panel.closest('#workspace-tools')).not.toBeNull();
+    expect(panel.textContent).toContain('Open PDF');
+    expect(document.querySelector('iframe')).toBeNull();
+    vi.mocked(host.hasPdf).mockReturnValue(true);
+    controller.sync();
+    expect(document.getElementById('pdf-viewer')!.hidden).toBe(false);
+    expect(document.getElementById('download-document')!.hidden).toBe(false);
+    expect(panel.textContent).toContain('Place signature');
+    await controller.select('rotate-pdf');
+    expect(host.cancelSignature).toHaveBeenCalled();
+  });
+  it('keeps certificate signing, validation and timestamp settings beside the viewer', async () => {
+    const { controller, host } = fixture();
+    vi.mocked(host.hasPdf).mockReturnValue(true);
+    for (const tool of [
+      'digital-sign-pdf',
+      'validate-signature-pdf',
+      'timestamp-pdf',
+    ]) {
+      await controller.select(tool, true);
+      const frame = [...document.querySelectorAll('iframe')].find(
+        (frame) => !frame.hidden
+      )!;
+      expect(frame.parentElement?.id).toBe('workspace-tools');
+      expect(document.getElementById('pdf-viewer')!.hidden).toBe(false);
+      expect(document.getElementById('download-document')!.hidden).toBe(false);
+    }
   });
 });
