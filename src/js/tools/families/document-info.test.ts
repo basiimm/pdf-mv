@@ -30,9 +30,8 @@ describe('document-info family registration', () => {
     }
   });
 
-  it('does not register tools that need dynamic fields or a tree UI', () => {
+  it('leaves tree editing (bookmarks) to its dedicated panel', () => {
     expect(toolDefinitions.has('bookmark')).toBe(false);
-    expect(toolDefinitions.has('pdf-layers')).toBe(false);
   });
 
   it('gives every tool a verb-first primary label and a past-tense done label', () => {
