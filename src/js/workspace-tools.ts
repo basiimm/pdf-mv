@@ -16,6 +16,8 @@ import { createMergePanel } from './workspace-merge-panel.js';
 import { createToolPanel } from './tools/panel.js';
 import { rememberTool } from './tool-launcher.js';
 import { createOrganizePanel } from './tools/organize-panel.js';
+import { createBookmarkPanel } from './tools/bookmark-panel.js';
+import { createComparePanel } from './tools/compare-panel.js';
 import { toolDefinitions } from './tools/registry.js';
 import { detectConversion } from './workspace-conversion.js';
 import { describeWorkspaceError } from './workspace-errors.js';
@@ -540,6 +542,8 @@ export function setupWorkspaceTools(host: ToolHost) {
         toolId === 'organize-pdf' ||
         toolId === 'pdf-multi-tool' ||
         toolId === 'split-pdf' ||
+        toolId === 'bookmark' ||
+        toolId === 'compare-pdfs' ||
         toolDefinitions.has(toolId)
       ) {
         if (!nativePanels.has(nativeKey)) {
@@ -552,16 +556,20 @@ export function setupWorkspaceTools(host: ToolHost) {
                   ? createOrganizePanel(outputHost, id, 'organize', sync)
                   : toolId === 'split-pdf'
                     ? createOrganizePanel(outputHost, id, 'split', sync)
-                    : toolDefinitions.has(toolId)
-                      ? createToolPanel(
-                          outputHost,
-                          id,
-                          toolDefinitions.get(toolId)!,
-                          sync
-                        )
-                      : (() => {
-                          throw new Error('This tool is not available.');
-                        })();
+                    : toolId === 'bookmark'
+                      ? createBookmarkPanel(outputHost, id, sync)
+                      : toolId === 'compare-pdfs'
+                        ? createComparePanel(outputHost, id, sync)
+                        : toolDefinitions.has(toolId)
+                          ? createToolPanel(
+                              outputHost,
+                              id,
+                              toolDefinitions.get(toolId)!,
+                              sync
+                            )
+                          : (() => {
+                              throw new Error('This tool is not available.');
+                            })();
           nativePanels.set(nativeKey, instance);
           panel.append(instance.root);
           const native = instance as NativePanel;

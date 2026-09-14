@@ -1,0 +1,186 @@
+/* Edit bookmarks: outline tree in the tool panel. Tokens only. */
+.ds-bookmarks .ds-tool-panel__footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-200);
+}
+.ds-bookmarks__surface {
+  display: grid;
+  gap: var(--ds-space-200);
+  min-width: 0;
+}
+.ds-bookmarks__surface > .ds-empty {
+  padding: var(--ds-space-600) var(--ds-space-200);
+  border: 1px dashed var(--ds-border);
+  border-radius: var(--ds-radius-l);
+}
+.ds-bookmarks__surface .ds-drop-zone {
+  margin-top: var(--ds-space-200);
+}
+.ds-bookmarks__toolbar {
+  position: sticky;
+  top: calc(-1 * var(--ds-space-400));
+  z-index: var(--ds-z-sticky);
+  padding: 0 var(--ds-space-100);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-m);
+  min-height: var(--ds-size-m);
+  flex-wrap: wrap;
+}
+.ds-bookmarks__toolbar > .ds-button:first-child {
+  margin-right: auto;
+}
+.ds-bookmarks__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-200);
+  margin-top: var(--ds-space-200);
+}
+.ds-bookmarks__code {
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-xs);
+  padding-block: var(--ds-space-200);
+}
+.ds-bookmarks .ds-disclosure__body {
+  padding-bottom: var(--ds-space-200);
+}
+
+/* ---------- Tree ---------- */
+.ds-bookmark-tree,
+.ds-bookmark-tree__group {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ds-bookmark-tree {
+  display: grid;
+  gap: var(--ds-space-50);
+  padding: var(--ds-space-100);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-m);
+  background: var(--ds-surface);
+}
+.ds-bookmark-tree__item {
+  outline: none;
+  border-radius: var(--ds-radius-m);
+}
+.ds-bookmark-tree__row {
+  --_indent: calc(var(--_level, 0) * var(--ds-space-400));
+  display: grid;
+  grid-template-columns: var(--ds-size-s) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ds-space-100);
+  min-height: var(--ds-size-m);
+  padding: var(--ds-space-50) var(--ds-space-100);
+  padding-left: calc(var(--ds-space-50) + var(--_indent));
+  border-radius: var(--ds-radius-m);
+  color: var(--ds-text);
+  font: var(--ds-text-s) / var(--ds-leading-tight) var(--ds-font-sans);
+  cursor: default;
+  user-select: none;
+  transition: background-color var(--ds-duration-fast) var(--ds-ease-out);
+}
+.ds-bookmark-tree__row:hover {
+  background: var(--ds-hover);
+}
+.ds-bookmark-tree__item[aria-selected='true'] > .ds-bookmark-tree__row {
+  background: var(--ds-selected);
+}
+.ds-bookmark-tree__item:focus-visible > .ds-bookmark-tree__row {
+  outline: var(--ds-focus-width) solid var(--ds-focus-ring);
+  outline-offset: calc(-1 * var(--ds-focus-width));
+}
+.ds-bookmark-tree__twisty {
+  display: grid;
+  place-items: center;
+  width: var(--ds-size-s);
+  height: var(--ds-size-s);
+  border-radius: var(--ds-radius-s);
+  color: var(--ds-text-muted);
+  cursor: pointer;
+}
+.ds-bookmark-tree__twisty:hover {
+  background: var(--ds-active);
+  color: var(--ds-text);
+}
+.ds-bookmark-tree__twisty svg {
+  transition: transform var(--ds-duration-fast) var(--ds-ease-out);
+}
+.ds-bookmark-tree__item[aria-expanded='true']
+  > .ds-bookmark-tree__row
+  .ds-bookmark-tree__twisty
+  svg {
+  transform: rotate(90deg);
+}
+.ds-bookmark-tree__twisty[data-hidden] {
+  visibility: hidden;
+}
+.ds-bookmark-tree__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ds-bookmark-tree__title[data-bold] {
+  font-weight: var(--ds-weight-bold);
+}
+.ds-bookmark-tree__title[data-italic] {
+  font-style: italic;
+}
+.ds-bookmark-tree__rename.ds-input {
+  min-height: var(--ds-size-s);
+  padding: 0 var(--ds-space-200);
+  font-size: var(--ds-text-s);
+  user-select: text;
+}
+.ds-bookmark-tree__page {
+  width: 5.5ch;
+  min-height: var(--ds-size-s);
+  padding: 0 var(--ds-space-100);
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-full);
+  background: var(--ds-inset);
+  color: var(--ds-text-muted);
+  font: var(--ds-weight-medium) var(--ds-text-xs) / 1 var(--ds-font-sans);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.ds-bookmark-tree__page::-webkit-inner-spin-button,
+.ds-bookmark-tree__page::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+.ds-bookmark-tree__page:hover {
+  border-color: var(--ds-border-control);
+}
+.ds-bookmark-tree__page:focus-visible {
+  outline: var(--ds-focus-width) solid var(--ds-focus-ring);
+  outline-offset: 0;
+  background: var(--ds-surface);
+  color: var(--ds-text);
+}
+.ds-bookmark-tree__item[aria-selected='true']
+  > .ds-bookmark-tree__row
+  .ds-bookmark-tree__page {
+  background: var(--ds-surface);
+  color: var(--ds-accent-text);
+}
+
+@media (pointer: coarse) {
+  .ds-bookmark-tree__row {
+    min-height: var(--ds-size-touch);
+  }
+  .ds-bookmark-tree__page {
+    min-height: var(--ds-size-m);
+    font-size: var(--ds-text-m);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-bookmark-tree__row,
+  .ds-bookmark-tree__twisty svg {
+    transition: none;
+  }
+}
