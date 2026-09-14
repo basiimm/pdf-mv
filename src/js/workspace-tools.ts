@@ -475,7 +475,7 @@ export function setupWorkspaceTools(host: ToolHost) {
         : 'Choose a file';
     const useCanvas =
       !!chosen &&
-      (canvasTools.has(chosen) ||
+      ((canvasTools.has(chosen) && !toolDefinitions.has(chosen)) ||
         chosen === 'merge-pdf' ||
         !!native?.isPreviewActive?.());
     const convertingInput =

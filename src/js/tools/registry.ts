@@ -148,6 +148,7 @@ import { register as registerMarks } from './families/marks.js';
 import { register as registerAppearance } from './families/appearance.js';
 import { register as registerDocumentInfo } from './families/document-info.js';
 import { register as registerSigningOcr } from './families/signing-ocr.js';
+import { register as registerInteractive } from './families/interactive.js';
 
 registerProtectOptimize();
 registerExports();
@@ -156,3 +157,4 @@ registerMarks();
 registerAppearance();
 registerDocumentInfo();
 registerSigningOcr();
+registerInteractive();
