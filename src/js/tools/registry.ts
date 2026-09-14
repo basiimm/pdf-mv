@@ -147,6 +147,7 @@ import { register as registerCreatePdf } from './families/create-pdf.js';
 import { register as registerMarks } from './families/marks.js';
 import { register as registerAppearance } from './families/appearance.js';
 import { register as registerDocumentInfo } from './families/document-info.js';
+import { register as registerSigningOcr } from './families/signing-ocr.js';
 
 registerProtectOptimize();
 registerExports();
@@ -154,3 +155,4 @@ registerCreatePdf();
 registerMarks();
 registerAppearance();
 registerDocumentInfo();
+registerSigningOcr();
