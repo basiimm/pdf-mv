@@ -918,3 +918,92 @@
     opacity: 0;
   }
 }
+
+/* ---------- Command menu ---------- */
+.ds-command {
+  width: min(560px, calc(100vw - 32px));
+  margin-top: 12vh;
+  overflow: hidden;
+}
+.ds-command__search {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-200);
+  padding: var(--ds-space-300) var(--ds-space-400);
+  border-bottom: 1px solid var(--ds-border);
+}
+.ds-command__input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--ds-size-l);
+  border: 0;
+  background: transparent;
+  color: var(--ds-text);
+  font: var(--ds-text-m) / 1 var(--ds-font-sans);
+  outline: none;
+}
+.ds-command__input::-webkit-search-cancel-button {
+  display: none;
+}
+.ds-command__list {
+  max-height: min(420px, 60dvh);
+  overflow-y: auto;
+  padding: var(--ds-space-200);
+}
+.ds-command__section {
+  padding: var(--ds-space-300) var(--ds-space-200) var(--ds-space-100);
+  font: var(--ds-weight-medium) var(--ds-text-xs) / 1 var(--ds-font-sans);
+  color: var(--ds-text-muted);
+}
+.ds-command__item {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-300);
+  min-height: var(--ds-size-l);
+  padding: var(--ds-space-200);
+  border-radius: var(--ds-radius-m);
+  cursor: pointer;
+}
+.ds-command__item[aria-selected='true'] {
+  background: var(--ds-selected);
+}
+.ds-command__item[aria-selected='true'] .ds-command__label {
+  color: var(--ds-accent-text);
+}
+.ds-command__text {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+.ds-command__label {
+  font: var(--ds-weight-medium) var(--ds-text-s) / var(--ds-leading-tight)
+    var(--ds-font-sans);
+  color: var(--ds-text);
+}
+.ds-command__description {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-text-muted);
+}
+.ds-command__hint {
+  font-size: var(--ds-text-xs);
+  color: var(--ds-text-muted);
+}
+.ds-command__empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--ds-space-300);
+  padding: var(--ds-space-600) var(--ds-space-400);
+  text-align: center;
+  color: var(--ds-text-muted);
+}
+.ds-command__empty p {
+  margin: 0;
+}
+@media (max-width: 600px) {
+  .ds-command {
+    margin-top: var(--ds-space-400);
+  }
+}

@@ -5,6 +5,7 @@ import {
 } from './config/workspace-tool-visuals.js';
 import { createToolCard } from './workspace-tool-card.js';
 import { setupWorkspaceTools, type ToolHost } from './workspace-tools.js';
+import { openToolLauncher } from './tool-launcher.js';
 import { describeWorkspaceError } from './workspace-errors.js';
 import { viewerTheme } from './studio-theme.js';
 import { createIcons, icons } from 'lucide';
@@ -128,6 +129,24 @@ function showStatus(message: string, error = false, persistent = false): void {
       },
       error ? 9000 : 4500
     );
+}
+let closeLauncher: (() => void) | null = null;
+function openLauncher(): void {
+  closeLauncher?.();
+  closeLauncher = openToolLauncher({
+    selectTool: (id) =>
+      void workspaceTools.select(id, session.activeTab === 'home'),
+    openDocuments: () =>
+      [...session.documents.values()]
+        .filter((document) => !document.toolOnly)
+        .map(({ id, name }) => ({ id, name })),
+    activateDocument: (id) => activateTab(id),
+    chooseFiles,
+    browseAllTools: () => {
+      activateTab('home');
+      applyFilter('all', true);
+    },
+  });
 }
 function chooseFiles(): void {
   input.value = '';
@@ -1133,6 +1152,11 @@ window.addEventListener('keydown', (event) => {
     target instanceof HTMLElement &&
     (target.matches('input,textarea,[contenteditable="true"]') ||
       target.isContentEditable);
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault();
+    openLauncher();
+    return;
+  }
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'o') {
     event.preventDefault();
     chooseFiles();
@@ -1148,8 +1172,7 @@ window.addEventListener('keydown', (event) => {
     !el<HTMLDialogElement>('close-dialog').open
   ) {
     event.preventDefault();
-    activateTab('home');
-    el<HTMLInputElement>('tool-search').focus();
+    openLauncher();
   }
 });
 window.addEventListener('beforeunload', (event) => {

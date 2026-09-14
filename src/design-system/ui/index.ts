@@ -4,3 +4,4 @@ export * from './feedback.js';
 export * from './layout.js';
 export * from './files.js';
 export { el } from './dom.js';
+export * from './command-menu.js';

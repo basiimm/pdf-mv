@@ -14,6 +14,7 @@ import {
 import { createSignaturePanel } from './workspace-signature-panel.js';
 import { createMergePanel } from './workspace-merge-panel.js';
 import { createToolPanel } from './tools/panel.js';
+import { rememberTool } from './tool-launcher.js';
 import { createOrganizePanel } from './tools/organize-panel.js';
 import { toolDefinitions } from './tools/registry.js';
 import { detectConversion } from './workspace-conversion.js';
@@ -626,6 +627,7 @@ export function setupWorkspaceTools(host: ToolHost) {
     }
   }
   async function select(request: string, fromHome = false, search = '') {
+    rememberTool(request);
     const group = groupById.get(request) ?? groupForEngine.get(request);
     if (!group) {
       host.status('This tool is not available.');
