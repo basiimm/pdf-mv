@@ -1,3 +1,5 @@
+> Development record from September 2026. Entries describe checks and decisions at the time; later entries may supersede earlier findings. For current setup and scope, start with [README.md](README.md).
+
 # Local workspace setup
 
 Based on BentoPDF v2.8.8, commit `f96cd4e5166f3d51393dfe9f3c440b5bb77802f1`.

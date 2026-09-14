@@ -1,4 +1,4 @@
-name: BentoPDF CodeQL config
+name: PDF MV CodeQL config
 
 paths-ignore:
   - dist

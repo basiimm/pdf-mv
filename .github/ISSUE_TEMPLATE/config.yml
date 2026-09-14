@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 💬 Discord Community
-    url: https://discord.gg/Bgq3Ay3f2w
-    about: Join our Discord for quick questions and community support
-  - name: 📖 Documentation
-    url: https://github.com/nicholaschen09/BentoPDF#readme
-    about: Check the README for setup and usage instructions
+  - name: Security vulnerability
+    url: https://github.com/basiimm/pdf-mv/security/advisories/new
+    about: Report security issues privately.
+  - name: Setup and project documentation
+    url: https://github.com/basiimm/pdf-mv#readme
+    about: Check setup, scope, and known limitations.

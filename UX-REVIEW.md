@@ -1,3 +1,5 @@
+> Development record from September 2026. Entries describe checks and decisions at the time; later entries may supersede earlier findings. For current setup and scope, start with [README.md](README.md).
+
 # PDF Studio workflow review
 
 Verdict: **Approve with changes** for the shared direction; individual tool workflows still need staged redesign and validation.

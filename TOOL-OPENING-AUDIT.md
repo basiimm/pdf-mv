@@ -1,3 +1,5 @@
+> Development record from September 2026. Entries describe checks and decisions at the time; later entries may supersede earlier findings. For current setup and scope, start with [README.md](README.md).
+
 # Current grouped workspace audit
 
 The current Home has **23 task groups**, covering the same **118 engines**. All 23 Home entries passed live app-tab creation and selection checks. Automated routing tests cover every original engine ID and check that selecting a feature inside a task does not create another task.

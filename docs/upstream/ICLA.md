@@ -1,3 +1,5 @@
+> Historical BentoPDF reference, retained for provenance. This is not PDF MV policy or deployment guidance. Relative links may refer to the upstream repository. See [PDF MV](../../README.md).
+
 # BentoPDF Individual Contributor License Agreement (ICLA)
 
 Thank you for your interest in contributing to BentoPDF. This Individual Contributor License Agreement ("Agreement") documents the rights granted by contributors to the Project.
@@ -93,8 +95,8 @@ By submitting a pull request or other Contribution to the Project, and by typing
 
 **Date:** 20-12-2025
 
-**Signature:** ___________________________
+**Signature:** ************\_\_\_************
 
 ---
 
-*This CLA is based on the Apache Individual Contributor License Agreement and has been adapted for BentoPDF's dual licensing model.*
+_This CLA is based on the Apache Individual Contributor License Agreement and has been adapted for BentoPDF's dual licensing model._

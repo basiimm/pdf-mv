@@ -40,7 +40,7 @@ Maintainers have the right and responsibility to remove, edit, or reject comment
 
 If you are subject to or witness unacceptable behavior, or have any other concerns, please report it by contacting the project team at:
 
-**Email:** `contact@bentopdf.com`
+Use GitHub’s “Report abuse” action for abusive content, or flag a non-sensitive moderation concern to [@basiimm](https://github.com/basiimm) in the relevant issue or pull request. Do not disclose private details publicly.
 
 All complaints will be reviewed and investigated and will result in a response that is deemed necessary and appropriate to the circumstances.
 
@@ -54,7 +54,7 @@ This Code of Conduct applies both within project spaces and in public spaces whe
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project team at the email above. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project team using the reporting options above. All complaints will be reviewed and investigated promptly and fairly.
 
 Maintainers who do not follow or enforce the Code of Conduct in good faith may face temporary or permanent consequences as determined by other members of the project's leadership.
 
