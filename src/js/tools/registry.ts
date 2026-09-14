@@ -145,8 +145,12 @@ import { register as registerProtectOptimize } from './families/protect-optimize
 import { register as registerExports } from './families/exports.js';
 import { register as registerCreatePdf } from './families/create-pdf.js';
 import { register as registerMarks } from './families/marks.js';
+import { register as registerAppearance } from './families/appearance.js';
+import { register as registerDocumentInfo } from './families/document-info.js';
 
 registerProtectOptimize();
 registerExports();
 registerCreatePdf();
 registerMarks();
+registerAppearance();
+registerDocumentInfo();
