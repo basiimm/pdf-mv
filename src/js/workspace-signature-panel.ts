@@ -1,5 +1,22 @@
 import type { ToolHost } from './workspace-tools.js';
 
+let signatureFont: Promise<FontFace> | undefined;
+function loadSignatureFont() {
+  return (signatureFont ??= new FontFace(
+    'Momo Signature',
+    `url("${import.meta.env.BASE_URL}fonts/MomoSignature-Regular.ttf")`
+  )
+    .load()
+    .then((font) => {
+      document.fonts.add(font);
+      return font;
+    })
+    .catch((error) => {
+      signatureFont = undefined;
+      throw error;
+    }));
+}
+
 /** Signature artwork stays in its document session, never in persistent storage. */
 export function createSignaturePanel(
   host: ToolHost,
@@ -31,6 +48,57 @@ export function createSignaturePanel(
     drawing = false,
     hasInk = false,
     image: HTMLImageElement | null = null;
+  let ink = '#171717';
+  const strokes: [number, number][][] = [];
+  let activePointer: number | null = null;
+  const drawControls = document.createElement('div');
+  drawControls.className = 'signature-draw-controls';
+  const palette = document.createElement('div');
+  palette.className = 'signature-colors';
+  palette.setAttribute('role', 'group');
+  palette.setAttribute('aria-label', 'Signature ink color');
+  for (const [label, color] of [
+    ['Black', '#171717'],
+    ['Cobalt blue', '#0047ab'],
+    ['Green', '#16733b'],
+    ['Red', '#c62828'],
+    ['Pink', '#c21875'],
+  ]) {
+    const swatch = button(label, () => {
+      ink = color;
+      for (const child of Array.from(palette.children))
+        child.setAttribute('aria-pressed', String(child === swatch));
+      render();
+    });
+    swatch.className = 'signature-swatch';
+    swatch.title = label;
+    swatch.setAttribute('aria-label', label);
+    swatch.setAttribute('aria-pressed', String(color === ink));
+    swatch.style.setProperty('--ink', color);
+    palette.append(swatch);
+  }
+  const smoothingLabel = document.createElement('label');
+  smoothingLabel.className = 'signature-smoothing';
+  const smoothingText = document.createElement('span');
+  smoothingText.textContent = 'Smoothing: Gentle';
+  const smoothing = document.createElement('input');
+  smoothing.type = 'range';
+  smoothing.min = '0';
+  smoothing.max = '3';
+  smoothing.step = '1';
+  smoothing.value = '1';
+  smoothing.setAttribute('aria-label', 'Signature smoothing');
+  smoothing.setAttribute('aria-valuetext', 'Gentle');
+  smoothing.oninput = () => {
+    const value = ['Off', 'Gentle', 'Medium', 'Strong'][
+      Number(smoothing.value)
+    ];
+    smoothingText.textContent = `Smoothing: ${value}`;
+    smoothing.setAttribute('aria-valuetext', value);
+    render();
+  };
+  smoothingLabel.append(smoothingText, smoothing);
+  drawControls.append(palette, smoothingLabel);
   const canvas = document.createElement('canvas');
   canvas.width = 800;
   canvas.height = 300;
@@ -56,7 +124,11 @@ export function createSignaturePanel(
     host.cancelSignature(id);
     image = null;
     name.value = '';
+    renderVersion++;
     hasInk = false;
+    drawing = false;
+    activePointer = null;
+    strokes.length = 0;
     canvas.getContext('2d')?.clearRect(0, 0, 800, 300);
     place.disabled = true;
     status.textContent = '';
@@ -131,19 +203,60 @@ export function createSignaturePanel(
     b.onclick = action;
     return b;
   }
-  function render() {
+  let renderVersion = 0;
+  async function render() {
+    const version = ++renderVersion;
     host.cancelSignature(id);
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, 800, 300);
-    if (mode === 'type' && name.value.trim()) {
+    if (mode === 'draw') {
+      ctx.strokeStyle = ink;
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      for (const raw of strokes) {
+        // Always smooth original points, so adjustments never compound or erase ink.
+        let points = raw;
+        const amount = Number(smoothing.value) * 0.15;
+        for (let pass = 0; pass < 2 && amount > 0; pass++) {
+          const previous = points;
+          points = previous.map((p, i) => {
+            if (i === 0 || i === previous.length - 1) return p;
+            return [
+              p[0] * (1 - amount) +
+                ((previous[i - 1][0] + previous[i + 1][0]) * amount) / 2,
+              p[1] * (1 - amount) +
+                ((previous[i - 1][1] + previous[i + 1][1]) * amount) / 2,
+            ];
+          });
+        }
+        ctx.beginPath();
+        ctx.moveTo(...points[0]);
+        if (points.length === 1) ctx.lineTo(points[0][0] + 0.1, points[0][1]);
+        else for (const p of points.slice(1)) ctx.lineTo(...p);
+        ctx.stroke();
+      }
+    } else if (mode === 'type' && name.value.trim()) {
+      place.disabled = true;
+      status.textContent = 'Loading signature font…';
+      try {
+        await loadSignatureFont();
+      } catch {
+        if (version === renderVersion)
+          status.textContent =
+            'Could not load the signature font. Try typing again.';
+        return;
+      }
+      if (version !== renderVersion) return;
+      status.textContent = '';
       ctx.fillStyle = '#171717';
-      ctx.font = 'italic 100px Georgia, serif';
+      ctx.font = '100px "Momo Signature"';
       const size = Math.min(
         100,
         (100 * 720) / Math.max(1, ctx.measureText(name.value).width)
       );
-      ctx.font = `italic ${size}px Georgia, serif`;
+      ctx.font = `${size}px "Momo Signature"`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(name.value, 400, 150);
@@ -166,7 +279,10 @@ export function createSignaturePanel(
     const b = button(value[0].toUpperCase() + value.slice(1), () => {
       if (mode === value) return;
       mode = value;
-      hasInk = false;
+      drawing = false;
+      activePointer = null;
+      hasInk = strokes.length > 0;
+      drawControls.hidden = mode !== 'draw';
       status.textContent = '';
       host.cancelSignature(id);
       for (const child of Array.from(modes.children))
@@ -182,7 +298,7 @@ export function createSignaturePanel(
   name.hidden = true;
   uploadButton.hidden = true;
   name.oninput = render;
-  const point = (e: PointerEvent) => {
+  const point = (e: PointerEvent): [number, number] => {
     const r = canvas.getBoundingClientRect();
     return [
       ((e.clientX - r.left) * 800) / r.width,
@@ -190,35 +306,30 @@ export function createSignaturePanel(
     ];
   };
   canvas.onpointerdown = (e) => {
-    if (mode !== 'draw') return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (mode !== 'draw' || activePointer !== null || e.button !== 0) return;
     e.preventDefault();
     canvas.setPointerCapture(e.pointerId);
+    activePointer = e.pointerId;
     drawing = true;
     hasInk = true;
-    const [x, y] = point(e);
-    ctx.lineWidth = 5;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#171717';
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + 0.1, y + 0.1);
-    ctx.stroke();
-    place.disabled = false;
+    strokes.push([point(e)]);
+    render();
   };
   canvas.onpointermove = (e) => {
-    if (!drawing) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const [x, y] = point(e);
-    ctx.lineTo(x, y);
-    ctx.stroke();
+    if (!drawing || e.pointerId !== activePointer) return;
+    const samples = e.getCoalescedEvents?.() ?? [];
+    for (const sample of samples.length ? samples : [e])
+      strokes[strokes.length - 1].push(point(sample));
+    render();
   };
-  canvas.onpointerup = canvas.onpointercancel = () => {
-    drawing = false;
-  };
+  canvas.onpointerup =
+    canvas.onpointercancel =
+    canvas.onlostpointercapture =
+      (e) => {
+        if (e.pointerId !== activePointer) return;
+        drawing = false;
+        activePointer = null;
+      };
   upload.onchange = async () => {
     const file = upload.files?.[0];
     if (!file) return;
@@ -259,7 +370,17 @@ export function createSignaturePanel(
   const note = document.createElement('p');
   note.textContent =
     'This adds a visible signature. For certificate-based signing, choose Digital Signature PDF above.';
-  form.append(modes, name, uploadButton, upload, canvas, clear, place, note);
+  form.append(
+    modes,
+    name,
+    uploadButton,
+    upload,
+    drawControls,
+    canvas,
+    clear,
+    place,
+    note
+  );
   root.append(intro, open, pdf, form, status);
   let wasVisible = true;
   function sync() {
@@ -274,6 +395,7 @@ export function createSignaturePanel(
     root,
     sync,
     dispose() {
+      renderVersion++;
       host.cancelSignature(id);
       image = null;
       root.remove();

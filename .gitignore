@@ -54,3 +54,9 @@ test
 # Sibling checkouts of the engine/viewer forks
 bentopdf-pdfium-viewer/
 bentopdf-pymupdf-wasm/
+
+# Cloudflare build output and local runtime
+/dist-cloudflare/
+/.wrangler/
+/cloudflare/engine-manifest.json
+/worker-configuration.d.ts

@@ -1,12 +1,12 @@
-# BentoPDF Robots.txt
-# https://www.bentopdf.com
+# PDF.mv Robots.txt
+# https://pdf.mv
 
 # Allow all crawlers
 User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://www.bentopdf.com/sitemap.xml
+Sitemap: https://pdf.mv/sitemap.xml
 
 # Disallow internal/system paths
 Disallow: /api/
