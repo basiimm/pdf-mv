@@ -174,14 +174,16 @@ export function createToolPanel(
   let controller: AbortController | null = null;
   let disposed = false;
 
-  const picker = tool.input
+  // Tools either replace the open PDF as their source (input) or add files to it (extraInput).
+  const fileSource = tool.input ?? tool.extraInput;
+  const picker = fileSource
     ? dropZone({
-        accept: tool.input.accept,
-        multiple: tool.input.multiple,
-        title: tool.input.label,
+        accept: fileSource.accept,
+        multiple: fileSource.multiple,
+        title: fileSource.label,
         hint: 'Files stay on this device',
         onFiles(files) {
-          inputs = tool.input!.multiple
+          inputs = fileSource!.multiple
             ? [...inputs, ...files]
             : files.slice(0, 1);
           sync();
@@ -221,12 +223,15 @@ export function createToolPanel(
   }
   function sync() {
     void inspect();
-    const ready = tool.input ? inputs.length > 0 : host.hasPdf(id);
+    const ready = tool.input
+      ? inputs.length > 0
+      : host.hasPdf(id) &&
+        (!tool.extraInput || tool.extraInput.optional || inputs.length > 0);
     primary.disabled = busy || !ready;
     essentials.hidden = !ready;
     if (advanced) advanced.root.hidden = !ready;
     source.replaceChildren();
-    if (tool.input && picker) {
+    if (fileSource && picker) {
       if (inputs.length) {
         source.append(
           el(
@@ -276,7 +281,9 @@ export function createToolPanel(
     });
     feedback.replaceChildren(bar.root);
     try {
-      const files = tool.input ? [...inputs] : [await host.snapshot(id)];
+      const files = tool.input
+        ? [...inputs]
+        : [await host.snapshot(id), ...inputs];
       const output = await tool.run({
         files,
         values: values(),
@@ -507,7 +514,7 @@ export function createToolPanel(
     },
     sourceFiles: () => [...inputs],
     setFiles(files: File[]) {
-      if (tool.input) {
+      if (fileSource) {
         inputs = [...files];
         sync();
       }

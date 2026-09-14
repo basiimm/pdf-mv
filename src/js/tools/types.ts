@@ -76,5 +76,15 @@ export interface ToolDefinition {
   inspect?(file: File): Promise<ToolInspection>;
   /** Omit to operate on the open PDF. */
   input?: { accept: string; multiple: boolean; label: string };
+  /**
+   * Extra files used together with the open PDF (attachments, overlay, the
+   * second document to interleave). run() receives [openPdf, ...extraFiles].
+   */
+  extraInput?: {
+    accept: string;
+    multiple: boolean;
+    label: string;
+    optional?: boolean;
+  };
   run(context: ToolRunContext): Promise<File | File[]>;
 }
