@@ -1542,3 +1542,40 @@ button.tool-card:focus-visible {
 .signature-panel p {
   line-height: 1.6;
 }
+
+.signature-draw-controls {
+  margin-block: 12px;
+}
+.signature-colors {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.signature-panel .signature-swatch {
+  width: 40px;
+  height: 40px;
+  padding: 7px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: var(--ink);
+  background-clip: content-box;
+  font-size: 0;
+  cursor: pointer;
+}
+.signature-panel .signature-swatch[aria-pressed='true'] {
+  border-color: currentColor;
+}
+.signature-panel .signature-swatch:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+.signature-smoothing {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.signature-panel .signature-smoothing input {
+  width: 100%;
+  padding: 0;
+  accent-color: #1a7f37;
+}

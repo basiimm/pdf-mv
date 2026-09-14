@@ -44,7 +44,12 @@ function listDistHtml() {
       const rel = path.posix.join(prefix, entry);
       const stat = fs.statSync(full);
       if (stat.isDirectory()) {
-        if (SKIP_DIRS.has(entry) || entry.startsWith('.')) continue;
+        if (
+          SKIP_DIRS.has(entry) ||
+          entry.startsWith('.') ||
+          rel === 'brand/preview'
+        )
+          continue;
         walk(full, rel);
       } else if (entry.endsWith('.html')) {
         files.push({ full, rel });

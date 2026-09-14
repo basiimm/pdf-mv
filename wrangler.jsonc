@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pdf-mv",
+  "main": "cloudflare/site-worker.js",
+  "compatibility_date": "2026-09-14",
+  "assets": {
+    "directory": "./dist-cloudflare",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "run_worker_first": [
+      "/libreoffice-wasm/soffice.wasm.gz",
+      "/libreoffice-wasm/soffice.data.gz",
+    ],
+  },
+  "observability": { "enabled": true, "traces": { "enabled": true } },
+  "routes": [{ "pattern": "pdf.mv", "custom_domain": true }],
+}
