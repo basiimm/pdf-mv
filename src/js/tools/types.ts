@@ -50,6 +50,8 @@ export interface ToolRunContext {
 
 export interface ToolInspection {
   values?: Record<string, string>;
+  /** Fields that exist only for this document (form fields, layers). */
+  fields?: ToolField[];
   /** Label/value rows shown above the fields. */
   details?: [label: string, value: string][];
 }

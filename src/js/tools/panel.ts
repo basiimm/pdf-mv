@@ -145,6 +145,29 @@ export function createToolPanel(
     controls.set(field.key, c);
     (field.advanced ? advanced!.body : essentials).append(c.element);
   }
+  // Fields that depend on the open document (form fields, layers), from inspect().
+  const dynamicFields = el('div', {
+    className: 'ds-tool-panel__body',
+    attrs: { style: 'padding:0' },
+  });
+  let dynamicKeys: string[] = [];
+  function setDynamicFields(fields: ToolField[]) {
+    for (const key of dynamicKeys) controls.delete(key);
+    dynamicKeys = [];
+    const visible: HTMLElement[] = [];
+    const hidden = disclosure({ summary: 'More fields' });
+    for (const field of fields) {
+      const c = control(field);
+      controls.set(field.key, c);
+      dynamicKeys.push(field.key);
+      (field.advanced
+        ? hidden.body
+        : { append: (e: HTMLElement) => visible.push(e) }
+      ).append(c.element);
+    }
+    dynamicFields.replaceChildren(...visible);
+    if (hidden.body.childElementCount) dynamicFields.append(hidden.root);
+  }
   const feedback = el('div', { attrs: { 'aria-live': 'polite' } });
   const primary = button({
     label: tool.primaryLabel,
@@ -165,7 +188,7 @@ export function createToolPanel(
   footer.append(primary, note);
   const details = el('dl', { className: 'ds-details' });
   details.hidden = true;
-  body.append(intro, details, source, essentials);
+  body.append(intro, details, source, essentials, dynamicFields);
   if (advanced) body.append(advanced.root);
   body.append(feedback);
 
@@ -200,6 +223,7 @@ export function createToolPanel(
     try {
       const result = await tool.inspect(await host.snapshot(id));
       if (disposed) return;
+      if (result.fields) setDynamicFields(result.fields);
       for (const [key, value] of Object.entries(result.values ?? {}))
         controls.get(key)?.setValue(value);
       details.replaceChildren(
@@ -229,6 +253,7 @@ export function createToolPanel(
         (!tool.extraInput || tool.extraInput.optional || inputs.length > 0);
     primary.disabled = busy || !ready;
     essentials.hidden = !ready;
+    dynamicFields.hidden = !ready;
     if (advanced) advanced.root.hidden = !ready;
     source.replaceChildren();
     if (fileSource && picker) {
