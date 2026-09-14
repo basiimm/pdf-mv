@@ -1,13 +1,11 @@
 import { showAlert } from '../ui.js';
-import {
-  downloadFile,
-  formatBytes,
-  readFileAsArrayBuffer,
-} from '../utils/helpers.js';
-import { decryptPdfBytes } from '../utils/pdf-decrypt.js';
+import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { icons, createIcons } from 'lucide';
 import JSZip from 'jszip';
 import { DecryptPdfState } from '@/types';
+import { decryptPdf as decryptPdfEngine } from '../engines/decrypt-pdf.js';
+
+const noopProgress = () => {};
 
 const pageState: DecryptPdfState = {
   files: [],
@@ -123,21 +121,20 @@ async function decryptPdf() {
     if (pageState.files.length === 1) {
       // Single file: decrypt and download directly
       const file = pageState.files[0];
-      if (loaderText) loaderText.textContent = 'Reading encrypted PDF...';
-      const fileBuffer = await readFileAsArrayBuffer(file);
-      const uint8Array = new Uint8Array(fileBuffer as ArrayBuffer);
-
       if (loaderText) loaderText.textContent = 'Decrypting PDF...';
-      const { bytes: decryptedBytes } = await decryptPdfBytes(
-        uint8Array,
-        password
+      const decryptedFile = await decryptPdfEngine(
+        file,
+        { password },
+        {
+          signal: new AbortController().signal,
+          progress: (p) => {
+            if (loaderText) loaderText.textContent = p.label;
+          },
+        }
       );
 
       if (loaderText) loaderText.textContent = 'Preparing download...';
-      const blob = new Blob([decryptedBytes.slice().buffer], {
-        type: 'application/pdf',
-      });
-      downloadFile(blob, file.name);
+      downloadFile(decryptedFile, file.name);
 
       if (loaderModal) loaderModal.classList.add('hidden');
       showAlert(
@@ -161,11 +158,13 @@ async function decryptPdf() {
           loaderText.textContent = `Decrypting ${file.name} (${i + 1}/${pageState.files.length})...`;
 
         try {
-          const fileBuffer = await readFileAsArrayBuffer(file);
-          const uint8Array = new Uint8Array(fileBuffer as ArrayBuffer);
-          const { bytes: decryptedBytes } = await decryptPdfBytes(
-            uint8Array,
-            password
+          const decryptedFile = await decryptPdfEngine(
+            file,
+            { password },
+            { signal: new AbortController().signal, progress: noopProgress }
+          );
+          const decryptedBytes = new Uint8Array(
+            await decryptedFile.arrayBuffer()
           );
 
           zip.file(file.name, decryptedBytes, { binary: true });

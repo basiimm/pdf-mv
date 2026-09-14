@@ -7,17 +7,10 @@ import {
   getCleanPdfFilename,
 } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import JSZip from 'jszip';
-import * as pdfjsLib from 'pdfjs-dist';
-import { PDFPageProxy } from 'pdfjs-dist';
 import { t } from '../i18n/i18n';
-import {
-  generateComicInfoXml,
-  generateMetadataOpf,
-  generateComicBookInfoJson,
-} from '../utils/comic-info.js';
-import type { CbzOptions, ComicMetadata } from '@/types';
+import type { CbzOptions } from '@/types';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
+import { pdfToCbz } from '../engines/pdf-to-cbz.js';
 import '../utils/setup-pdf-worker.js';
 
 let files: File[] = [];
@@ -66,24 +59,6 @@ function getOptions(): CbzOptions {
     year: yearInput?.value?.trim() ?? '',
     rating: ratingInput?.value?.trim() ?? '',
   };
-}
-
-function getMimeType(format: CbzOptions['imageFormat']): string {
-  const mimeTypes: Record<CbzOptions['imageFormat'], string> = {
-    jpeg: 'image/jpeg',
-    png: 'image/png',
-    webp: 'image/webp',
-  };
-  return mimeTypes[format];
-}
-
-function getExtension(format: CbzOptions['imageFormat']): string {
-  const extensions: Record<CbzOptions['imageFormat'], string> = {
-    jpeg: 'jpg',
-    png: 'png',
-    webp: 'webp',
-  };
-  return extensions[format];
 }
 
 const updateUI = () => {
@@ -173,46 +148,6 @@ const resetState = () => {
   updateUI();
 };
 
-async function renderPage(
-  page: PDFPageProxy,
-  options: CbzOptions
-): Promise<Blob | null> {
-  const viewport = page.getViewport({ scale: options.scale });
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('Failed to acquire 2D canvas context');
-  canvas.height = viewport.height;
-  canvas.width = viewport.width;
-
-  await page.render({
-    canvasContext: context,
-    viewport: viewport,
-    canvas,
-  }).promise;
-
-  if (options.grayscale) {
-    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-      const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-      data[i] = gray;
-      data[i + 1] = gray;
-      data[i + 2] = gray;
-    }
-    context.putImageData(imageData, 0, 0);
-  }
-
-  const mimeType = getMimeType(options.imageFormat);
-  const quality = options.imageFormat === 'png' ? undefined : options.quality;
-
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, mimeType, quality)
-  );
-  canvas.width = 0;
-  canvas.height = 0;
-  return blob;
-}
-
 async function convert() {
   if (files.length === 0) {
     showAlert(
@@ -230,53 +165,13 @@ async function convert() {
     const result = await loadPdfWithPasswordPrompt(files[0], files, 0);
     if (!result) return;
     showLoader(t('tools:pdfToCbz.converting'));
-    const { pdf } = result;
 
-    if (pdf.numPages === 0) {
-      throw new Error('PDF has no pages');
-    }
-
-    const zip = new JSZip();
-    const ext = getExtension(options.imageFormat);
-    const padLength = String(pdf.numPages).length;
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const blob = await renderPage(page, options);
-      if (blob) {
-        const pageNum = String(i).padStart(padLength, '0');
-        zip.file(`${pageNum}.${ext}`, blob);
-      }
-    }
-
-    let zipComment = '';
-
-    if (options.includeMetadata) {
-      const meta: ComicMetadata = {
-        title: options.title || getCleanPdfFilename(files[0].name),
-        series: options.series || undefined,
-        number: options.number || undefined,
-        volume: options.volume || undefined,
-        writer: options.author || undefined,
-        publisher: options.publisher || undefined,
-        genre: options.tags || undefined,
-        year: options.year || undefined,
-        communityRating: options.rating || undefined,
-        pageCount: pdf.numPages,
-        manga: options.manga,
-        blackAndWhite: options.grayscale,
-      };
-
-      zip.file('ComicInfo.xml', generateComicInfoXml(meta));
-      zip.file('metadata.opf', generateMetadataOpf(meta));
-      zipComment = generateComicBookInfoJson(meta);
-    }
-
-    const cbzBlob = await zip.generateAsync({
-      type: 'blob',
-      comment: zipComment || undefined,
+    const controller = new AbortController();
+    const output = await pdfToCbz(result.file, options, {
+      signal: controller.signal,
+      progress: (p) => showLoader(p.label),
     });
-    downloadFile(cbzBlob, getCleanPdfFilename(files[0].name) + '.cbz');
+    downloadFile(output, output.name);
 
     showAlert(
       t('common.success'),

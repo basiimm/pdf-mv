@@ -4,37 +4,15 @@ import {
   formatBytes,
   readFileAsArrayBuffer,
   getPDFDocument,
-  getCleanPdfFilename,
 } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import JSZip from 'jszip';
-import * as pdfjsLib from 'pdfjs-dist';
-import { PDFPageProxy } from 'pdfjs-dist';
 import { t } from '../i18n/i18n';
-import type Vips from 'wasm-vips';
-import wasmUrl from 'wasm-vips/vips.wasm?url';
 import type { TiffOptions } from '@/types';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
+import { pdfToTiff } from '../engines/pdf-to-tiff.js';
 import '../utils/setup-pdf-worker.js';
 
 let files: File[] = [];
-let vipsInstance: typeof Vips | null = null;
-
-async function getVips(): Promise<typeof Vips> {
-  if (vipsInstance) return vipsInstance;
-  const VipsInit = (await import('wasm-vips')).default;
-  vipsInstance = await VipsInit({
-    dynamicLibraries: [],
-    locateFile: (fileName: string) => {
-      if (fileName.endsWith('.wasm')) {
-        return wasmUrl;
-      }
-      return fileName;
-    },
-  });
-  vipsInstance.Cache.max(0);
-  return vipsInstance;
-}
 
 function getOptions(): TiffOptions {
   const dpiInput = document.getElementById('tiff-dpi') as HTMLInputElement;
@@ -124,94 +102,6 @@ const resetState = () => {
   updateUI();
 };
 
-async function renderPageToRgba(
-  page: PDFPageProxy,
-  dpi: number
-): Promise<{ rgba: Uint8ClampedArray; width: number; height: number }> {
-  const scale = dpi / 72;
-  const viewport = page.getViewport({ scale });
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d')!;
-  canvas.height = viewport.height;
-  canvas.width = viewport.width;
-
-  await page.render({
-    canvasContext: context,
-    viewport: viewport,
-    canvas,
-  }).promise;
-
-  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-  const { width, height } = canvas;
-  page.cleanup();
-  canvas.width = 0;
-  canvas.height = 0;
-  return { rgba: imageData.data, width, height };
-}
-
-function encodePageToTiff(
-  vips: typeof Vips,
-  rgba: Uint8ClampedArray,
-  width: number,
-  height: number,
-  options: TiffOptions
-): Uint8Array {
-  const intermediates: Vips.Image[] = [];
-  const track = (img: Vips.Image): Vips.Image => {
-    intermediates.push(img);
-    return img;
-  };
-
-  try {
-    let image = track(
-      vips.Image.newFromMemory(
-        new Uint8Array(rgba.buffer, rgba.byteOffset, rgba.byteLength),
-        width,
-        height,
-        4,
-        vips.BandFormat.uchar
-      )
-    );
-
-    image = track(image.copy());
-    const pixelsPerMm = options.dpi / 25.4;
-    image.setDouble('xres', pixelsPerMm);
-    image.setDouble('yres', pixelsPerMm);
-
-    if (image.bands === 4) {
-      image = track(image.flatten({ background: [255, 255, 255] }));
-    }
-    if (options.colorMode === 'greyscale' || options.colorMode === 'bw') {
-      image = track(image.colourspace(vips.Interpretation.b_w));
-    }
-
-    const tiffOptions: Parameters<typeof image.tiffsaveBuffer>[0] = {
-      compression: options.compression as Vips.Enum,
-      resunit: vips.ForeignTiffResunit.inch,
-      xres: options.dpi / 25.4,
-      yres: options.dpi / 25.4,
-      predictor:
-        options.compression === 'lzw' || options.compression === 'deflate'
-          ? vips.ForeignTiffPredictor.horizontal
-          : vips.ForeignTiffPredictor.none,
-    };
-
-    if (options.colorMode === 'bw') {
-      tiffOptions.bitdepth = 1;
-    }
-
-    if (options.compression === 'jpeg') {
-      tiffOptions.Q = 85;
-    }
-
-    return image.tiffsaveBuffer(tiffOptions);
-  } finally {
-    for (const img of intermediates) {
-      if (!img.isDeleted()) img.delete();
-    }
-  }
-}
-
 async function convert() {
   if (files.length === 0) {
     showAlert(
@@ -222,136 +112,18 @@ async function convert() {
   }
   showLoader(t('tools:pdfToTiff.loadingVips'));
 
-  let vips: typeof Vips;
-  try {
-    vips = await getVips();
-  } catch (e) {
-    console.error('Failed to load wasm-vips:', e);
-    hideLoader();
-    showAlert(
-      'Error',
-      'Failed to load the image processor. Please ensure your browser supports SharedArrayBuffer (requires HTTPS or localhost).'
-    );
-    return;
-  }
-
-  showLoader(t('tools:pdfToTiff.converting'));
-
   try {
     const options = getOptions();
-    hideLoader();
     const result = await loadPdfWithPasswordPrompt(files[0], files, 0);
     if (!result) return;
     showLoader(t('tools:pdfToTiff.converting'));
-    const { pdf } = result;
 
-    if (options.multiPage && pdf.numPages > 1) {
-      const pages: Vips.Image[] = [];
-
-      try {
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const { rgba, width, height } = await renderPageToRgba(
-            page,
-            options.dpi
-          );
-
-          const intermediates: Vips.Image[] = [];
-          const track = (image: Vips.Image): Vips.Image => {
-            intermediates.push(image);
-            return image;
-          };
-
-          try {
-            let img = track(
-              vips.Image.newFromMemory(
-                new Uint8Array(rgba.buffer, rgba.byteOffset, rgba.byteLength),
-                width,
-                height,
-                4,
-                vips.BandFormat.uchar
-              )
-            );
-
-            if (img.bands === 4) {
-              img = track(img.flatten({ background: [255, 255, 255] }));
-            }
-            if (
-              options.colorMode === 'greyscale' ||
-              options.colorMode === 'bw'
-            ) {
-              img = track(img.colourspace(vips.Interpretation.b_w));
-            }
-
-            pages.push(img.copyMemory());
-          } finally {
-            for (const img of intermediates) {
-              if (!img.isDeleted()) img.delete();
-            }
-          }
-        }
-
-        const firstPage = pages[0];
-        let joined = firstPage;
-        if (pages.length > 1) {
-          joined = vips.Image.arrayjoin(pages, { across: 1 });
-        }
-
-        try {
-          const tiffOptions: Parameters<typeof joined.tiffsaveBuffer>[0] = {
-            compression: options.compression as Vips.Enum,
-            resunit: vips.ForeignTiffResunit.inch,
-            xres: options.dpi / 25.4,
-            yres: options.dpi / 25.4,
-            page_height: firstPage.height,
-            predictor:
-              options.compression === 'lzw' || options.compression === 'deflate'
-                ? vips.ForeignTiffPredictor.horizontal
-                : vips.ForeignTiffPredictor.none,
-          };
-
-          if (options.colorMode === 'bw') {
-            tiffOptions.bitdepth = 1;
-          }
-
-          if (options.compression === 'jpeg') {
-            tiffOptions.Q = 85;
-          }
-
-          const buffer = joined.tiffsaveBuffer(tiffOptions);
-          const blob = new Blob([new Uint8Array(buffer)], {
-            type: 'image/tiff',
-          });
-          downloadFile(blob, getCleanPdfFilename(files[0].name) + '.tiff');
-        } finally {
-          if (joined !== firstPage && !joined.isDeleted()) joined.delete();
-        }
-      } finally {
-        for (const p of pages) {
-          if (!p.isDeleted()) p.delete();
-        }
-      }
-    } else if (pdf.numPages === 1) {
-      const page = await pdf.getPage(1);
-      const { rgba, width, height } = await renderPageToRgba(page, options.dpi);
-      const buffer = encodePageToTiff(vips, rgba, width, height, options);
-      const blob = new Blob([new Uint8Array(buffer)], { type: 'image/tiff' });
-      downloadFile(blob, getCleanPdfFilename(files[0].name) + '.tiff');
-    } else {
-      const zip = new JSZip();
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const { rgba, width, height } = await renderPageToRgba(
-          page,
-          options.dpi
-        );
-        const buffer = encodePageToTiff(vips, rgba, width, height, options);
-        zip.file(`page_${i}.tiff`, new Uint8Array(buffer));
-      }
-
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      downloadFile(zipBlob, getCleanPdfFilename(files[0].name) + '_tiffs.zip');
-    }
+    const controller = new AbortController();
+    const output = await pdfToTiff(result.file, options, {
+      signal: controller.signal,
+      progress: (p) => showLoader(p.label),
+    });
+    downloadFile(output, output.name);
 
     showAlert(
       t('common.success'),

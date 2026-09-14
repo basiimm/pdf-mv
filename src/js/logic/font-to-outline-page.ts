@@ -1,12 +1,12 @@
 import { showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
-import { convertFileToOutlines } from '../utils/ghostscript-loader.js';
 import { isGhostscriptAvailable } from '../utils/ghostscript-dynamic-loader.js';
 import { showWasmRequiredDialog } from '../utils/wasm-provider.js';
 import { batchDecryptIfNeeded } from '../utils/password-prompt.js';
 import { icons, createIcons } from 'lucide';
 import JSZip from 'jszip';
 import { deduplicateFileName } from '../utils/deduplicate-filename.js';
+import { fontToOutline as fontToOutlineEngine } from '../engines/font-to-outline.js';
 
 interface FontToOutlineState {
   files: File[];
@@ -120,11 +120,18 @@ async function processFiles() {
         loaderText.textContent = 'Converting fonts to outlines...';
 
       const file = pageState.files[0];
-      const resultBlob = await convertFileToOutlines(file, (msg) => {
-        if (loaderText) loaderText.textContent = msg;
-      });
+      const resultFile = await fontToOutlineEngine(
+        file,
+        {},
+        {
+          signal: new AbortController().signal,
+          progress: (p) => {
+            if (loaderText) loaderText.textContent = p.label;
+          },
+        }
+      );
 
-      downloadFile(resultBlob, file.name);
+      downloadFile(resultFile, resultFile.name);
       if (loaderModal) loaderModal.classList.add('hidden');
     } else {
       if (loaderModal) loaderModal.classList.remove('hidden');
@@ -140,10 +147,13 @@ async function processFiles() {
           loaderText.textContent = `Processing ${i + 1}/${pageState.files.length}: ${file.name}...`;
 
         try {
-          const resultBlob = await convertFileToOutlines(file, () => {});
-          const arrayBuffer = await resultBlob.arrayBuffer();
+          const resultFile = await fontToOutlineEngine(
+            file,
+            {},
+            { signal: new AbortController().signal, progress: () => {} }
+          );
           const zipEntryName = deduplicateFileName(file.name, usedNames);
-          zip.file(zipEntryName, arrayBuffer);
+          zip.file(zipEntryName, await resultFile.arrayBuffer());
           processedCount++;
         } catch (e) {
           console.error(`Error processing ${file.name}:`, e);

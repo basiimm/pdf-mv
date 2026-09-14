@@ -1,21 +1,15 @@
 import { createIcons, icons } from 'lucide';
 import { showAlert, showLoader, hideLoader } from '@/js/ui.js';
 import { downloadFile, formatBytes } from '@/js/utils/helpers.js';
-import { loadPyMuPDF } from '@/js/utils/pymupdf-loader.js';
-import type { PyMuPDFInstance } from '@/types';
-import {
-  getSelectedQuality,
-  compressImageFile,
-} from '@/js/utils/image-compress.js';
+import { getSelectedQuality } from '@/js/utils/image-compress.js';
 import {
   IMAGE_ACCEPT,
   IMAGE_FORMATS_LABEL,
   isValidImageFile,
-  preprocessImageFile,
 } from '@/js/utils/image-input-utils.js';
+import { convertImagesToPdf } from '@/js/engines/images-to-pdf.js';
 
 let files: File[] = [];
-let pymupdf: PyMuPDFInstance | null = null;
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializePage);
@@ -166,13 +160,6 @@ function updateUI() {
   }
 }
 
-async function ensurePyMuPDF(): Promise<PyMuPDFInstance> {
-  if (!pymupdf) {
-    pymupdf = (await loadPyMuPDF()) as PyMuPDFInstance;
-  }
-  return pymupdf;
-}
-
 async function convertToPdf() {
   if (files.length === 0) {
     showAlert('No Files', 'Please select at least one image file.');
@@ -183,25 +170,18 @@ async function convertToPdf() {
 
   try {
     const quality = getSelectedQuality();
-    const processedFiles: File[] = [];
-    for (const file of files) {
-      try {
-        const processed = await preprocessImageFile(file);
-        const compressed = await compressImageFile(processed, quality);
-        processedFiles.push(compressed);
-      } catch (error: unknown) {
-        console.warn(error);
-        throw error;
+    const controller = new AbortController();
+    const pdfFile = await convertImagesToPdf(
+      files,
+      { quality },
+      {
+        signal: controller.signal,
+        progress: (p) =>
+          showLoader(p.detail ? `${p.label}: ${p.detail}` : p.label),
       }
-    }
+    );
 
-    showLoader('Loading engine...');
-    const mupdf = await ensurePyMuPDF();
-
-    showLoader('Converting images to PDF...');
-    const pdfBlob = await mupdf.imagesToPdf(processedFiles);
-
-    downloadFile(pdfBlob, 'images_to_pdf.pdf');
+    downloadFile(pdfFile, 'images_to_pdf.pdf');
 
     showAlert('Success', 'PDF created successfully!', 'success', () => {
       resetState();

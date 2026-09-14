@@ -1,12 +1,8 @@
 import { showAlert } from '../ui.js';
-import {
-  downloadFile,
-  formatBytes,
-  initializeQpdf,
-  readFileAsArrayBuffer,
-} from '../utils/helpers.js';
+import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { icons, createIcons } from 'lucide';
-import { EncryptPdfState, QpdfInstanceExtended } from '@/types';
+import { EncryptPdfState } from '@/types';
+import { encryptPdf as encryptPdfEngine } from '../engines/encrypt-pdf.js';
 
 const pageState: EncryptPdfState = {
   file: null,
@@ -109,71 +105,29 @@ async function encryptPdf() {
     return;
   }
 
-  const ownerPassword = ownerPasswordInput || userPassword;
   const hasDistinctOwnerPassword = ownerPasswordInput !== '';
-
-  const inputPath = '/input.pdf';
-  const outputPath = '/output.pdf';
-  let qpdf: QpdfInstanceExtended;
 
   const loaderModal = document.getElementById('loader-modal');
   const loaderText = document.getElementById('loader-text');
 
   try {
     if (loaderModal) loaderModal.classList.remove('hidden');
-    if (loaderText) loaderText.textContent = 'Initializing encryption...';
-
-    qpdf = await initializeQpdf();
-
-    if (loaderText) loaderText.textContent = 'Reading PDF...';
-    const fileBuffer = await readFileAsArrayBuffer(pageState.file);
-    const uint8Array = new Uint8Array(fileBuffer as ArrayBuffer);
-
-    qpdf.FS.writeFile(inputPath, uint8Array);
-
     if (loaderText)
       loaderText.textContent = 'Encrypting PDF with 256-bit AES...';
 
-    const args = [inputPath, '--encrypt', userPassword, ownerPassword, '256'];
-
-    // Only add restrictions if a distinct owner password was provided
-    if (hasDistinctOwnerPassword) {
-      args.push(
-        '--modify=none',
-        '--extract=n',
-        '--print=none',
-        '--accessibility=n',
-        '--annotate=n',
-        '--assemble=n',
-        '--form=n',
-        '--modify-other=n'
-      );
-    }
-
-    args.push('--', outputPath);
-
-    try {
-      qpdf.callMain(args);
-    } catch (qpdfError: unknown) {
-      console.error('qpdf execution error:', qpdfError);
-      throw new Error(
-        'Encryption failed: ' +
-          (qpdfError instanceof Error ? qpdfError.message : 'Unknown error'),
-        { cause: qpdfError }
-      );
-    }
+    const outputFile = await encryptPdfEngine(
+      pageState.file,
+      { userPassword, ownerPassword: ownerPasswordInput },
+      {
+        signal: new AbortController().signal,
+        progress: (p) => {
+          if (loaderText) loaderText.textContent = p.label;
+        },
+      }
+    );
 
     if (loaderText) loaderText.textContent = 'Preparing download...';
-    const outputFile = qpdf.FS.readFile(outputPath, { encoding: 'binary' });
-
-    if (!outputFile || outputFile.length === 0) {
-      throw new Error('Encryption resulted in an empty file.');
-    }
-
-    const blob = new Blob([new Uint8Array(outputFile)], {
-      type: 'application/pdf',
-    });
-    downloadFile(blob, pageState.file.name);
+    downloadFile(outputFile, pageState.file.name);
 
     if (loaderModal) loaderModal.classList.add('hidden');
 
@@ -193,23 +147,6 @@ async function encryptPdf() {
       'Encryption Failed',
       `An error occurred: ${error instanceof Error ? error.message : 'The PDF might be corrupted.'}`
     );
-  } finally {
-    try {
-      if (qpdf?.FS) {
-        try {
-          qpdf.FS.unlink(inputPath);
-        } catch (e) {
-          console.warn('Failed to unlink input file:', e);
-        }
-        try {
-          qpdf.FS.unlink(outputPath);
-        } catch (e) {
-          console.warn('Failed to unlink output file:', e);
-        }
-      }
-    } catch (cleanupError) {
-      console.warn('Failed to cleanup WASM FS:', cleanupError);
-    }
   }
 }
 

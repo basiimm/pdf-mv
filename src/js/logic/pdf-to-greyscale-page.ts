@@ -6,11 +6,9 @@ import {
   getPDFDocument,
 } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import { PDFDocument } from 'pdf-lib';
-import { applyGreyscale } from '../utils/image-effects.js';
-import * as pdfjsLib from 'pdfjs-dist';
 import { t } from '../i18n/i18n';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
+import { pdfToGreyscale } from '../engines/pdf-to-greyscale.js';
 import '../utils/setup-pdf-worker.js';
 
 let files: File[] = [];
@@ -95,51 +93,17 @@ async function convert() {
     const result = await loadPdfWithPasswordPrompt(files[0], files, 0);
     if (!result) return;
     showLoader('Converting to greyscale...');
-    const { pdf: pdfjsDoc } = result;
-    const newPdfDoc = await PDFDocument.create();
 
-    for (let i = 1; i <= pdfjsDoc.numPages; i++) {
-      const page = await pdfjsDoc.getPage(i);
-      const viewport = page.getViewport({ scale: 2.0 });
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-
-      await page.render({ canvasContext: context!, viewport: viewport, canvas })
-        .promise;
-
-      const imageData = context!.getImageData(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
-      applyGreyscale(imageData);
-      context!.putImageData(imageData, 0, 0);
-
-      const jpegBlob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, 'image/jpeg', 0.9)
-      );
-
-      if (jpegBlob) {
-        const jpegBytes = await jpegBlob.arrayBuffer();
-        const jpegImage = await newPdfDoc.embedJpg(jpegBytes);
-        const newPage = newPdfDoc.addPage([viewport.width, viewport.height]);
-        newPage.drawImage(jpegImage, {
-          x: 0,
-          y: 0,
-          width: viewport.width,
-          height: viewport.height,
-        });
+    const controller = new AbortController();
+    const output = await pdfToGreyscale(
+      result.file,
+      {},
+      {
+        signal: controller.signal,
+        progress: (p) => showLoader(p.label),
       }
-    }
-
-    const resultBytes = await newPdfDoc.save();
-    downloadFile(
-      new Blob([new Uint8Array(resultBytes)], { type: 'application/pdf' }),
-      files[0]?.name || 'document.pdf'
     );
+    downloadFile(output, output.name);
     showAlert(
       'Success',
       'PDF converted to greyscale successfully!',

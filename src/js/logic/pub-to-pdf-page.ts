@@ -2,11 +2,7 @@ import { showLoader, hideLoader, showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { state } from '../state.js';
 import { createIcons, icons } from 'lucide';
-import {
-  getLibreOfficeConverter,
-  type LoadProgress,
-} from '../utils/libreoffice-loader.js';
-import { deduplicateFileName } from '../utils/deduplicate-filename.js';
+import { convertOfficeToPdf } from '../engines/office-to-pdf.js';
 
 const ACCEPTED_EXTENSIONS = ['.pub'];
 const FILETYPE_NAME = 'PUB';
@@ -87,52 +83,22 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     try {
-      const converter = getLibreOfficeConverter();
       showLoader('Loading engine...');
-      await converter.initialize((progress: LoadProgress) => {
-        showLoader(progress.message, progress.percent);
+      const controller = new AbortController();
+      const pdfFile = await convertOfficeToPdf(state.files, {
+        signal: controller.signal,
+        progress: (p) =>
+          showLoader(p.detail ? `${p.label}: ${p.detail}` : p.label),
       });
-      if (state.files.length === 1) {
-        const file = state.files[0];
-        showLoader(`Converting ${file.name}...`);
-        const pdfBlob = await converter.convertToPdf(file);
-        const baseName = file.name.replace(/\.[^/.]+$/, '');
-        downloadFile(pdfBlob, `${baseName}.pdf`);
-        hideLoader();
-        showAlert(
-          'Conversion Complete',
-          `Successfully converted ${file.name} to PDF.`,
-          'success',
-          () => resetState()
-        );
-      } else {
-        showLoader('Converting multiple files...');
-        const JSZip = (await import('jszip')).default;
-        const zip = new JSZip();
-        const usedNames = new Set<string>();
-        for (let i = 0; i < state.files.length; i++) {
-          const file = state.files[i];
-          showLoader(
-            `Converting ${i + 1}/${state.files.length}: ${file.name}...`
-          );
-          const pdfBlob = await converter.convertToPdf(file);
-          const baseName = file.name.replace(/\.[^/.]+$/, '');
-          const zipEntryName = deduplicateFileName(
-            `${baseName}.pdf`,
-            usedNames
-          );
-          zip.file(zipEntryName, pdfBlob);
-        }
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-        downloadFile(zipBlob, `${FILETYPE_NAME.toLowerCase()}-to-pdf.zip`);
-        hideLoader();
-        showAlert(
-          'Conversion Complete',
-          `Successfully converted ${state.files.length} files to PDF.`,
-          'success',
-          () => resetState()
-        );
-      }
+      downloadFile(pdfFile, pdfFile.name);
+
+      hideLoader();
+      showAlert(
+        'Conversion Complete',
+        `Successfully converted ${state.files.length} ${FILETYPE_NAME} file(s) to PDF.`,
+        'success',
+        () => resetState()
+      );
     } catch (err) {
       hideLoader();
       const message = err instanceof Error ? err.message : 'Unknown error';

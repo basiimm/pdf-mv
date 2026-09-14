@@ -73,7 +73,9 @@ function control(field: ToolField): Control {
           label: field.label,
           value: field.value,
           type:
-            field.type === 'number' || field.type === 'color'
+            field.type === 'number' ||
+            field.type === 'color' ||
+            field.type === 'password'
               ? field.type
               : 'text',
           min: field.min,

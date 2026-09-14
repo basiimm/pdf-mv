@@ -1,17 +1,10 @@
-import { showAlert, showLoader } from '../ui.js';
+import { showAlert, showLoader, hideLoader } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import JSZip from 'jszip';
 import { isCpdfAvailable } from '../utils/cpdf-helper.js';
-import {
-  showWasmRequiredDialog,
-  WasmProvider,
-} from '../utils/wasm-provider.js';
+import { showWasmRequiredDialog } from '../utils/wasm-provider.js';
 import { batchDecryptIfNeeded } from '../utils/password-prompt.js';
-
-const worker = new Worker(
-  import.meta.env.BASE_URL + 'workers/extract-attachments.worker.js'
-);
+import { extractAttachments as extractAttachmentsEngine } from '../engines/extract-attachments.js';
 
 interface ExtractState {
   files: File[];
@@ -62,94 +55,6 @@ function showStatus(
   }`;
   statusMessage.classList.remove('hidden');
 }
-
-worker.onmessage = function (e) {
-  const processBtn = document.getElementById('process-btn');
-  if (processBtn) {
-    processBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-    processBtn.removeAttribute('disabled');
-  }
-
-  if (e.data.status === 'success') {
-    const attachments = e.data.attachments;
-
-    if (attachments.length === 0) {
-      showAlert(
-        'No Attachments',
-        'The PDF file(s) do not contain any attachments to extract.'
-      );
-      resetState();
-      return;
-    }
-
-    const zip = new JSZip();
-    let totalSize = 0;
-
-    const usedNames = new Set<string>();
-    for (const attachment of attachments) {
-      const base =
-        (attachment.name || 'attachment')
-          .split(/[/\\]/)
-          .pop()
-          ?.replace(/^\.+/, '')
-          .replace(/\p{Cc}/gu, '')
-          .trim() || 'attachment';
-      let safeName = base;
-      let counter = 1;
-      while (usedNames.has(safeName)) {
-        const dot = base.lastIndexOf('.');
-        safeName =
-          dot > 0
-            ? `${base.slice(0, dot)}_${counter}${base.slice(dot)}`
-            : `${base}_${counter}`;
-        counter++;
-      }
-      usedNames.add(safeName);
-      zip.file(safeName, new Uint8Array(attachment.data));
-      totalSize += attachment.data.byteLength;
-    }
-
-    zip.generateAsync({ type: 'blob' }).then(function (zipBlob) {
-      downloadFile(zipBlob, 'extracted-attachments.zip');
-
-      showAlert(
-        'Success',
-        `${attachments.length} attachment(s) extracted successfully!`
-      );
-
-      showStatus(
-        `Extraction completed! ${attachments.length} attachment(s) in zip file (${formatBytes(totalSize)}). Download started.`,
-        'success'
-      );
-
-      resetState();
-    });
-  } else if (e.data.status === 'error') {
-    const errorMessage = e.data.message || 'Unknown error occurred in worker.';
-    console.error('Worker Error:', errorMessage);
-
-    if (errorMessage.includes('No attachments were found')) {
-      showAlert(
-        'No Attachments',
-        'The PDF file(s) do not contain any attachments to extract.'
-      );
-      resetState();
-    } else {
-      showStatus(`Error: ${errorMessage}`, 'error');
-    }
-  }
-};
-
-worker.onerror = function (error) {
-  console.error('Worker error:', error);
-  showStatus('Worker error occurred. Check console for details.', 'error');
-
-  const processBtn = document.getElementById('process-btn');
-  if (processBtn) {
-    processBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-    processBtn.removeAttribute('disabled');
-  }
-};
 
 async function updateUI() {
   const fileDisplayArea = document.getElementById('file-display-area');
@@ -221,50 +126,49 @@ async function extractAttachments() {
     pageState.files = await batchDecryptIfNeeded(pageState.files);
     showLoader('Reading files...');
 
-    const fileBuffers: ArrayBuffer[] = [];
-    const fileNames: string[] = [];
-
-    for (const file of pageState.files) {
-      const buffer = await file.arrayBuffer();
-      fileBuffers.push(buffer);
-      fileNames.push(file.name);
-    }
-
-    if (fileBuffers.length === 0) {
-      if (processBtn) {
-        processBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        processBtn.removeAttribute('disabled');
-      }
-      return;
-    }
-
     showStatus(
       `Extracting attachments from ${pageState.files.length} file(s)...`,
       'info'
     );
 
-    const message = {
-      command: 'extract-attachments',
-      fileBuffers,
-      fileNames,
-      cpdfUrl: WasmProvider.getUrl('cpdf')! + 'coherentpdf.browser.min.js',
-    };
-
-    const transferables = fileBuffers.map(function (buf) {
-      return buf;
-    });
-    worker.postMessage(message, transferables);
-  } catch (error) {
-    console.error('Error reading files:', error);
-    showStatus(
-      `Error reading files: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
-      'error'
+    const controller = new AbortController();
+    const output = await extractAttachmentsEngine(
+      pageState.files[0],
+      {},
+      {
+        signal: controller.signal,
+        progress: (p) => showStatus(p.label, 'info'),
+      }
     );
+
+    downloadFile(output, output.name);
+    showAlert('Success', 'Attachment(s) extracted successfully!');
+    showStatus(
+      `Extraction completed! Archive (${formatBytes(output.size)}). Download started.`,
+      'success'
+    );
+    resetState();
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error extracting attachments:', error);
+
+    if (/does not contain any attachments/i.test(message)) {
+      showAlert(
+        'No Attachments',
+        'The PDF file(s) do not contain any attachments to extract.'
+      );
+      resetState();
+    } else {
+      showStatus(`Error: ${message}`, 'error');
+    }
 
     if (processBtn) {
       processBtn.classList.remove('opacity-50', 'cursor-not-allowed');
       processBtn.removeAttribute('disabled');
     }
+  } finally {
+    hideLoader();
   }
 }
 

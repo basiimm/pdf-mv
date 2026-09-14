@@ -7,7 +7,14 @@ export interface ToolField {
   key: string;
   label: string;
   value: string;
-  type?: 'text' | 'number' | 'color' | 'select' | 'checkbox' | 'segmented';
+  type?:
+    | 'text'
+    | 'password'
+    | 'number'
+    | 'color'
+    | 'select'
+    | 'checkbox'
+    | 'segmented';
   options?: [value: string, label: string][];
   min?: string;
   max?: string;

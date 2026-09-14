@@ -1,22 +1,15 @@
 import { showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { batchDecryptIfNeeded } from '../utils/password-prompt.js';
-import { PDFDocument } from 'pdf-lib';
-import { flattenAnnotations } from '../utils/flatten-annotations.js';
 import { icons, createIcons } from 'lucide';
 import JSZip from 'jszip';
 import { deduplicateFileName } from '../utils/deduplicate-filename.js';
 import { FlattenPdfState } from '@/types';
-import { loadPdfDocument } from '../utils/load-pdf-document.js';
+import { flattenPdf as flattenPdfEngine } from '../engines/flatten-pdf.js';
 
 const pageState: FlattenPdfState = {
   files: [],
 };
-
-function flattenFormsInDoc(pdfDoc: PDFDocument) {
-  const form = pdfDoc.getForm();
-  form.flatten();
-}
 
 function resetState() {
   pageState.files = [];
@@ -115,30 +108,12 @@ async function flattenPdf() {
       if (loaderText) loaderText.textContent = 'Flattening PDF...';
 
       const file = pageState.files[0];
-      const arrayBuffer = await file.arrayBuffer();
-      const pdfDoc = await loadPdfDocument(arrayBuffer);
-
-      try {
-        flattenFormsInDoc(pdfDoc);
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e);
-        if (!msg.includes('getForm')) {
-          throw e;
-        }
-      }
-
-      try {
-        flattenAnnotations(pdfDoc);
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e);
-        console.warn('Could not flatten annotations:', msg);
-      }
-
-      const newPdfBytes = await pdfDoc.save();
-      downloadFile(
-        new Blob([new Uint8Array(newPdfBytes)], { type: 'application/pdf' }),
-        `flattened_${file.name}`
+      const flattenedFile = await flattenPdfEngine(
+        file,
+        {},
+        { signal: new AbortController().signal, progress: () => {} }
       );
+      downloadFile(flattenedFile, `flattened_${file.name}`);
       if (loaderModal) loaderModal.classList.add('hidden');
     } else {
       if (loaderModal) loaderModal.classList.remove('hidden');
@@ -154,28 +129,13 @@ async function flattenPdf() {
           loaderText.textContent = `Flattening ${i + 1}/${pageState.files.length}: ${file.name}...`;
 
         try {
-          const arrayBuffer = await file.arrayBuffer();
-          const pdfDoc = await loadPdfDocument(arrayBuffer);
-
-          try {
-            flattenFormsInDoc(pdfDoc);
-          } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : String(e);
-            if (!msg.includes('getForm')) {
-              throw e;
-            }
-          }
-
-          try {
-            flattenAnnotations(pdfDoc);
-          } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : String(e);
-            console.warn('Could not flatten annotations:', msg);
-          }
-
-          const flattenedBytes = await pdfDoc.save();
+          const flattenedFile = await flattenPdfEngine(
+            file,
+            {},
+            { signal: new AbortController().signal, progress: () => {} }
+          );
           const zipEntryName = deduplicateFileName(file.name, usedNames);
-          zip.file(zipEntryName, flattenedBytes);
+          zip.file(zipEntryName, await flattenedFile.arrayBuffer());
           processedCount++;
         } catch (e) {
           console.error(`Error processing ${file.name}:`, e);

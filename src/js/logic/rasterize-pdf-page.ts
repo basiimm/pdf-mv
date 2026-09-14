@@ -8,11 +8,11 @@ import {
 } from '../utils/helpers.js';
 import { state } from '../state.js';
 import { createIcons, icons } from 'lucide';
-import { loadPyMuPDF, isPyMuPDFAvailable } from '../utils/pymupdf-loader.js';
-import type { PyMuPDFInstance } from '@/types';
+import { isPyMuPDFAvailable } from '../utils/pymupdf-loader.js';
 import { batchDecryptIfNeeded } from '../utils/password-prompt.js';
 import { deduplicateFileName } from '../utils/deduplicate-filename.js';
 import { showWasmRequiredDialog } from '../utils/wasm-provider.js';
+import { rasterizePdf as rasterizePdfEngine } from '../engines/rasterize-pdf.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -109,9 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      showLoader('Loading engine...');
-      const pymupdf = await loadPyMuPDF();
-
       // Get options from UI
       const dpi =
         parseInt(
@@ -136,17 +133,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const file = state.files[0];
         showLoader(`Rasterizing ${file.name}...`);
 
-        const rasterizedBlob = await (pymupdf as PyMuPDFInstance).rasterizePdf(
+        const rasterizedFile = await rasterizePdfEngine(
           file,
+          { dpi, format, grayscale },
           {
-            dpi,
-            format,
-            grayscale,
-            quality: 95,
+            signal: new AbortController().signal,
+            progress: (p) => showLoader(p.label),
           }
         );
 
-        downloadFile(rasterizedBlob, file.name);
+        downloadFile(rasterizedFile, rasterizedFile.name);
 
         hideLoader();
         showAlert(
@@ -167,17 +163,14 @@ document.addEventListener('DOMContentLoaded', () => {
               `Rasterizing ${file.name} (${completed + 1}/${total})...`
             );
 
-            const rasterizedBlob = await (
-              pymupdf as PyMuPDFInstance
-            ).rasterizePdf(file, {
-              dpi,
-              format,
-              grayscale,
-              quality: 95,
-            });
+            const rasterizedFile = await rasterizePdfEngine(
+              file,
+              { dpi, format, grayscale },
+              { signal: new AbortController().signal, progress: () => {} }
+            );
 
             const zipEntryName = deduplicateFileName(file.name, usedNames);
-            zip.file(zipEntryName, rasterizedBlob);
+            zip.file(zipEntryName, await rasterizedFile.arrayBuffer());
 
             completed++;
           } catch (error) {

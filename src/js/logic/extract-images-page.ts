@@ -8,16 +8,10 @@ import {
 } from '../utils/helpers.js';
 import { state } from '../state.js';
 import { createIcons, icons } from 'lucide';
-import { loadPyMuPDF } from '../utils/pymupdf-loader.js';
 import { batchDecryptIfNeeded } from '../utils/password-prompt.js';
+import { extractImages } from '../engines/extract-images.js';
 
-interface ExtractedImage {
-  data: Uint8Array;
-  name: string;
-  ext: string;
-}
-
-let extractedImages: ExtractedImage[] = [];
+let extractedImages: File[] = [];
 
 document.addEventListener('DOMContentLoaded', () => {
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -117,8 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
     imagesGrid.innerHTML = '';
 
     extractedImages.forEach((img) => {
-      const blob = new Blob([new Uint8Array(img.data)]);
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(img);
 
       const card = document.createElement('div');
       card.className = 'bg-gray-700 rounded-lg overflow-hidden';
@@ -138,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
       downloadBtn.className = 'text-indigo-400 hover:text-indigo-300';
       downloadBtn.innerHTML = '<i data-lucide="download" class="w-4 h-4"></i>';
       downloadBtn.onclick = () => {
-        downloadFile(blob, img.name);
+        downloadFile(img, img.name);
       };
 
       info.append(name, downloadBtn);
@@ -160,57 +153,31 @@ document.addEventListener('DOMContentLoaded', () => {
       const decryptedFiles = await batchDecryptIfNeeded(state.files);
       showLoader('Loading PDF processor...');
       state.files = decryptedFiles;
-      const pymupdf = await loadPyMuPDF();
 
-      extractedImages = [];
-      let imgCounter = 0;
-
-      for (let i = 0; i < state.files.length; i++) {
-        const file = state.files[i];
-        showLoader(`Extracting images from ${file.name}...`);
-
-        const doc = await pymupdf.open(file);
-        const pageCount = doc.pageCount;
-
-        for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
-          const page = doc.getPage(pageIdx);
-          const images = page.getImages();
-
-          for (const imgInfo of images) {
-            try {
-              const imgData = page.extractImage(imgInfo.xref);
-              if (imgData && imgData.data) {
-                imgCounter++;
-                extractedImages.push({
-                  data: imgData.data,
-                  name: `image_${imgCounter}.${imgData.ext || 'png'}`,
-                  ext: imgData.ext || 'png',
-                });
-              }
-            } catch (e) {
-              console.warn('Failed to extract image:', e);
-            }
-          }
+      const controller = new AbortController();
+      const output = await extractImages(
+        state.files[0],
+        {},
+        {
+          signal: controller.signal,
+          progress: (p) => showLoader(p.label),
         }
-        doc.close();
-      }
+      );
+      extractedImages = Array.isArray(output) ? output : [output];
 
       hideLoader();
-
-      if (extractedImages.length === 0) {
-        showAlert(
-          'No Images Found',
-          'No embedded images were found in the selected PDF(s).'
-        );
-      } else {
-        displayImages();
-        showAlert(
-          'Extraction Complete',
-          `Found ${extractedImages.length} image(s) in ${state.files.length} PDF(s).`,
-          'success'
-        );
-      }
+      displayImages();
+      showAlert(
+        'Extraction Complete',
+        `Found ${extractedImages.length} image file(s).`,
+        'success'
+      );
     } catch (e: unknown) {
+      if (e instanceof Error && /no embedded images/i.test(e.message)) {
+        hideLoader();
+        showAlert('No Images Found', e.message);
+        return;
+      }
       hideLoader();
       showAlert(
         'Error',
@@ -221,14 +188,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const downloadAll = async () => {
     if (extractedImages.length === 0) return;
+    if (extractedImages.length === 1) {
+      downloadFile(extractedImages[0], extractedImages[0].name);
+      return;
+    }
 
     showLoader('Creating ZIP archive...');
     const JSZip = (await import('jszip')).default;
     const zip = new JSZip();
 
-    extractedImages.forEach((img) => {
-      zip.file(img.name, img.data);
-    });
+    for (const img of extractedImages) {
+      zip.file(img.name, await img.arrayBuffer());
+    }
 
     const zipBlob = await zip.generateAsync({ type: 'blob' });
     downloadFile(zipBlob, 'extracted-images.zip');

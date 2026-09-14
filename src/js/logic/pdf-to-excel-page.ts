@@ -1,9 +1,8 @@
 import { showLoader, hideLoader, showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import { loadPyMuPDF } from '../utils/pymupdf-loader.js';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
-import * as XLSX from 'xlsx';
+import { pdfToExcel } from '../engines/pdf-to-excel.js';
 let file: File | null = null;
 
 const updateUI = () => {
@@ -64,9 +63,6 @@ async function convert() {
   showLoader('Loading Engine...');
 
   try {
-    const pymupdf = await loadPyMuPDF();
-
-    hideLoader();
     const pwResult = await loadPdfWithPasswordPrompt(file);
     if (!pwResult) return;
     pwResult.pdf.destroy();
@@ -74,64 +70,17 @@ async function convert() {
 
     showLoader('Extracting tables...');
 
-    const doc = await pymupdf.open(file);
-    const pageCount = doc.pageCount;
-    const baseName = file.name.replace(/\.[^/.]+$/, '');
-
-    interface TableData {
-      page: number;
-      rows: (string | null)[][];
-    }
-
-    const allTables: TableData[] = [];
-
-    for (let i = 0; i < pageCount; i++) {
-      showLoader(`Scanning page ${i + 1} of ${pageCount}...`);
-      const page = doc.getPage(i);
-      const tables = page.findTables();
-
-      tables.forEach((table) => {
-        allTables.push({
-          page: i + 1,
-          rows: table.rows,
-        });
-      });
-    }
-
-    if (allTables.length === 0) {
-      showAlert('No Tables Found', 'No tables were detected in this PDF.');
-      return;
-    }
-
-    showLoader('Creating Excel file...');
-
-    const workbook = XLSX.utils.book_new();
-
-    if (allTables.length === 1) {
-      const worksheet = XLSX.utils.aoa_to_sheet(allTables[0].rows);
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Table');
-    } else {
-      allTables.forEach((table, idx) => {
-        const sheetName = `Table ${idx + 1} (Page ${table.page})`.substring(
-          0,
-          31
-        );
-        const worksheet = XLSX.utils.aoa_to_sheet(table.rows);
-        XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-      });
-    }
-
-    const xlsxData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([xlsxData], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    });
-    downloadFile(blob, `${baseName}.xlsx`);
-    showAlert(
-      'Success',
-      `Extracted ${allTables.length} table(s) to Excel!`,
-      'success',
-      resetState
+    const controller = new AbortController();
+    const output = await pdfToExcel(
+      file,
+      {},
+      {
+        signal: controller.signal,
+        progress: (p) => showLoader(p.label),
+      }
     );
+    downloadFile(output, output.name);
+    showAlert('Success', 'Tables extracted to Excel!', 'success', resetState);
   } catch (e) {
     console.error(e);
     const message = e instanceof Error ? e.message : 'Unknown error';

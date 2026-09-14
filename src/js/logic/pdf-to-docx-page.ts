@@ -8,9 +8,9 @@ import {
 } from '../utils/helpers.js';
 import { state } from '../state.js';
 import { createIcons, icons } from 'lucide';
-import { loadPyMuPDF } from '../utils/pymupdf-loader.js';
 import { batchDecryptIfNeeded } from '../utils/password-prompt.js';
 import { deduplicateFileName } from '../utils/deduplicate-filename.js';
+import { pdfToDocx } from '../engines/pdf-to-docx.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -101,21 +101,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      showLoader('Loading PDF converter...');
-      const pymupdf = await loadPyMuPDF();
-
-      hideLoader();
       state.files = await batchDecryptIfNeeded(state.files);
       showLoader('Converting...');
 
       if (state.files.length === 1) {
         const file = state.files[0];
-        showLoader(`Converting ${file.name}...`);
+        const controller = new AbortController();
+        const output = await pdfToDocx(
+          file,
+          {},
+          {
+            signal: controller.signal,
+            progress: (p) => showLoader(p.label),
+          }
+        );
 
-        const docxBlob = await pymupdf.pdfToDocx(file);
-        const outName = file.name.replace(/\.pdf$/i, '') + '.docx';
-
-        downloadFile(docxBlob, outName);
+        downloadFile(output, output.name);
         hideLoader();
 
         showAlert(
@@ -135,13 +136,17 @@ document.addEventListener('DOMContentLoaded', () => {
             `Converting ${i + 1}/${state.files.length}: ${file.name}...`
           );
 
-          const docxBlob = await pymupdf.pdfToDocx(file);
-          const baseName = file.name.replace(/\.pdf$/i, '');
-          const arrayBuffer = await docxBlob.arrayBuffer();
-          const zipEntryName = deduplicateFileName(
-            `${baseName}.docx`,
-            usedNames
+          const controller = new AbortController();
+          const output = await pdfToDocx(
+            file,
+            {},
+            {
+              signal: controller.signal,
+              progress: (p) => showLoader(p.label),
+            }
           );
+          const arrayBuffer = await output.arrayBuffer();
+          const zipEntryName = deduplicateFileName(output.name, usedNames);
           zip.file(zipEntryName, arrayBuffer);
         }
 

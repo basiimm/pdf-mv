@@ -1,8 +1,7 @@
 import { showLoader, hideLoader, showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import JSZip from 'jszip';
-import { deduplicateFileName } from '../utils/deduplicate-filename.js';
+import { pdfToZip } from '../engines/pdf-to-zip.js';
 
 interface PdfToZipState {
   files: File[];
@@ -84,21 +83,17 @@ async function createZipArchive() {
   showLoader('Creating ZIP archive...');
 
   try {
-    const zip = new JSZip();
-    const usedNames = new Set<string>();
+    const controller = new AbortController();
+    const output = await pdfToZip(
+      pageState.files,
+      {},
+      {
+        signal: controller.signal,
+        progress: (p) => showLoader(p.label),
+      }
+    );
 
-    for (let i = 0; i < pageState.files.length; i++) {
-      const file = pageState.files[i];
-      showLoader(`Adding ${file.name} (${i + 1}/${pageState.files.length})...`);
-      const arrayBuffer = await file.arrayBuffer();
-      const zipEntryName = deduplicateFileName(file.name, usedNames);
-      zip.file(zipEntryName, arrayBuffer);
-    }
-
-    showLoader('Generating ZIP file...');
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
-
-    downloadFile(zipBlob, 'pdfs_archive.zip');
+    downloadFile(output, output.name);
 
     showAlert(
       'Success',

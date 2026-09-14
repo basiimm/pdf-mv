@@ -1,13 +1,7 @@
 import { showLoader, hideLoader, showAlert } from '../ui.js';
-import {
-  downloadFile,
-  formatBytes,
-  readFileAsArrayBuffer,
-} from '../utils/helpers.js';
+import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import { PDFDocument as PDFLibDocument } from 'pdf-lib';
-import { decode } from 'tiff';
-import { tiffIfdToRgba } from '../utils/tiff-utils.js';
+import { convertTiffToPdf, isValidQuality } from '../engines/images-to-pdf.js';
 
 let files: File[] = [];
 
@@ -78,73 +72,22 @@ async function convert() {
   const qualitySelect = document.getElementById(
     'tiff-pdf-quality'
   ) as HTMLSelectElement;
-  const quality = qualitySelect?.value || 'medium';
-  const jpegQualityMap: Record<string, number> = {
-    high: 0.92,
-    medium: 0.75,
-    low: 0.5,
-  };
-  const useJpeg = quality !== 'high';
-  const jpegQuality = jpegQualityMap[quality] || 0.75;
+  const qualityValue = qualitySelect?.value || 'medium';
+  const quality = isValidQuality(qualityValue) ? qualityValue : 'medium';
 
   showLoader('Converting TIFF to PDF...');
   try {
-    const pdfDoc = await PDFLibDocument.create();
-    for (const file of files) {
-      const tiffBytes = await readFileAsArrayBuffer(file);
-      const ifds = decode(tiffBytes as ArrayBuffer);
-
-      for (const ifd of ifds) {
-        const width = ifd.width;
-        const height = ifd.height;
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) continue;
-
-        const rgba = tiffIfdToRgba(
-          ifd.data,
-          width,
-          height,
-          ifd.samplesPerPixel || 1,
-          ifd.type
-        );
-        const imageData = ctx.createImageData(width, height);
-        imageData.data.set(rgba);
-        ctx.putImageData(imageData, 0, 0);
-
-        const blob = await new Promise<Blob | null>((res) =>
-          canvas.toBlob(
-            res,
-            useJpeg ? 'image/jpeg' : 'image/png',
-            useJpeg ? jpegQuality : undefined
-          )
-        );
-        if (!blob) continue;
-
-        canvas.width = 0;
-        canvas.height = 0;
-
-        const imgBytes = await blob.arrayBuffer();
-        const image = useJpeg
-          ? await pdfDoc.embedJpg(imgBytes)
-          : await pdfDoc.embedPng(imgBytes);
-        const page = pdfDoc.addPage([image.width, image.height]);
-        page.drawImage(image, {
-          x: 0,
-          y: 0,
-          width: image.width,
-          height: image.height,
-        });
+    const controller = new AbortController();
+    const pdfFile = await convertTiffToPdf(
+      files,
+      { quality },
+      {
+        signal: controller.signal,
+        progress: (p) =>
+          showLoader(p.detail ? `${p.label}: ${p.detail}` : p.label),
       }
-    }
-    const pdfBytes = await pdfDoc.save();
-    downloadFile(
-      new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' }),
-      'from_tiff.pdf'
     );
+    downloadFile(pdfFile, pdfFile.name);
     showAlert('Success', 'PDF created successfully!', 'success', () => {
       resetState();
     });

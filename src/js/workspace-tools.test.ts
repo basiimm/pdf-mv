@@ -138,7 +138,7 @@ describe('workspace tool navigation', () => {
   });
   it('hides previous embedded controls when switching to a native feature', async () => {
     const { controller } = fixture();
-    await controller.select('compress-pdf', true);
+    await controller.select('bookmark', true);
     const frame = document.querySelector('iframe')!;
     expect(frame.hidden).toBe(false);
     await controller.select('rotate-pdf');

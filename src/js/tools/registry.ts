@@ -141,6 +141,12 @@ for (const [id, action] of Object.entries(nativeActions)) {
   });
 }
 
+import { register as registerProtectOptimize } from './families/protect-optimize.js';
+import { register as registerExports } from './families/exports.js';
+import { register as registerCreatePdf } from './families/create-pdf.js';
 import { register as registerMarks } from './families/marks.js';
 
+registerProtectOptimize();
+registerExports();
+registerCreatePdf();
 registerMarks();
