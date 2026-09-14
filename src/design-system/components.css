@@ -797,6 +797,27 @@
   height: 96px;
 }
 
+/* ---------- Details list ---------- */
+.ds-details {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: var(--ds-space-100) var(--ds-space-300);
+  margin: 0;
+  padding: var(--ds-space-300);
+  border-radius: var(--ds-radius-m);
+  background: var(--ds-bg);
+  font-size: var(--ds-text-xs);
+}
+.ds-details dt {
+  color: var(--ds-text-muted);
+}
+.ds-details dd {
+  margin: 0;
+  color: var(--ds-text);
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- Small pieces ---------- */
 .ds-badge {
   display: inline-flex;

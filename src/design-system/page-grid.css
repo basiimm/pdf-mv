@@ -1,0 +1,154 @@
+/* Page organizer (organize, split, multi-tool). Tokens only. */
+.ds-page-organizer {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  background: var(--ds-canvas);
+  color: var(--ds-text);
+  font-family: var(--ds-font-sans);
+}
+.ds-page-organizer__toolbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--ds-z-sticky);
+  flex: none;
+}
+.ds-page-organizer__toolbar .ds-badge {
+  margin-right: var(--ds-space-100);
+  white-space: nowrap;
+}
+.ds-page-organizer__toolbar .ds-button {
+  white-space: nowrap;
+}
+.ds-page-organizer__toolbar .ds-button[aria-pressed='true'] {
+  background: var(--ds-selected);
+  color: var(--ds-accent-text);
+}
+.ds-page-organizer__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--ds-space-500);
+}
+.ds-page-organizer__grid {
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: var(--ds-space-500) var(--ds-space-400);
+}
+.ds-page-organizer[data-mode='split'] .ds-page-organizer__grid {
+  column-gap: var(--ds-space-600);
+}
+.ds-page-organizer[data-disabled] .ds-page-organizer__grid {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* No content-visibility here: paint containment would clip the gap markers. Thumbnails are lazy instead. */
+.ds-page-organizer .ds-page-thumb {
+  user-select: none;
+  touch-action: manipulation;
+}
+.ds-page-organizer .ds-page-thumb:focus-visible {
+  outline: var(--ds-focus-width) solid var(--ds-focus-ring);
+  outline-offset: var(--ds-focus-offset);
+}
+.ds-page-organizer[data-dragging] .ds-page-thumb[aria-selected='true'] {
+  opacity: 0.5;
+}
+.ds-page-organizer .ds-page-thumb__paper {
+  position: relative;
+  aspect-ratio: var(--_ratio, var(--_default-ratio, 1 / 1.414));
+  overflow: visible;
+  transform: rotate(var(--_angle, 0deg)) scale(var(--_fit, 1));
+  transition: transform var(--ds-duration-base) var(--ds-ease-out);
+}
+.ds-page-organizer .ds-page-thumb__paper > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+.ds-page-organizer .ds-page-thumb__paper:not([data-loaded])::before {
+  content: '';
+  position: absolute;
+  inset: 12%;
+  border-radius: var(--ds-radius-s);
+  background: linear-gradient(
+    var(--ds-inset) 0 8%,
+    transparent 8% 18%,
+    var(--ds-inset) 18% 24%,
+    transparent 24% 32%,
+    var(--ds-inset) 32% 38%,
+    transparent 38%
+  );
+  opacity: 0.7;
+}
+.ds-page-organizer .ds-page-thumb[data-blank] .ds-page-thumb__paper::before {
+  display: none;
+}
+.ds-page-organizer .ds-page-thumb__paper[data-failed]::before {
+  background: none;
+}
+.ds-page-organizer .ds-page-thumb__badge {
+  top: var(--ds-space-100);
+  left: var(--ds-space-100);
+  z-index: 1;
+}
+
+/* Drop indicator: a bar in the gap before or after the target card. */
+.ds-page-organizer .ds-page-thumb[data-drop]::after {
+  content: '';
+  position: absolute;
+  top: var(--ds-space-200);
+  bottom: var(--ds-space-200);
+  width: 3px;
+  border-radius: var(--ds-radius-full);
+  background: var(--ds-accent-fill);
+}
+.ds-page-organizer .ds-page-thumb[data-drop='before']::after {
+  left: calc(-1 * var(--ds-space-200) - 3px);
+}
+.ds-page-organizer .ds-page-thumb[data-drop='after']::after {
+  right: calc(-1 * var(--ds-space-200) - 3px);
+}
+
+/* Split marker: dashed rule in the gap after the page. */
+.ds-page-organizer .ds-page-thumb[data-split-after]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: calc(-1 * var(--ds-space-300) - 3px);
+  border-right: 2px dashed var(--ds-accent-fill);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-page-organizer .ds-page-thumb__paper {
+    transition: none;
+  }
+}
+
+/* Workspace host for the organizer (canvas area) and its panel footer. */
+.ds-page-organizer-host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--ds-canvas);
+}
+.ds-page-organizer-host > .ds-skeleton,
+.ds-page-organizer-host__message {
+  padding: var(--ds-space-500);
+}
+.ds-page-organizer-host > .ds-empty {
+  margin: auto;
+}
+.ds-page-organizer-host .ds-drop-zone {
+  margin-top: var(--ds-space-400);
+}
+.ds-tool-panel__footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-200);
+}

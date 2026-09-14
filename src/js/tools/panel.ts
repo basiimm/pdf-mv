@@ -20,6 +20,7 @@ import type { ToolDefinition, ToolField } from './types.js';
 
 type Control = {
   value: string;
+  setValue(value: string): void;
   element: HTMLElement;
   focus(): void;
   setDisabled(v: boolean): void;
@@ -33,6 +34,7 @@ function control(field: ToolField): Control {
       get value() {
         return String(c.control.checked);
       },
+      setValue: (v: string) => (c.control.checked = v === 'true'),
       focus: () => c.control.focus(),
       setDisabled: (v) => (c.control.disabled = v),
     };
@@ -53,6 +55,7 @@ function control(field: ToolField): Control {
       get value() {
         return s.value;
       },
+      setValue: (v: string) => s.set(v),
       focus: () =>
         s.root
           .querySelector<HTMLButtonElement>('[aria-checked="true"]')
@@ -89,6 +92,7 @@ function control(field: ToolField): Control {
     get value() {
       return f.control.value;
     },
+    setValue: (v: string) => (f.control.value = v),
     focus: () => f.control.focus(),
     setDisabled: (v) => (f.control.disabled = v),
   };
@@ -159,7 +163,9 @@ export function createToolPanel(
           : 'Runs on this device. The file downloads when ready.',
   });
   footer.append(primary, note);
-  body.append(intro, source, essentials);
+  const details = el('dl', { className: 'ds-details' });
+  details.hidden = true;
+  body.append(intro, details, source, essentials);
   if (advanced) body.append(advanced.root);
   body.append(feedback);
 
@@ -183,7 +189,38 @@ export function createToolPanel(
       })
     : null;
 
+  let inspectedRevision = -1;
+  async function inspect() {
+    if (!tool.inspect || !host.hasPdf(id) || disposed) return;
+    const revision = host.revision(id);
+    if (revision === inspectedRevision) return;
+    inspectedRevision = revision;
+    try {
+      const result = await tool.inspect(await host.snapshot(id));
+      if (disposed) return;
+      for (const [key, value] of Object.entries(result.values ?? {}))
+        controls.get(key)?.setValue(value);
+      details.replaceChildren(
+        ...(result.details ?? []).flatMap(([label, value]) => [
+          el('dt', { text: label }),
+          el('dd', { text: value }),
+        ])
+      );
+      details.hidden = !result.details?.length;
+    } catch (error) {
+      inspectedRevision = -1;
+      const description = describeWorkspaceError(error, 'open');
+      feedback.replaceChildren(
+        inlineAlert({
+          tone: 'negative',
+          message: description.message,
+          details: description.details,
+        })
+      );
+    }
+  }
   function sync() {
+    void inspect();
     const ready = tool.input ? inputs.length > 0 : host.hasPdf(id);
     primary.disabled = busy || !ready;
     essentials.hidden = !ready;

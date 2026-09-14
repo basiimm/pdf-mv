@@ -48,6 +48,12 @@ export interface ToolRunContext {
   progress(update: ToolProgress): void;
 }
 
+export interface ToolInspection {
+  values?: Record<string, string>;
+  /** Label/value rows shown above the fields. */
+  details?: [label: string, value: string][];
+}
+
 export interface ToolDefinition {
   id: string;
   description: string;
@@ -62,6 +68,12 @@ export interface ToolDefinition {
    * Apply commits it. Only for `revision` tools whose run is reasonably fast.
    */
   preview?: boolean;
+  /**
+   * Read the open document before showing fields: prefill values (e.g.
+   * current metadata) and/or show read-only details. Runs again after each
+   * revision. Tools with only `inspect` and no fields are read-only.
+   */
+  inspect?(file: File): Promise<ToolInspection>;
   /** Omit to operate on the open PDF. */
   input?: { accept: string; multiple: boolean; label: string };
   run(context: ToolRunContext): Promise<File | File[]>;
