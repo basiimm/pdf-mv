@@ -31,6 +31,9 @@ function host(snapshot = async () => sourceFile()) {
     result: vi.fn(async () => {}),
     attach: vi.fn(),
     status: vi.fn(),
+    commit: vi.fn(async () => {}),
+    canUndoCommit: vi.fn(() => false),
+    undoCommit: vi.fn(async () => null),
   } as unknown as ToolHost;
 }
 async function settle() {

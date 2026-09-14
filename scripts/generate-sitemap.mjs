@@ -8,7 +8,12 @@ const __dirname = path.dirname(__filename);
 const DIST_DIR = path.resolve(__dirname, '../dist');
 const LOCALES_DIR = path.resolve(__dirname, '../public/locales');
 const SITE_URL = (process.env.SITE_URL || 'https://pdf.mv').replace(/\/+$/, '');
-const EXCLUDED_PAGES = new Set(['404', 'wasm-settings', 'workspace']);
+const EXCLUDED_PAGES = new Set([
+  '404',
+  'wasm-settings',
+  'workspace',
+  'offline',
+]);
 
 const languages = fs.readdirSync(LOCALES_DIR).filter((file) => {
   return fs.statSync(path.join(LOCALES_DIR, file)).isDirectory();
@@ -16,11 +21,6 @@ const languages = fs.readdirSync(LOCALES_DIR).filter((file) => {
 
 const PRIORITY_MAP = {
   index: 1.0,
-  tools: 0.9,
-  'pdf-converter': 0.9,
-  'pdf-editor': 0.9,
-  'pdf-security': 0.9,
-  'pdf-merge-split': 0.9,
   'merge-pdf': 0.9,
   'split-pdf': 0.9,
   'compress-pdf': 0.9,

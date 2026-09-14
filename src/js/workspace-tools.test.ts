@@ -16,6 +16,9 @@ function fixture() {
     attach: vi.fn(),
     result: vi.fn(),
     status: vi.fn(),
+    commit: vi.fn(async () => {}),
+    canUndoCommit: vi.fn(() => false),
+    undoCommit: vi.fn(async () => null),
     editMode: vi.fn(async () => {}),
   };
   return { host, controller: setupWorkspaceTools(host), active: () => active };
@@ -63,9 +66,9 @@ describe('workspace tool navigation', () => {
     });
     input.dispatchEvent(new Event('change'));
     await vi.waitFor(() =>
-      expect(
-        document.querySelector('.native-source-row')?.textContent
-      ).toContain('page.png')
+      expect(document.querySelector('.ds-file-row')?.textContent).toContain(
+        'page.png'
+      )
     );
     expect(
       document.querySelector('.workspace-group-controls')?.textContent
@@ -106,16 +109,22 @@ describe('workspace tool navigation', () => {
     expect(host.createTask).toHaveBeenCalledTimes(1);
     expect(host.status).not.toHaveBeenCalled();
   });
+  it('keeps migrated tools in the PDF view without a legacy options page', async () => {
+    const { controller } = fixture();
+    await controller.select('extract-pages', true);
+    expect(document.querySelector('.workspace-mode-switch')).toBeNull();
+    expect(document.querySelector('iframe')).toBeNull();
+  });
   it('retains advanced controls for native features without creating another task', async () => {
     const { controller, host } = fixture();
-    await controller.select('extract-pages', true);
+    await controller.select('header-footer', true);
     const more = document.querySelector(
       '.workspace-mode-switch'
     ) as HTMLButtonElement;
     expect(more.textContent).toBe('More options');
     more.click();
     const frame = document.querySelector('iframe')!;
-    expect(frame.src).toContain('extract-pages.html');
+    expect(frame.src).toContain('header-footer.html');
     expect(frame.hidden).toBe(false);
     (
       document.querySelector('.workspace-mode-switch') as HTMLButtonElement
@@ -130,7 +139,7 @@ describe('workspace tool navigation', () => {
     expect(frame.hidden).toBe(false);
     await controller.select('rotate-pdf');
     expect(frame.hidden).toBe(true);
-    const native = document.querySelector('.native-mark-panel') as HTMLElement;
+    const native = document.querySelector('.ds-tool-panel') as HTMLElement;
     expect(native.hidden).toBe(false);
     controller.toggle();
     expect(document.getElementById('workspace-tools')!.hidden).toBe(true);

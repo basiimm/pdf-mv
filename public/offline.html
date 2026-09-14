@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>You&rsquo;re offline — PDF.mv</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="canonical" href="https://pdf.mv/offline" />
+    <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg" />
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: #f5f5f5;
+        color: #222222;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #161616;
+          color: #f2f2f2;
+        }
+        .icon {
+          background: #292929;
+        }
+        .try-again {
+          background: #1a7f37;
+        }
+        .try-again:hover {
+          background: #1f8a3e;
+        }
+      }
+      main {
+        display: grid;
+        justify-items: center;
+        gap: 12px;
+        max-width: 60ch;
+        text-align: center;
+      }
+      .icon {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: #ededed;
+        margin-bottom: 8px;
+      }
+      .icon svg {
+        width: 24px;
+        height: 24px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        line-height: 1.25;
+      }
+      p {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.45;
+        color: #5c5c5c;
+        max-width: 44ch;
+      }
+      @media (prefers-color-scheme: dark) {
+        p {
+          color: #b6b6b6;
+        }
+      }
+      .try-again {
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        padding: 0 20px;
+        border: none;
+        border-radius: 999px;
+        background: #1a7f37;
+        color: #ffffff;
+        font: 600 14px/1 inherit;
+        cursor: pointer;
+      }
+      .try-again:hover {
+        background: #15692d;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="icon" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M2 8.82a15 15 0 0 1 4.17-2.65" />
+          <path d="M22 8.82a15 15 0 0 0-11.5-3.8" />
+          <path d="M8.5 16.5a5 5 0 0 1 7 0" />
+          <path d="M2 2l20 20" />
+          <path d="M5 12.5a10 10 0 0 1 2.5-1.9" />
+          <path d="M12 20h.01" />
+        </svg>
+      </div>
+      <h1>You&rsquo;re offline</h1>
+      <p>
+        PDF.mv needs a connection to load. Files you already opened stay on this
+        device.
+      </p>
+      <button class="try-again" type="button" onclick="location.reload()">
+        Try again
+      </button>
+    </main>
+  </body>
+</html>

@@ -4,7 +4,7 @@ import {
   inferToolIcon,
 } from './config/workspace-tool-visuals.js';
 import { createToolCard } from './workspace-tool-card.js';
-import { setupWorkspaceTools } from './workspace-tools.js';
+import { setupWorkspaceTools, type ToolHost } from './workspace-tools.js';
 import { describeWorkspaceError } from './workspace-errors.js';
 import { viewerTheme } from './studio-theme.js';
 import { createIcons, icons } from 'lucide';
@@ -230,7 +230,7 @@ function activateTab(id: string): void {
     !session.documents.get(id)?.toolOnly &&
     !session.documents.get(id)?.loading
   )
-    manager.setActiveDocument(id);
+    manager.setActiveDocument(viewerId(id));
   renderWorkspace();
   document
     .getElementById(id === 'home' ? 'home-tab' : `tab-${id}`)
@@ -319,6 +319,11 @@ async function initializeViewer(): Promise<void> {
       .getPlugin('export')
       .provides() as unknown as ExportCapability;
     manager.onDocumentOpened((event) => {
+      // Revisions reopen under a new viewer id; the tab keeps its own id.
+      if (tabIds.has(event.id)) {
+        renderWorkspace();
+        return;
+      }
       let document = session.documents.get(event.id);
       if (!document) {
         document = {
@@ -351,7 +356,11 @@ async function initializeViewer(): Promise<void> {
       renderWorkspace();
     });
     manager.onDocumentClosed((event) => {
-      const id = typeof event === 'string' ? event : event.id;
+      const closedId = typeof event === 'string' ? event : event.id;
+      // A revision swap closes the previous viewer document; keep the tab.
+      if (replacing.has(closedId)) return;
+      const id = tabId(closedId);
+      forgetViewerId(id);
       const next = session.remove(id);
       pendingRedactions.delete(id);
       originalFiles.delete(id);
@@ -363,43 +372,149 @@ async function initializeViewer(): Promise<void> {
       if (
         session.activeTab !== 'home' &&
         event.currentDocumentId &&
-        session.documents.has(event.currentDocumentId)
+        session.documents.has(tabId(event.currentDocumentId))
       ) {
-        session.activate(event.currentDocumentId);
+        session.activate(tabId(event.currentDocumentId));
         renderWorkspace();
       }
     });
     const history = registry
       .getPlugin('history')
       .provides() as unknown as HistoryCapability;
-    history.onHistoryChange((event) => markDirty(event.documentId));
+    history.onHistoryChange((event) => markDirty(tabId(event.documentId)));
     const annotation = registry
       .getPlugin('annotation')
       .provides() as unknown as AnnotationCapability;
     annotation.onAnnotationEvent((event) => {
       if (['create', 'update', 'delete'].includes(event.type))
-        markDirty(event.documentId);
+        markDirty(tabId(event.documentId));
     });
     const redaction = registry
       .getPlugin('redaction')
       .provides() as unknown as RedactionCapability;
     redaction.onRedactionEvent((event) => {
-      if (event.type !== 'loaded') markDirty(event.documentId);
+      if (event.type !== 'loaded') markDirty(tabId(event.documentId));
     });
     redaction.onPendingChange((event) => {
       const count = event.pending.length;
-      if (
-        pendingRedactions.has(event.documentId) &&
-        pendingRedactions.get(event.documentId) !== count
-      )
-        markDirty(event.documentId);
-      pendingRedactions.set(event.documentId, count);
+      const id = tabId(event.documentId);
+      if (pendingRedactions.has(id) && pendingRedactions.get(id) !== count)
+        markDirty(id);
+      pendingRedactions.set(id, count);
     });
   })().catch((error) => {
     viewerReady = null;
     throw error;
   });
   return viewerReady;
+}
+const replacing = new Set<string>();
+// Tab ids are stable; viewer document ids change with each in-place revision.
+const viewerIds = new Map<string, string>();
+const tabIds = new Map<string, string>();
+let revisionCounter = 0;
+const viewerId = (id: string) => viewerIds.get(id) ?? id;
+const tabId = (documentId: string) => tabIds.get(documentId) ?? documentId;
+function forgetViewerId(id: string) {
+  const current = viewerIds.get(id);
+  if (current) tabIds.delete(current);
+  viewerIds.delete(id);
+  revisionHistory.delete(id);
+}
+const revisionHistory = new Map<string, { file: File; label: string }[]>();
+interface ViewState {
+  zoomLevel: number | string;
+  page: number;
+}
+interface ZoomScope {
+  getState(): { zoomLevel: number | string; currentZoomLevel: number };
+  requestZoom(level: number | string): void;
+}
+interface ScrollScope {
+  getCurrentPage(): number;
+  getTotalPages(): number;
+  scrollToPage(options: { pageNumber: number; behavior?: string }): void;
+}
+async function viewScopes(id: string) {
+  const registry = await viewer!.registry;
+  const scope = <T>(plugin: string) =>
+    (
+      registry.getPlugin(plugin).provides() as unknown as {
+        forDocument(id: string): T;
+      }
+    ).forDocument(viewerId(id));
+  return {
+    zoom: scope<ZoomScope>('zoom'),
+    scroll: scope<ScrollScope>('scroll'),
+  };
+}
+const nextFrame = () => new Promise((resolve) => setTimeout(resolve, 16));
+async function captureView(id: string): Promise<ViewState | null> {
+  try {
+    const { zoom, scroll } = await viewScopes(id);
+    return {
+      zoomLevel: zoom.getState().zoomLevel,
+      page: scroll.getCurrentPage(),
+    };
+  } catch {
+    return null;
+  }
+}
+/** Restore zoom and page once the reopened document has laid out. */
+async function restoreView(id: string, view: ViewState | null) {
+  if (!view) return;
+  const { zoom, scroll } = await viewScopes(id);
+  for (let i = 0; i < 120 && !scroll.getTotalPages(); i++) await nextFrame();
+  // The viewer applies its default fit on load; wait for it before overriding.
+  for (let i = 0; i < 6; i++) await nextFrame();
+  zoom.requestZoom(view.zoomLevel);
+  for (let i = 0; i < 6; i++) await nextFrame();
+  scroll.scrollToPage({
+    pageNumber: Math.min(view.page, scroll.getTotalPages() || view.page),
+    behavior: 'instant',
+  });
+}
+/** Replace a document's content in place, keeping its tab, zoom and scroll position. */
+async function swapDocument(id: string, file: File): Promise<void> {
+  const doc = session.documents.get(id);
+  if (!doc || doc.toolOnly)
+    throw new Error('Open a PDF before applying changes.');
+  await initializeViewer();
+  const view = await captureView(id);
+  const previous = viewerId(id);
+  // The engine cannot reopen a closed document id, so each revision gets a new one.
+  const next = `${id}~r${++revisionCounter}`;
+  tabIds.set(next, id);
+  doc.loading = true;
+  renderWorkspace();
+  try {
+    const opened = await manager!
+      .openDocumentBuffer({
+        documentId: next,
+        buffer: await file.arrayBuffer(),
+        name: doc.name,
+        autoActivate: session.activeTab === id,
+      })
+      .toPromise();
+    await opened.task.toPromise();
+  } catch (error) {
+    tabIds.delete(next);
+    doc.loading = false;
+    renderWorkspace();
+    throw error;
+  }
+  viewerIds.set(id, next);
+  replacing.add(previous);
+  try {
+    await manager!.closeDocument(previous).toPromise();
+  } finally {
+    replacing.delete(previous);
+    tabIds.delete(previous);
+    doc.loading = false;
+  }
+  doc.size = file.size;
+  await restoreView(id, view);
+  renderWorkspace();
 }
 async function openFiles(
   files: File[],
@@ -503,7 +618,10 @@ async function downloadDocument(id: string): Promise<boolean> {
   renderWorkspace();
   showStatus(`Preparing ${document.name}…`, false, true);
   try {
-    const buffer = await exporter.forDocument(id).saveAsCopy().toPromise();
+    const buffer = await exporter
+      .forDocument(viewerId(id))
+      .saveAsCopy()
+      .toPromise();
     const url = URL.createObjectURL(
       new Blob([buffer], { type: 'application/pdf' })
     );
@@ -573,7 +691,7 @@ async function closeDocument(id: string): Promise<void> {
     }
   }
   try {
-    await manager.closeDocument(id).toPromise();
+    await manager.closeDocument(viewerId(id)).toPromise();
   } catch {
     showStatus('Could not close the document. Try again.', true);
   }
@@ -679,7 +797,7 @@ function renderTools(): void {
   }
   refreshIcons();
 }
-const workspaceTools = setupWorkspaceTools({
+const workspaceHost: ToolHost = {
   activeId: () => session.activeTab,
   revision: (id) => session.documents.get(id)?.revision ?? 0,
   hasPdf: (id) =>
@@ -712,7 +830,7 @@ const workspaceTools = setupWorkspaceTools({
       imageSize: size,
       subject: 'Signature',
     });
-    annotation.forDocument(id).setActiveTool('stamp');
+    annotation.forDocument(viewerId(id)).setActiveTool('stamp');
   },
   cancelSignature(id) {
     if (!viewer || signatureDocument !== id) return;
@@ -724,7 +842,7 @@ const workspaceTools = setupWorkspaceTools({
           .getPlugin('annotation')
           .provides() as unknown as AnnotationCapability;
         if (session.documents.has(id) && !session.documents.get(id)?.toolOnly) {
-          const scope = annotation.forDocument(id);
+          const scope = annotation.forDocument(viewerId(id));
           if (scope.getActiveTool()?.id === 'stamp') scope.setActiveTool(null);
         }
         annotation.setToolDefaults('stamp', {
@@ -748,7 +866,7 @@ const workspaceTools = setupWorkspaceTools({
         id: string
       ): void;
     };
-    ui.setActiveToolbar('top', 'secondary', toolbar, id);
+    ui.setActiveToolbar('top', 'secondary', toolbar, viewerId(id));
   },
   async snapshot(id, preserveOriginal = false) {
     if ((pendingRedactions.get(id) ?? 0) > 0)
@@ -757,7 +875,7 @@ const workspaceTools = setupWorkspaceTools({
     if (preserveOriginal && doc.revision === 0 && originalFiles.has(id))
       return originalFiles.get(id)!;
     return new File(
-      [await exporter!.forDocument(id).saveAsCopy().toPromise()],
+      [await exporter!.forDocument(viewerId(id)).saveAsCopy().toPromise()],
       doc.name,
       { type: 'application/pdf' }
     );
@@ -790,8 +908,28 @@ const workspaceTools = setupWorkspaceTools({
   async result(file) {
     await openFiles([file], true);
   },
+  async commit(id, file, label) {
+    const previous = await this.snapshot(id);
+    await swapDocument(id, file);
+    const stack = revisionHistory.get(id) ?? [];
+    stack.push({ file: previous, label });
+    revisionHistory.set(id, stack.slice(-10));
+    session.markDirty(id);
+    renderWorkspace();
+  },
+  canUndoCommit: (id) => !!revisionHistory.get(id)?.length,
+  async undoCommit(id) {
+    const entry = revisionHistory.get(id)?.pop();
+    if (!entry) return null;
+    await swapDocument(id, entry.file);
+    session.markDirty(id);
+    renderWorkspace();
+    return entry.label;
+  },
   status: (message) => showStatus(message, true),
-});
+};
+const workspaceTools = setupWorkspaceTools(workspaceHost);
+if (import.meta.env.DEV) Object.assign(window, { __pdfmvHost: workspaceHost });
 for (const id of ['tab-open', 'hero-open']) el(id).onclick = chooseFiles;
 el('tool-empty-open').onclick = () => workspaceTools.chooseSource();
 el('overview-link').onclick = () => {

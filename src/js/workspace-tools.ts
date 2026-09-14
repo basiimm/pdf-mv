@@ -12,10 +12,10 @@ import {
   type ToolGroup,
 } from './config/workspace-catalog.js';
 import { createMarkPanel } from './workspace-mark-panel.js';
-import { createActionPanel } from './workspace-action-panel.js';
 import { createSignaturePanel } from './workspace-signature-panel.js';
-import { nativeActions } from './workspace-actions.js';
 import { createMergePanel } from './workspace-merge-panel.js';
+import { createToolPanel } from './tools/panel.js';
+import { toolDefinitions } from './tools/registry.js';
 import { detectConversion } from './workspace-conversion.js';
 import { describeWorkspaceError } from './workspace-errors.js';
 
@@ -34,6 +34,11 @@ export interface ToolHost {
   snapshot(id: string, preserveOriginal?: boolean): Promise<File>;
   attach(id: string, file: File): Promise<void>;
   result(file: File): Promise<void>;
+  /** Apply a tool's output to the same document as an undoable revision. */
+  commit(id: string, file: File, label: string): Promise<void>;
+  canUndoCommit(id: string): boolean;
+  /** Restore the previous revision; resolves with its label, or null. */
+  undoCommit(id: string): Promise<string | null>;
   status(message: string): void;
 }
 interface FrameEntry {
@@ -356,7 +361,8 @@ export function setupWorkspaceTools(host: ToolHost) {
         (key) => void openEngine(id, key)
       );
     }
-    if (nativeActions[chosen] || chosen === 'header-footer') {
+    // Legacy engine pages are only offered where the native panel lacks options.
+    if (chosen === 'header-footer' || chosen === 'add-watermark') {
       const mode = document.createElement('button');
       mode.className = 'workspace-mode-switch';
       mode.textContent = advanced ? 'Use simple controls' : 'More options';
@@ -524,7 +530,7 @@ export function setupWorkspaceTools(host: ToolHost) {
         toolId === 'sign-pdf' ||
         toolId === 'add-watermark' ||
         toolId === 'header-footer' ||
-        nativeActions[toolId]
+        toolDefinitions.has(toolId)
       ) {
         if (!nativePanels.has(nativeKey)) {
           const instance =
@@ -534,7 +540,16 @@ export function setupWorkspaceTools(host: ToolHost) {
                 ? createSignaturePanel(outputHost, id, sync)
                 : toolId === 'add-watermark' || toolId === 'header-footer'
                   ? createMarkPanel(outputHost, id, toolId, sync)
-                  : createActionPanel(outputHost, id, toolId, sync);
+                  : toolDefinitions.has(toolId)
+                    ? createToolPanel(
+                        outputHost,
+                        id,
+                        toolDefinitions.get(toolId)!,
+                        sync
+                      )
+                    : (() => {
+                        throw new Error('This tool is not available.');
+                      })();
           nativePanels.set(nativeKey, instance);
           panel.append(instance.root);
           const native = instance as NativePanel;

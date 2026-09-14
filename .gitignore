@@ -60,3 +60,5 @@ bentopdf-pymupdf-wasm/
 /.wrangler/
 /cloudflare/engine-manifest.json
 /worker-configuration.d.ts
+.tmp-proto/
+.claude/launch.json

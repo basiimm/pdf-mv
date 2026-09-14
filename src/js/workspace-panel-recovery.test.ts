@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ToolHost } from './workspace-tools.js';
-import { createActionPanel } from './workspace-action-panel.js';
+import { createToolPanel } from './tools/panel.js';
+import { toolDefinitions } from './tools/registry.js';
 import { createSignaturePanel } from './workspace-signature-panel.js';
 const run = vi.hoisted(() => vi.fn());
 vi.mock('./workspace-actions.js', () => ({
@@ -19,6 +20,8 @@ function host() {
     hasPdf: () => true,
     snapshot: vi.fn(async () => ({ name: 'source.pdf' })),
     result: vi.fn(async () => {}),
+    commit: vi.fn(async () => {}),
+    undoCommit: vi.fn(async () => null),
     cancelSignature: vi.fn(),
   } as unknown as ToolHost;
 }
@@ -39,29 +42,41 @@ describe('panel error recovery', () => {
       .mockResolvedValueOnce(
         new File(['result'], 'result.pdf', { type: 'application/pdf' })
       );
-    const panel = createActionPanel(host(), 'doc', 'rotate-pdf', vi.fn());
+    const workspace = host();
+    const panel = createToolPanel(
+      workspace,
+      'doc',
+      toolDefinitions.get('rotate-pdf')!,
+      vi.fn()
+    );
     document.body.append(panel.root);
     const pages = panel.root.querySelector(
       'input[type="text"]'
     ) as HTMLInputElement;
     pages.value = '2-3';
     panel.root
-      .querySelector('form')!
-      .dispatchEvent(new Event('submit', { cancelable: true }));
+      .querySelector<HTMLButtonElement>('[data-variant="accent"]')!
+      .click();
+    await tick();
     await tick();
     const retry = [...panel.root.querySelectorAll('button')].find(
       (button) => button.textContent === 'Retry engine loading'
     )!;
     expect(retry).toBeDefined();
     expect(
-      panel.root.querySelector('[role="status"] .ds-alert__message')!
-        .textContent
+      panel.root.querySelector('.ds-alert__message')!.textContent
     ).not.toContain('https://');
     retry.click();
+    await tick();
     await tick();
     expect(run).toHaveBeenLastCalledWith(expect.anything(), 'rotate-pdf', {
       pages: '2-3',
     });
+    expect(workspace.commit).toHaveBeenCalledWith(
+      'doc',
+      expect.any(File),
+      'Pages rotated'
+    );
     expect(pages.value).toBe('2-3');
     panel.dispose();
   });

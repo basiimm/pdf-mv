@@ -1,0 +1,14 @@
+# Retired BentoPDF marketing/category pages -> the PDF.mv workspace.
+# Cloudflare preserves the original query string on these redirects.
+/tools              /  301
+/tools.html         /  301
+/pdf-converter       /  301
+/pdf-converter.html  /  301
+/pdf-editor          /  301
+/pdf-editor.html     /  301
+/pdf-merge-split     /  301
+/pdf-merge-split.html /  301
+/pdf-security        /  301
+/pdf-security.html   /  301
+/workspace           /  301
+/workspace.html      /  301
