@@ -1,46 +1,7 @@
-/* Spectrum 2-inspired application tokens, shared by the workspace and tool pages. */
-:root {
-  --s-bg: #f5f5f5;
-  --s-surface: #fff;
-  --s-raised: #fff;
-  --s-inset: #eaeaea;
-  --s-text: #222;
-  --s-muted: #626262;
-  --s-border: #e3e3e3;
-  --s-card-border: #ededed;
-  --s-control-border: #b8b8b8;
-  --s-accent: #1a7f37;
-  --s-primary-fill: #1a7f37;
-  --s-on-accent: #fff;
-  --s-selected: #e6f4ea;
-  --s-hover: #ededed;
-  --s-canvas: #e9e9e9;
-}
-:root[data-studio-theme='dark'] {
-  --s-bg: #161616;
-  --s-surface: #202020;
-  --s-raised: #292929;
-  --s-inset: #181818;
-  --s-text: #f2f2f2;
-  --s-muted: #b6b6b6;
-  --s-border: #303030;
-  --s-card-border: #292929;
-  --s-control-border: #505050;
-  --s-accent: #3fb950;
-  --s-on-accent: #fff;
-  --s-selected: #203b29;
-  --s-hover: #2b2b2b;
-  --s-canvas: #101010;
-}
-html[data-studio-theme] {
-  --studio-bg: var(--s-bg);
-  --studio-surface: var(--s-surface);
-  --studio-ink: var(--s-text);
-  --studio-muted: var(--s-muted);
-  --studio-border: var(--s-border);
-  --studio-accent: var(--s-accent);
-  --studio-accent-soft: var(--s-selected);
-}
+/* Studio theme: component overrides for the workspace and legacy tool pages.
+   Tokens live in src/design-system/tokens.css. */
+@import '../design-system/tokens.css';
+
 .studio-theme-control {
   margin-left: auto;
   display: flex;
@@ -605,6 +566,10 @@ body[data-studio-tool] .studio-has-files #process-btn {
   min-height: 0;
   border: 0;
   background: var(--s-surface);
+}
+/* Hidden (but laid out) until the embedded page reports it is styled. */
+.workspace-tool-frame[data-state='loading'] {
+  visibility: hidden;
 }
 .workspace-embedded-tool .studio-tool-nav,
 .workspace-embedded-tool .studio-tool-credits,

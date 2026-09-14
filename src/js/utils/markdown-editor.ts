@@ -75,7 +75,7 @@ export interface MarkdownEditorOptions {
 
 export type { MarkdownItOptions } from '@/types';
 
-const DEFAULT_MARKDOWN = `# Welcome to BentoPDF Markdown Editor
+const DEFAULT_MARKDOWN = `# Welcome to the PDF.mv Markdown editor
 
 This is a **live preview** markdown editor with full plugin support.
 
@@ -145,12 +145,12 @@ graph TD
 \`\`\`mermaid
 sequenceDiagram
     participant User
-    participant BentoPDF
+    participant PDFmv as PDF.mv
     participant Server
-    User->>BentoPDF: Upload PDF
-    BentoPDF->>BentoPDF: Process locally
-    BentoPDF-->>User: Download result
-    Note over BentoPDF: No server needed!
+    User->>PDFmv: Upload PDF
+    PDFmv->>PDFmv: Process locally
+    PDFmv-->>User: Download result
+    Note over PDFmv: No server needed!
 \`\`\`
 
 ### Pie Chart
@@ -218,7 +218,7 @@ erDiagram
 
 \`\`\`mermaid
 mindmap
-    root((BentoPDF))
+    root((PDF.mv))
         Convert
             Word to PDF
             Excel to PDF

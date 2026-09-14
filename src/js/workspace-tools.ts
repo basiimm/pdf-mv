@@ -139,6 +139,19 @@ export function setupWorkspaceTools(host: ToolHost) {
       );
     }
   };
+  const revealTimers = new WeakMap<HTMLIFrameElement, number>();
+  function revealFrame(frame: HTMLIFrameElement) {
+    clearTimeout(revealTimers.get(frame));
+    delete frame.dataset.state;
+  }
+  function markFrameLoading(frame: HTMLIFrameElement) {
+    frame.dataset.state = 'loading';
+    clearTimeout(revealTimers.get(frame));
+    revealTimers.set(
+      frame,
+      window.setTimeout(() => revealFrame(frame), 3000)
+    );
+  }
   let uploadTask = '',
     query = '';
   // These engines require a large interactive canvas; settings-oriented tools keep the PDF visible.
@@ -475,6 +488,7 @@ export function setupWorkspaceTools(host: ToolHost) {
         retry.onclick = () => {
           active.initialized = false;
           active.state = 'Reloading tool…';
+          markFrameLoading(active.frame);
           active.frame.src = active.frame.src;
           sync();
         };
@@ -544,6 +558,9 @@ export function setupWorkspaceTools(host: ToolHost) {
         const frame = document.createElement('iframe');
         frame.className = 'workspace-tool-frame';
         frame.title = tool.name + ' controls';
+        // Stay invisible until the page reports it is styled, so the legacy
+        // markup can never flash. A timeout keeps slow pages reachable.
+        markFrameLoading(frame);
         const url = new URL(tool.href, location.href);
         url.searchParams.set('workspace', '1');
         frame.src = url.href;
@@ -620,6 +637,10 @@ export function setupWorkspaceTools(host: ToolHost) {
     );
     if (!entry) return;
     const id = entry.documentId;
+    if (event.data.type === 'studio-tool-styled') {
+      revealFrame(entry.frame);
+      return;
+    }
     if (event.data.type === 'studio-tool-back') {
       if (
         host.activeId() !== id ||

@@ -2196,7 +2196,7 @@ downloadBtn.addEventListener('click', async () => {
 
     // Set document metadata for accessibility
     pdfDoc.setTitle('Fillable Form');
-    pdfDoc.setAuthor('BentoPDF');
+    pdfDoc.setAuthor('PDF.mv');
     pdfDoc.setLanguage('en-US');
 
     const radioGroups = new Map<

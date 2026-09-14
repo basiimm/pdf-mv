@@ -469,6 +469,40 @@ function swPrecachePlugin(): Plugin {
   };
 }
 
+// Studio theme must be active at first paint on every page. Injects a
+// synchronous boot script plus the studio stylesheet into <head>, and marks
+// tool pages at build time instead of waiting for runtime JavaScript.
+function studioBootPlugin(): Plugin {
+  const base = (process.env.BASE_URL || '/').replace(/\/?$/, '/');
+  return {
+    name: 'studio-boot',
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html, ctx) {
+        const file = (ctx.filename || ctx.path || '').replace(/\\/g, '/');
+        const isTool = /\/src\/pages\/[^/]+\.html$/.test(file);
+        const boot =
+          '<meta name="color-scheme" content="light dark" />\n' +
+          `    <script src="${base}theme-boot.js"></script>`;
+        const stylesheet =
+          '<link rel="stylesheet" href="/src/css/studio-theme.css" />';
+        // Directly after <meta charset> (or <head>), ahead of any stylesheet.
+        let out = /<meta\s+charset=[^>]*>/i.test(html)
+          ? html.replace(
+              /<meta\s+charset=[^>]*>/i,
+              (meta) => `${meta}\n    ${boot}`
+            )
+          : html.replace(/<head>/i, (head) => `${head}\n    ${boot}`);
+        // After the page's own stylesheets so studio rules win the cascade.
+        out = out.replace(/<\/head>/i, `    ${stylesheet}\n  </head>`);
+        if (isTool)
+          out = out.replace(/<body(\s|>)/i, '<body data-studio-tool$1');
+        return out;
+      },
+    },
+  };
+}
+
 function rewriteHtmlPathsPlugin(): Plugin {
   const baseUrl = process.env.BASE_URL || '/';
   const normalizedBase = baseUrl.replace(/\/?$/, '/');
@@ -529,6 +563,7 @@ export default defineConfig(() => {
     },
     plugins: [
       // basicSsl(),
+      studioBootPlugin(),
       handlebars({
         partialDirectory: resolve(__dirname, 'src/partials'),
         context: {
