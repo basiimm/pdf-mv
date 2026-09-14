@@ -180,7 +180,7 @@ jobs:
 
       - name: Create Pull Request
         if: steps.gate.outputs.run == 'true'
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: 'build(deps): bump PDF engine and viewer to ${{ steps.upstream.outputs.version }}'
           title: 'build(deps): bump PDF engine and viewer to ${{ steps.upstream.outputs.version }}'
