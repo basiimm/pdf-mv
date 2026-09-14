@@ -237,11 +237,19 @@ kbd {
   color: var(--studio-ink);
 }
 .new-tab {
-  min-width: 35px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 0 10px;
+  white-space: nowrap;
   align-self: center;
-  height: 33px;
+  height: 32px;
+  font-size: 12px;
+  line-height: 1;
   background: transparent;
-  border: 0;
+  border: 1px solid var(--s-border, var(--studio-border));
   border-radius: 6px;
   color: #89909a;
 }

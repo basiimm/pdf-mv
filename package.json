@@ -41,7 +41,7 @@
     "security:patterns": "node scripts/security-patterns-check.mjs",
     "security:audit": "npm audit --audit-level=high && npm run lint:security && npm run security:patterns",
     "prepare": "husky",
-    "build:cloudflare": "SIMPLE_MODE=true DISABLE_GITHUB_STARS=true npm run build && node scripts/prepare-cloudflare.mjs",
+    "build:cloudflare": "SITE_URL=https://pdf.mv VITE_BRAND_NAME=PDF.mv SIMPLE_MODE=true DISABLE_GITHUB_STARS=true npm run build && node scripts/prepare-cloudflare.mjs",
     "deploy:cloudflare": "npm run build:cloudflare && wrangler deploy"
   },
   "devDependencies": {
