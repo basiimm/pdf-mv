@@ -1,5 +1,11 @@
 # PDF MV
 
+<p align="center">
+  <img src="public/brand/pdf-mv-logo.gif" alt="PDF MV — animated logo" width="600" height="300" />
+</p>
+
+<p align="center"><a href="public/brand/pdf-mv.svg">Static logo</a> · <a href="public/brand/pdf-mv-logo.lottie.json">Lottie animation source</a></p>
+
 A free, open-source PDF workspace built on [BentoPDF](https://github.com/alam00000/bentopdf). Open a document, make changes, and download a copy. No account or credit card required.
 
 **Status:** active development. The custom workspace is available at `/workspace.html`. This repository does not yet publish an official hosted service, release package, or container image.
