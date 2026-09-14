@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>PDF.mv Studio kit</title>
+    <style>
+      html,
+      body {
+        height: auto;
+        overflow: auto;
+      }
+      body {
+        margin: 0;
+        background: var(--ds-bg);
+        color: var(--ds-text);
+        font: var(--ds-text-s) / var(--ds-leading) var(--ds-font-sans);
+      }
+      .kit {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: var(--ds-space-600) var(--ds-space-400);
+        display: grid;
+        gap: var(--ds-space-600);
+      }
+      .kit header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--ds-space-400);
+      }
+      .kit h1 {
+        margin: 0;
+        font-size: var(--ds-text-xxl);
+      }
+      .kit section {
+        display: grid;
+        gap: var(--ds-space-300);
+      }
+      .kit h2 {
+        margin: 0;
+        font-size: var(--ds-text-xs);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--ds-text-muted);
+      }
+      .kit .row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--ds-space-300);
+      }
+      .kit .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: var(--ds-space-400);
+      }
+      .kit .surface {
+        padding: var(--ds-space-400);
+        border: 1px solid var(--ds-border);
+        border-radius: var(--ds-radius-l);
+        background: var(--ds-surface);
+      }
+      .kit .panel-frame {
+        height: 520px;
+        border: 1px solid var(--ds-border);
+        border-radius: var(--ds-radius-l);
+        overflow: hidden;
+      }
+      .kit .swatches {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: var(--ds-space-200);
+      }
+      .kit .swatch {
+        display: grid;
+        gap: var(--ds-space-100);
+        font-size: var(--ds-text-xs);
+        color: var(--ds-text-muted);
+      }
+      .kit .swatch span {
+        height: 40px;
+        border-radius: var(--ds-radius-m);
+        box-shadow: inset 0 0 0 1px var(--ds-border);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="kit" id="kit"></main>
+    <script type="module" src="./kit.ts"></script>
+  </body>
+</html>

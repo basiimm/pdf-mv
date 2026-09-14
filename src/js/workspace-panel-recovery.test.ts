@@ -54,7 +54,8 @@ describe('panel error recovery', () => {
     )!;
     expect(retry).toBeDefined();
     expect(
-      panel.root.querySelector('[role="status"] > p')!.textContent
+      panel.root.querySelector('[role="status"] .ds-alert__message')!
+        .textContent
     ).not.toContain('https://');
     retry.click();
     await tick();
@@ -96,7 +97,8 @@ describe('panel error recovery', () => {
     ).toBe(true);
     expect(name.value).toBe('Basim');
     expect(
-      panel.root.querySelector('[role="status"] > p')!.textContent
+      panel.root.querySelector('[role="status"] .ds-alert__message')!
+        .textContent
     ).not.toContain('https://');
     panel.dispose();
   });

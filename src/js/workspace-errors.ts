@@ -1,3 +1,5 @@
+import { inlineAlert } from '../design-system/ui/index.js';
+
 export type WorkspaceErrorContext =
   | 'open'
   | 'preview'
@@ -70,18 +72,17 @@ export function renderWorkspaceError(
   onRecover: (action: WorkspaceErrorDescription['action']) => void
 ): void {
   const description = describeWorkspaceError(error, context);
-  const message = document.createElement('p');
-  message.textContent = description.message;
-  const recover = document.createElement('button');
-  recover.type = 'button';
-  recover.className = 'button button-secondary';
-  recover.textContent = description.actionLabel;
-  recover.onclick = () => onRecover(description.action);
-  const details = document.createElement('details');
-  const summary = document.createElement('summary');
-  summary.textContent = 'Technical details';
-  const diagnostic = document.createElement('pre');
-  diagnostic.textContent = description.details;
-  details.append(summary, diagnostic);
-  container.replaceChildren(message, recover, details);
+  container.replaceChildren(
+    inlineAlert({
+      tone: 'negative',
+      message: description.message,
+      actions: [
+        {
+          label: description.actionLabel,
+          onClick: () => onRecover(description.action),
+        },
+      ],
+      details: description.details,
+    })
+  );
 }

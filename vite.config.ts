@@ -481,11 +481,21 @@ function studioBootPlugin(): Plugin {
       handler(html, ctx) {
         const file = (ctx.filename || ctx.path || '').replace(/\\/g, '/');
         const isTool = /\/src\/pages\/[^/]+\.html$/.test(file);
+        const toolName = isTool
+          ? file.match(/\/src\/pages\/([^/]+)\.html$/)![1]
+          : '';
+        const redirectable = isTool && toolName !== 'wasm-settings';
         const boot =
           '<meta name="color-scheme" content="light dark" />\n' +
-          `    <script src="${base}theme-boot.js"></script>`;
-        const stylesheet =
-          '<link rel="stylesheet" href="/src/css/studio-theme.css" />';
+          `    <script src="${base}theme-boot.js"${redirectable ? ` data-tool="${toolName}"` : ''}></script>`;
+        const stylesheet = [
+          '<link rel="stylesheet" href="/src/css/studio-theme.css" />',
+          '<link rel="stylesheet" href="/src/design-system/components.css" />',
+          isTool &&
+            '<link rel="stylesheet" href="/src/design-system/legacy-bridge.css" />',
+        ]
+          .filter(Boolean)
+          .join('\n    ');
         // Directly after <meta charset> (or <head>), ahead of any stylesheet.
         let out = /<meta\s+charset=[^>]*>/i.test(html)
           ? html.replace(

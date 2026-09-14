@@ -977,3 +977,9 @@ el('tool-count').textContent = String(toolsById.size);
 renderFilters();
 renderTools();
 renderWorkspace();
+// Standalone tool URLs redirect here as /?tool=<engine or group id>.
+const requestedTool = new URLSearchParams(location.search).get('tool');
+if (requestedTool) {
+  history.replaceState(null, '', location.pathname + location.hash);
+  void workspaceTools.select(requestedTool, true);
+}

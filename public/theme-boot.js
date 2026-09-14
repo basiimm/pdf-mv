@@ -18,9 +18,17 @@
   root.dataset.studioTheme = theme;
   root.style.colorScheme = theme;
 
-  var embedded =
-    window.parent !== window &&
-    new URLSearchParams(location.search).get('workspace') === '1';
+  var params = new URLSearchParams(location.search);
+  var embedded = window.parent !== window && params.get('workspace') === '1';
+  // Legacy tool pages are not a destination: open the tool inside the
+  // workspace instead. ?standalone=1 keeps the page for debugging.
+  var script = document.currentScript;
+  var tool = script && script.dataset.tool;
+  if (tool && !embedded && !params.has('standalone')) {
+    var base = new URL(script.src).pathname.replace(/theme-boot\.js$/, '');
+    location.replace(base + 'workspace.html?tool=' + encodeURIComponent(tool));
+    return;
+  }
   if (!embedded) return;
   root.classList.add('workspace-embedded-tool');
   if (
