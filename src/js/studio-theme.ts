@@ -93,6 +93,14 @@ function applyTheme(): void {
   document.documentElement.dataset.studioTheme = resolvedTheme();
   document.documentElement.style.colorScheme = resolvedTheme();
   for (const control of controls) control.value = preference;
+  document
+    .querySelectorAll<HTMLButtonElement>('[data-theme-choice]')
+    .forEach((button) => {
+      button.setAttribute(
+        'aria-pressed',
+        String(button.dataset.themeChoice === preference)
+      );
+    });
   document.querySelectorAll('embedpdf-container').forEach((viewer) => {
     (
       viewer as HTMLElement & {
@@ -157,9 +165,67 @@ new MutationObserver((records) => {
     applyTheme();
 }).observe(document.body, { childList: true, subtree: true });
 
+function createAppearanceIcons(): HTMLElement {
+  const group = document.createElement('div');
+  group.className = 'appearance-icons';
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-label', 'Appearance');
+  const icons: [Preference, string, string][] = [
+    [
+      'light',
+      'Light',
+      '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>',
+    ],
+    [
+      'dark',
+      'Dark',
+      '<path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"/>',
+    ],
+    [
+      'system',
+      'Auto',
+      '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/>',
+    ],
+  ];
+  for (const [value, name, path] of icons) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.themeChoice = value;
+    button.setAttribute('aria-label', `${name} appearance`);
+    button.setAttribute('aria-pressed', String(preference === value));
+    button.title =
+      name === 'Auto' ? 'Auto — follow your device' : `${name} appearance`;
+    button.innerHTML = `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+    button.addEventListener('click', () => {
+      preference = value;
+      try {
+        localStorage.setItem(key, value);
+      } catch {
+        /* Keep session preference. */
+      }
+      applyTheme();
+    });
+    group.append(button);
+  }
+  return group;
+}
+const favicon =
+  document.querySelector<HTMLLinkElement>('link[rel="icon"]') ??
+  document.createElement('link');
+favicon.rel = 'icon';
+favicon.type = 'image/svg+xml';
+favicon.href = `${import.meta.env.BASE_URL}brand/favicon.svg`;
+if (!favicon.isConnected) document.head.append(favicon);
+
 const workspaceTabs = document.querySelector('.tab-strip');
-if (workspaceTabs) workspaceTabs.append(createThemeControl());
-else if (
+if (workspaceTabs) {
+  document
+    .getElementById('sidebar-appearance')
+    ?.append(createAppearanceIcons());
+  const mobile = createAppearanceIcons();
+  mobile.classList.add('appearance-mobile');
+  document.querySelector('.home-footer')?.append(mobile);
+} else if (
   document.querySelector('#tool-uploader, #uploader') ||
   /\/src\/pages\//.test(location.pathname) ||
   /\/(form-creator|pdf-workflow|markdown-to-pdf|pdf-multi-tool)\.html$/.test(
