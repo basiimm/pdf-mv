@@ -76,6 +76,11 @@ export interface ToolDefinition {
    * revision. Tools with only `inspect` and no fields are read-only.
    */
   inspect?(file: File): Promise<ToolInspection>;
+  /**
+   * Use the original file bytes when the document has no edits, instead of a
+   * re-export. Required for signatures: re-saving would invalidate them.
+   */
+  preserveOriginal?: boolean;
   /** Omit to operate on the open PDF. */
   input?: { accept: string; multiple: boolean; label: string };
   /**

@@ -174,10 +174,11 @@ describe('workspace tool navigation', () => {
       'timestamp-pdf',
     ]) {
       await controller.select(tool, true);
-      const frame = [...document.querySelectorAll('iframe')].find(
-        (frame) => !frame.hidden
+      const panel = document.querySelector(
+        `.ds-tool-panel[data-tool="${tool}"]`
       )!;
-      expect(frame.parentElement?.id).toBe('workspace-tools');
+      expect(panel.closest('#workspace-tools')).not.toBeNull();
+      expect(document.querySelector('iframe:not([hidden])')).toBeNull();
       expect(document.getElementById('pdf-viewer')!.hidden).toBe(false);
       expect(document.getElementById('download-document')!.hidden).toBe(false);
     }

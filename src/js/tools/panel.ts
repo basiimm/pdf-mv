@@ -221,7 +221,9 @@ export function createToolPanel(
     if (revision === inspectedRevision) return;
     inspectedRevision = revision;
     try {
-      const result = await tool.inspect(await host.snapshot(id));
+      const result = await tool.inspect(
+        await host.snapshot(id, tool.preserveOriginal)
+      );
       if (disposed) return;
       if (result.fields) setDynamicFields(result.fields);
       for (const [key, value] of Object.entries(result.values ?? {}))
@@ -308,7 +310,7 @@ export function createToolPanel(
     try {
       const files = tool.input
         ? [...inputs]
-        : [await host.snapshot(id), ...inputs];
+        : [await host.snapshot(id, tool.preserveOriginal), ...inputs];
       const output = await tool.run({
         files,
         values: values(),
@@ -412,7 +414,7 @@ export function createToolPanel(
     feedback.replaceChildren(progressBar({ label: 'Updating preview…' }).root);
     try {
       const output = await tool.run({
-        files: [await host.snapshot(id)],
+        files: [await host.snapshot(id, tool.preserveOriginal)],
         values: values(),
         signal: new AbortController().signal,
         progress: () => {},
