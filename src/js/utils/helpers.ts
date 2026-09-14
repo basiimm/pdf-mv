@@ -72,6 +72,16 @@ export const formatBytes = (bytes: number, decimals = 1) => {
 };
 
 export const downloadFile = (blob: Blob, filename: string): void => {
+  if (
+    window.parent !== window &&
+    new URLSearchParams(location.search).get('workspace') === '1'
+  ) {
+    window.parent.postMessage(
+      { type: 'studio-tool-output', blob, name: filename },
+      location.origin
+    );
+    return;
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

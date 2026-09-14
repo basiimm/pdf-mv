@@ -19,7 +19,10 @@ function resolveWasmUrl() {
   }
   const resolve = import.meta.resolve;
   if (typeof resolve !== 'function') return null;
-  return new URL(resolve('bentopdf-pdfium/editcore.wasm')).pathname;
+  // Emscripten's Node loader expects a filesystem path, not URL-escaped text.
+  return decodeURIComponent(
+    new URL(resolve('bentopdf-pdfium/editcore.wasm')).pathname
+  );
 }
 
 const wasmUrl = resolveWasmUrl();

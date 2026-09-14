@@ -1,3 +1,4 @@
+import { notifyWorkspaceInputReady } from '../utils/workspace-ready.js';
 import JSZip from 'jszip';
 import {
   downloadFile,
@@ -208,6 +209,7 @@ void (async () => {
   });
 
   convertBtn.addEventListener('click', convertJSONsToPDF);
+  notifyWorkspaceInputReady();
 
   showStatus(t('tools:jsonToPdf.status.getStarted'), 'info');
   initializeGlobalShortcuts();

@@ -1,3 +1,30 @@
+# PDF MV
+
+A free, browser-based PDF workspace built on [BentoPDF](https://github.com/alam00000/bentopdf). No account or credit card required.
+
+Includes document tabs, a shared tool sidebar, grouped conversion tools, and a green-accented light/dark interface. PDF processing runs locally in the browser; some engines and assets load on demand.
+
+## Run locally
+
+Use the Node version in `.nvmrc`, then:
+
+```sh
+npm ci
+npm run dev
+```
+
+Open `http://localhost:5173/workspace.html`. Run `npm run build` for production assets.
+
+## License and source
+
+PDF MV is a modified BentoPDF distribution under [AGPL-3.0](LICENSE). Original copyright and third-party license notices are retained. Modifications made September 2026 include the workspace UI, tool grouping, viewer theming, document handoff, and integration fixes. Source: https://github.com/basiimm/pdf-mv.
+
+See [the tool review](ALL-TOOLS-REVIEW.md) for integration coverage and known limitations, and [local setup notes](LOCAL_SETUP.md) for engine provenance. Tool availability does not imply every processing path has been verified.
+
+---
+
+## Upstream BentoPDF documentation
+
 <p align="center"><img src="public/images/favicon-no-bg.svg" width="80"></p>
 <h1 align="center">BentoPDF</h1>
 <p align="center">

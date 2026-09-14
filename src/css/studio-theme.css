@@ -1,0 +1,947 @@
+/* Spectrum 2-inspired application tokens, shared by the workspace and tool pages. */
+:root {
+  --s-bg: #f5f5f5;
+  --s-surface: #fff;
+  --s-raised: #fff;
+  --s-inset: #eaeaea;
+  --s-text: #222;
+  --s-muted: #626262;
+  --s-border: #e3e3e3;
+  --s-card-border: #ededed;
+  --s-control-border: #b8b8b8;
+  --s-accent: #1a7f37;
+  --s-primary-fill: #1a7f37;
+  --s-on-accent: #fff;
+  --s-selected: #e6f4ea;
+  --s-hover: #ededed;
+  --s-canvas: #e9e9e9;
+}
+:root[data-studio-theme='dark'] {
+  --s-bg: #161616;
+  --s-surface: #202020;
+  --s-raised: #292929;
+  --s-inset: #181818;
+  --s-text: #f2f2f2;
+  --s-muted: #b6b6b6;
+  --s-border: #303030;
+  --s-card-border: #292929;
+  --s-control-border: #505050;
+  --s-accent: #3fb950;
+  --s-on-accent: #fff;
+  --s-selected: #203b29;
+  --s-hover: #2b2b2b;
+  --s-canvas: #101010;
+}
+html[data-studio-theme] {
+  --studio-bg: var(--s-bg);
+  --studio-surface: var(--s-surface);
+  --studio-ink: var(--s-text);
+  --studio-muted: var(--s-muted);
+  --studio-border: var(--s-border);
+  --studio-accent: var(--s-accent);
+  --studio-accent-soft: var(--s-selected);
+}
+.studio-theme-control {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 0 12px;
+  font:
+    500 12px/1.4 system-ui,
+    sans-serif;
+  color: var(--s-muted);
+}
+.studio-theme-control select {
+  font: inherit;
+  min-height: 32px;
+  border: 1px solid var(--s-border);
+  border-radius: 8px;
+  padding: 4px 26px 4px 10px;
+  background: var(--s-surface);
+  color: var(--s-text);
+  cursor: pointer;
+}
+html[data-studio-theme] :is(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--s-accent);
+  outline-offset: 3px;
+}
+html[data-studio-theme] .tab-strip {
+  background: var(--s-bg);
+  border-color: var(--s-border);
+  padding-top: 4px;
+}
+html[data-studio-theme] .workspace-tab {
+  color: var(--s-muted);
+}
+html[data-studio-theme] .workspace-tab.selected {
+  background: var(--s-surface);
+  border-color: var(--s-border);
+  color: var(--s-text);
+}
+html[data-studio-theme] :is(.tab-close, .new-tab):hover {
+  background: var(--s-hover);
+  color: var(--s-text);
+}
+html[data-studio-theme]
+  :is(
+    .home-sidebar,
+    .document-command-bar,
+    .editor-footnote,
+    .tool-card,
+    .open-document-card,
+    .tool-search,
+    .studio-dialog
+  ) {
+  background: var(--s-surface);
+  color: var(--s-text);
+  border-color: var(--s-border);
+}
+html[data-studio-theme] .home-sidebar {
+  border-right: 0;
+  background: var(--s-bg);
+}
+html[data-studio-theme]
+  :is(.sidebar-link, .category-pill, .workspace-tab, .new-tab, .tab-close) {
+  color: var(--s-muted);
+}
+html[data-studio-theme] :is(.sidebar-link, .category-pill).selected {
+  background: var(--s-selected);
+  color: var(--s-accent);
+}
+html[data-studio-theme]
+  :is(.sidebar-link, .category-pill, .button-quiet, .open-document-card):hover {
+  background: var(--s-hover);
+  color: var(--s-text);
+}
+html[data-studio-theme] :is(.button-primary, .button-primary:hover) {
+  background: var(--s-primary-fill);
+  color: var(--s-on-accent);
+  border-radius: 999px;
+}
+html[data-studio-theme] .button-quiet {
+  color: var(--s-text);
+}
+html[data-studio-theme]
+  :is(
+    .page-heading p,
+    .workspace-date,
+    .eyebrow,
+    .sidebar-section-label,
+    .sidebar-bottom,
+    .sidebar-bottom p,
+    .sidebar-bottom a,
+    .library-heading p,
+    .tool-card p,
+    .tool-library-note,
+    .home-footer,
+    .home-footer a,
+    .drop-hint,
+    .document-state,
+    .open-document-meta,
+    .editor-footnote,
+    .studio-dialog p
+  ) {
+  color: var(--s-muted);
+}
+html[data-studio-theme]
+  :is(.tool-search input, .tool-search input::placeholder) {
+  color: var(--s-muted);
+}
+html[data-studio-theme] .editor-panel {
+  background: var(--s-canvas);
+}
+html[data-studio-theme] .tool-card {
+  border-radius: 16px;
+  box-shadow: none;
+}
+html[data-studio-theme] .tool-card:hover {
+  border-color: var(--s-accent);
+  background: var(--s-raised);
+}
+html[data-studio-theme] .open-hero {
+  background: linear-gradient(115deg, var(--s-selected), var(--s-surface));
+  border-color: var(--s-border);
+  border-radius: 20px;
+}
+html[data-studio-theme] .hero-copy h2 {
+  color: var(--s-text);
+  font-weight: 650;
+}
+html[data-studio-theme] :is(.hero-copy p, .hero-label) {
+  color: var(--s-muted);
+}
+html[data-studio-theme] .hero-art {
+  opacity: 1;
+}
+html[data-studio-theme='dark'] .hero-art {
+  opacity: 0.85;
+}
+html[data-studio-theme] .tool-icon {
+  background: color-mix(in srgb, var(--icon-color) 18%, var(--s-surface));
+  color: var(--s-accent);
+}
+html[data-studio-theme] .drop-overlay {
+  background: var(--s-selected);
+  color: var(--s-accent);
+}
+html[data-studio-theme] .studio-dialog::backdrop {
+  background: #0008;
+}
+/* Existing tools share the same application framing without changing their PDF engines. */
+body[data-studio-tool] {
+  background: var(--s-bg);
+  color: var(--s-text);
+}
+body[data-studio-tool] > nav:not(.studio-tool-nav),
+body[data-studio-tool] > footer,
+body[data-studio-tool] > section {
+  display: none;
+}
+.studio-tool-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 48px;
+  padding: 4px 12px 0;
+  background: var(--s-bg);
+  border-bottom: 1px solid var(--s-border);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  color: var(--s-text);
+}
+.studio-tool-nav > a,
+.studio-current-tool {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 20px;
+  border-radius: 10px 10px 0 0;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.studio-current-tool {
+  background: var(--s-surface);
+  border: 1px solid var(--s-border);
+  border-bottom: 0;
+  max-width: 45vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body[data-studio-tool] #uploader {
+  background: var(--s-bg);
+  min-height: calc(100dvh - 48px);
+  padding-top: 40px;
+}
+body[data-studio-tool] #tool-uploader {
+  background: var(--s-surface);
+  border: 1px solid var(--s-border);
+  border-radius: 20px;
+  box-shadow: none;
+  padding: 32px;
+  max-width: 1000px;
+}
+body[data-studio-tool] :is(.bg-gray-900, .bg-gray-950) {
+  background-color: var(--s-bg);
+}
+body[data-studio-tool] :is(.bg-gray-800, .bg-gray-800\/50) {
+  background-color: var(--s-surface);
+}
+body[data-studio-tool] :is(.bg-gray-700, .bg-gray-600) {
+  background-color: var(--s-raised);
+}
+body[data-studio-tool]
+  :is(.text-white, .text-gray-100, .text-gray-200, .text-gray-300) {
+  color: var(--s-text);
+}
+body[data-studio-tool] :is(.text-gray-400, .text-gray-500) {
+  color: var(--s-muted);
+}
+body[data-studio-tool]
+  :is(.border-gray-600, .border-gray-700, .border-gray-800) {
+  border-color: var(--s-border);
+}
+body[data-studio-tool] :is(.text-indigo-300, .text-indigo-400, .text-blue-400) {
+  color: var(--s-accent);
+}
+body[data-studio-tool]
+  :is(.bg-indigo-600, .bg-indigo-700, .bg-blue-600, .btn-gradient) {
+  background: var(--s-primary-fill);
+  color: var(--s-on-accent);
+  box-shadow: none;
+}
+body[data-studio-tool] :is(.btn, .btn-gradient) {
+  border-radius: 999px;
+  min-height: 40px;
+}
+body[data-studio-tool] #drop-zone {
+  border: 2px dashed var(--s-border);
+  background: var(--s-bg);
+  border-radius: 16px;
+}
+body[data-studio-tool] #drop-zone:hover {
+  border-color: var(--s-accent);
+  background: var(--s-selected);
+}
+body[data-studio-tool]
+  :is(
+    input:not([type='file']):not([type='checkbox']):not([type='radio']):not(
+        [type='color']
+      ),
+    select,
+    textarea
+  ) {
+  background-color: var(--s-inset);
+  color: var(--s-text);
+  border-color: var(--s-border);
+  border-radius: 8px;
+}
+body[data-studio-tool] h1 {
+  font-size: 28px;
+  letter-spacing: -0.7px;
+  font-weight: 700;
+}
+body[data-studio-tool] #back-to-tools {
+  color: var(--s-accent);
+}
+body[data-studio-tool] :is(.hover\:bg-gray-700, .hover\:bg-gray-600):hover {
+  background-color: var(--s-hover);
+}
+@media (max-width: 700px) {
+  .studio-theme-control > span {
+    display: none;
+  }
+  .studio-theme-control {
+    padding: 0 6px;
+  }
+  .studio-theme-control select {
+    max-width: 92px;
+  }
+  body[data-studio-tool] #tool-uploader {
+    padding: 20px;
+  }
+  .studio-tool-nav > a,
+  .studio-current-tool {
+    padding: 0 12px;
+  }
+}
+
+html[data-studio-theme] .sidebar-bottom strong {
+  color: var(--s-text);
+}
+html[data-studio-theme] .art-orbit {
+  border-color: color-mix(in srgb, var(--s-accent) 18%, transparent);
+}
+.studio-tool-credits {
+  display: block;
+  padding: 18px;
+  text-align: center;
+  color: var(--s-muted);
+  font-size: 12px;
+}
+/* Files take priority once a task has input. Shared across the standard tool pages. */
+body[data-studio-tool] #tool-uploader.studio-has-files {
+  max-width: 1200px;
+}
+.studio-file-summary {
+  margin: 20px 0 8px;
+  color: var(--s-text);
+  font-weight: 600;
+  font-size: 14px;
+}
+body[data-studio-tool] .studio-has-files #drop-zone {
+  min-height: 48px;
+  height: 48px;
+  border-width: 1px;
+}
+body[data-studio-tool] .studio-has-files #drop-zone > div {
+  padding: 0;
+}
+body[data-studio-tool] .studio-has-files #drop-zone i,
+body[data-studio-tool] .studio-has-files #drop-zone p:not(:first-of-type) {
+  display: none;
+}
+body[data-studio-tool] .studio-has-files #drop-zone p {
+  margin: 0;
+  font-size: 13px;
+}
+body[data-studio-tool] .studio-has-files #file-controls {
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+body[data-studio-tool] .studio-has-files #add-more-btn {
+  background: var(--s-raised);
+  color: var(--s-text);
+  border: 1px solid var(--s-border);
+}
+body[data-studio-tool] #page-merge-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  align-items: start;
+  gap: 16px;
+  padding: 20px;
+  background: var(--s-bg);
+}
+body[data-studio-tool] #page-merge-preview > * {
+  min-width: 0;
+}
+body[data-studio-tool] #page-merge-preview .page-thumbnail {
+  padding: 10px;
+  background: var(--s-surface);
+  border: 1px solid var(--s-border);
+}
+body[data-studio-tool] #page-merge-preview .page-thumbnail > div:first-child {
+  width: 100%;
+  height: 210px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+body[data-studio-tool] #page-merge-preview img {
+  max-height: 210px;
+  width: auto;
+  object-fit: contain;
+  border-radius: 3px;
+}
+body[data-studio-tool] #page-merge-preview p {
+  margin: 8px 0;
+  font-size: 12px;
+}
+.studio-page-actions {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+}
+.studio-page-actions button {
+  min-height: 40px;
+  min-width: 40px;
+  border: 1px solid var(--s-border);
+  border-radius: 8px;
+  background: var(--s-surface);
+  color: var(--s-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+.studio-page-actions button:first-child {
+  flex: 1;
+}
+.studio-page-actions button:hover {
+  background: var(--s-selected);
+}
+.studio-mode-hint {
+  margin: 16px 0;
+  color: var(--s-muted);
+  font-size: 13px;
+}
+.studio-advanced {
+  margin: 20px 0;
+  border-top: 1px solid var(--s-border);
+  padding-top: 16px;
+}
+.studio-advanced summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+body[data-studio-tool] .studio-has-files #process-btn {
+  position: sticky;
+  bottom: 16px;
+  z-index: 10;
+  box-shadow: 0 0 0 8px var(--s-surface);
+}
+@media (max-width: 600px) {
+  body[data-studio-tool] #page-merge-preview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 10px;
+    gap: 10px;
+  }
+  body[data-studio-tool] #page-merge-preview .page-thumbnail > div:first-child,
+  body[data-studio-tool] #page-merge-preview img {
+    max-height: 160px;
+  }
+}
+.studio-input-previews {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  margin: 16px 0;
+}
+.studio-input-previews figure {
+  margin: 0;
+  flex: 0 0 150px;
+  border: 1px solid var(--s-border);
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--s-bg);
+}
+.studio-input-previews canvas {
+  width: 100%;
+  height: 140px;
+  object-fit: contain;
+}
+.studio-input-previews figcaption {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--s-muted);
+  overflow-wrap: anywhere;
+}
+body[data-studio-tool] .studio-has-files #back-to-tools {
+  display: none;
+}
+body[data-studio-tool]
+  .studio-has-files:has(#file-controls:not(.hidden))
+  #drop-zone {
+  display: none;
+}
+body[data-studio-tool] .studio-has-files #file-controls {
+  margin-top: -36px;
+  margin-bottom: 20px;
+}
+body[data-studio-tool] #merge-options > div:first-child {
+  max-width: 420px;
+  border: 0;
+  padding: 3px;
+}
+body[data-studio-tool] #merge-options > div:first-child button {
+  border-radius: 8px;
+  font-size: 13px;
+}
+body[data-studio-tool] .studio-has-files #process-btn {
+  width: auto;
+  min-width: 220px;
+  display: block;
+  margin-left: auto;
+  padding: 12px 24px;
+}
+@media (max-width: 600px) {
+  body[data-studio-tool] .studio-has-files #file-controls {
+    margin-top: 12px;
+    justify-content: flex-start;
+  }
+  body[data-studio-tool] .studio-has-files #process-btn {
+    width: 100%;
+  }
+}
+.document-work-area {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.document-canvas-area {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  background: var(--s-canvas);
+}
+#tool-empty-canvas {
+  margin: auto;
+  padding: 40px;
+  max-width: 440px;
+  color: var(--s-text);
+  text-align: center;
+}
+#tool-empty-canvas p {
+  color: var(--s-muted);
+  line-height: 1.6;
+}
+#workspace-tools {
+  width: 340px;
+  flex-shrink: 0;
+  background: var(--s-surface);
+  border-left: 1px solid var(--s-border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.document-tools-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border-bottom: 1px solid var(--s-border);
+}
+.document-tools-heading h2 {
+  font-size: 15px;
+  margin: 0;
+}
+#document-tools-search {
+  margin: 12px;
+  padding: 10px;
+  border: 1px solid var(--s-border);
+  border-radius: 8px;
+  background: var(--s-bg);
+  color: var(--s-text);
+  font-size: 14px;
+}
+#document-tool-list {
+  overflow: auto;
+  padding: 0 8px 12px;
+}
+.document-tool-button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: var(--s-text);
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.document-tool-button:hover {
+  background: var(--s-selected);
+  color: var(--s-accent);
+}
+.workspace-tool-frame {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  border: 0;
+  background: var(--s-surface);
+}
+.workspace-embedded-tool .studio-tool-nav,
+.workspace-embedded-tool .studio-tool-credits,
+.workspace-embedded-tool #back-to-tools {
+  display: none !important;
+}
+.workspace-embedded-tool body[data-studio-tool] #uploader {
+  padding: 12px !important;
+  min-height: 0;
+}
+.workspace-embedded-tool body[data-studio-tool] #tool-uploader {
+  border: 0;
+  padding: 0 !important;
+  border-radius: 0;
+}
+.workspace-embedded-tool #tool-uploader > h1,
+.workspace-embedded-tool #tool-uploader > h1 + p {
+  display: none;
+}
+.workspace-embedded-tool body[data-studio-tool] #page-merge-preview {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 8px;
+  gap: 8px;
+}
+.workspace-embedded-tool .studio-page-actions {
+  flex-wrap: wrap;
+}
+.workspace-embedded-tool .studio-page-actions button:first-child {
+  flex-basis: 100%;
+}
+.workspace-embedded-tool body[data-studio-tool] #file-controls {
+  margin: 12px 0;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.workspace-embedded-tool body[data-studio-tool] #process-btn {
+  min-width: 0;
+  width: 100%;
+}
+@media (max-width: 800px) {
+  #workspace-tools {
+    width: 280px;
+  }
+}
+@media (max-width: 600px) {
+  .document-work-area {
+    flex-direction: column;
+    overflow: auto;
+  }
+  .document-canvas-area {
+    min-height: 55dvh;
+  }
+  #workspace-tools {
+    width: 100%;
+    min-height: 45dvh;
+    border-left: 0;
+    border-top: 1px solid var(--s-border);
+  }
+  .workspace-tool-frame {
+    min-height: 45dvh;
+  }
+}
+#workspace-tools[hidden] {
+  display: none !important;
+}
+.document-tool-category {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--s-border);
+}
+.document-tool-category summary {
+  padding: 10px 12px;
+  color: var(--s-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.document-tool-category .document-tool-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.document-tool-category .tool-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+.document-tool-category .tool-icon svg {
+  width: 16px;
+  height: 16px;
+}
+.native-edit-controls {
+  padding: 16px;
+  color: var(--s-text);
+}
+.native-edit-controls p {
+  color: var(--s-muted);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+
+/* Quiet surfaces; controls keep a distinct boundary and a shared focus treatment. */
+html[data-studio-theme]
+  :is(
+    .tool-card,
+    .open-document-card,
+    .open-hero,
+    .studio-input-previews figure
+  ) {
+  border-color: var(--s-card-border);
+}
+body[data-studio-tool]
+  :is(#tool-uploader, #page-merge-preview, .page-thumbnail) {
+  border-color: var(--s-card-border);
+}
+html[data-studio-theme]
+  :is(.tool-search, #document-tools-search, .studio-theme-control select),
+body[data-studio-tool]
+  :is(
+    input:not([type='file']):not([type='checkbox']):not([type='radio']):not(
+        [type='color']
+      ),
+    select,
+    textarea
+  ) {
+  border-color: var(--s-control-border);
+}
+html[data-studio-theme] .tool-search:focus-within {
+  border-color: var(--s-accent);
+  outline: 2px solid color-mix(in srgb, var(--s-accent) 45%, transparent);
+  outline-offset: 2px;
+}
+html[data-studio-theme] .tool-search input:focus,
+html[data-studio-theme] .tool-search input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+html[data-studio-theme]
+  :is(#document-tools-search, select, textarea):focus-visible,
+body[data-studio-tool] input:not([type='file']):focus-visible {
+  border-color: var(--s-accent);
+  outline: 2px solid color-mix(in srgb, var(--s-accent) 45%, transparent);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+html[data-studio-theme] .tool-search kbd {
+  border-color: var(--s-border);
+  color: var(--s-muted);
+}
+html[data-studio-theme] .tool-card:focus-within {
+  border-color: var(--s-accent);
+  outline: 2px solid var(--s-accent);
+  outline-offset: 2px;
+}
+html[data-studio-theme] .tool-card :is(a, button):focus-visible {
+  outline: none;
+}
+html[data-studio-theme] :is(button, input, select, textarea):disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.native-mark-panel {
+  padding: 16px;
+  overflow-y: auto;
+  min-height: 0;
+  color: var(--s-text);
+}
+.native-mark-panel p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--s-muted);
+  margin: 0 0 16px;
+}
+.native-mark-panel form {
+  display: grid;
+  gap: 14px;
+}
+.native-mark-panel form[hidden],
+.native-mark-panel[hidden] {
+  display: none;
+}
+.native-mark-panel label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.native-mark-panel input,
+.native-mark-panel select {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--s-control-border);
+  border-radius: 6px;
+  background: var(--s-inset);
+  color: var(--s-text);
+  font: inherit;
+}
+.native-mark-panel input[type='color'] {
+  height: 36px;
+  padding: 3px;
+}
+.native-mark-panel canvas {
+  width: 100%;
+  height: auto;
+  border-radius: 3px;
+  background: white;
+}
+.native-mark-panel form p {
+  margin: 0;
+}
+
+.workspace-group-controls {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--s-card-border);
+  flex-shrink: 0;
+  display: grid;
+  gap: 12px;
+}
+.workspace-group-controls label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.workspace-group-controls select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--s-control-border);
+  color: var(--s-text);
+  background: var(--s-inset);
+  font: inherit;
+}
+.workspace-group-controls p,
+.workspace-frame-status {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--s-muted);
+}
+.workspace-frame-status {
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.workspace-frame-status button {
+  border: 0;
+  background: transparent;
+  color: var(--s-accent);
+  text-decoration: underline;
+  cursor: pointer;
+  min-height: 32px;
+}
+.workspace-group-controls[hidden],
+.workspace-frame-status[hidden],
+.workspace-tool-frame[hidden],
+.native-edit-controls[hidden] {
+  display: none !important;
+}
+.native-mark-panel {
+  flex: 1;
+}
+.native-mark-panel .button {
+  min-height: 40px;
+}
+@media (pointer: coarse) {
+  .native-mark-panel :is(input, select),
+  .workspace-group-controls select {
+    font-size: 16px;
+    min-height: 44px;
+  }
+}
+.native-source-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--s-card-border);
+}
+.native-source-row span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+}
+.native-source-row button {
+  min-width: 32px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 5px;
+  background: var(--s-raised);
+  color: var(--s-text);
+  cursor: pointer;
+}
+/* Tool panels use a compact file picker; the document remains the primary surface. */
+.workspace-embedded-tool #drop-zone {
+  min-height: 76px !important;
+  padding: 12px !important;
+  margin-bottom: 12px !important;
+}
+.workspace-embedded-tool #drop-zone > :is(i, svg) {
+  display: none !important;
+}
+.workspace-embedded-tool #drop-zone p {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+.native-source-row img {
+  width: 38px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 3px;
+  background: white;
+}
+.workspace-mode-switch {
+  justify-self: start;
+  padding: 4px 0;
+  min-height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--s-accent);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+html[data-studio-theme] button.tool-card .tool-card-description {
+  color: var(--s-muted);
+}
+html[data-studio-theme] button.tool-card:focus-visible {
+  outline: 2px solid var(--s-accent);
+  outline-offset: 2px;
+}

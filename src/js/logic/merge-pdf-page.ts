@@ -6,7 +6,7 @@ import {
   renderPagesProgressively,
   cleanupLazyRendering,
 } from '../utils/render-utils.js';
-import { initPagePreview } from '../utils/page-preview.js';
+import { showPreview } from '../utils/page-preview.js';
 import { isCpdfAvailable } from '../utils/cpdf-helper.js';
 import {
   showWasmRequiredDialog,
@@ -36,7 +36,7 @@ interface MergeState {
 const mergeState: MergeState = {
   pdfDocs: {},
   pdfBytes: {},
-  activeMode: 'file',
+  activeMode: 'page',
   sortableInstances: {},
   isRendering: false,
   cachedThumbnails: null,
@@ -80,6 +80,8 @@ function initializePageThumbnailsSortable() {
   }
 
   mergeState.sortableInstances.pageThumbnails = Sortable.create(container, {
+    filter: 'button',
+    preventOnFilter: false,
     animation: 150,
     ghostClass: 'sortable-ghost',
     chosenClass: 'sortable-chosen',
@@ -167,11 +169,44 @@ async function renderPageMergeThumbnails() {
         ? `${displayName} (page ${pageNumber})`
         : `Page ${pageNumber}`;
       fileNamePara.title = fullTitle;
-      fileNamePara.textContent = displayName
-        ? `${displayName.substring(0, 10)}... (p${pageNumber})`
-        : `Page ${pageNumber}`;
+      fileNamePara.textContent = fullTitle;
 
-      wrapper.append(imgContainer, fileNamePara);
+      img.alt = fullTitle;
+      const actions = document.createElement('div');
+      actions.className = 'studio-page-actions';
+      for (const [label, delta] of [
+        ['Move earlier', -1],
+        ['Move later', 1],
+      ] as const) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = delta < 0 ? '←' : '→';
+        button.setAttribute('aria-label', `${label}: ${fullTitle}`);
+        button.onclick = () => {
+          const sibling =
+            delta < 0
+              ? wrapper.previousElementSibling
+              : wrapper.nextElementSibling;
+          if (sibling) {
+            if (delta < 0) wrapper.before(sibling);
+            else wrapper.after(sibling);
+            if (delta < 0) sibling.before(wrapper);
+            else sibling.after(wrapper);
+            button.focus();
+          }
+        };
+        actions.append(button);
+      }
+      const preview = document.createElement('button');
+      preview.type = 'button';
+      preview.textContent = 'Preview';
+      preview.setAttribute('aria-label', `Preview ${fullTitle}`);
+      preview.onclick = () => {
+        const doc = mergeState.pdfDocs[fileKey];
+        if (doc) showPreview(doc, pageNumber, doc.numPages);
+      };
+      actions.prepend(preview);
+      wrapper.append(imgContainer, fileNamePara, actions);
       return wrapper;
     };
 
@@ -199,7 +234,7 @@ async function renderPageMergeThumbnails() {
           lazyLoadMargin: '300px',
           onProgress: () => {
             currentPageNumber++;
-            showLoader(`Rendering page previews...`);
+            // Background thumbnail rendering must not interrupt editing.
           },
           onBatchComplete: () => {
             createIcons({ icons });
@@ -207,7 +242,16 @@ async function renderPageMergeThumbnails() {
         }
       );
 
-      initPagePreview(container, pdfjsDoc);
+      container
+        .querySelectorAll<HTMLElement>(
+          '[data-lazy-load="true"]:not([data-file-name])'
+        )
+        .forEach((placeholder) => {
+          placeholder.dataset.fileName = fileKey;
+          placeholder.dataset.pageIndex = String(
+            Number(placeholder.dataset.pageNumber) - 1
+          );
+        });
     }
 
     mergeState.cachedThumbnails = true;
@@ -246,7 +290,7 @@ const resetState = async () => {
 
   mergeState.pdfDocs = {};
   mergeState.pdfBytes = {};
-  mergeState.activeMode = 'file';
+  mergeState.activeMode = 'page';
   mergeState.cachedThumbnails = null;
   mergeState.lastFileHash = null;
   mergeState.mergeSuccess = false;
@@ -443,7 +487,7 @@ export async function refreshMergeUI() {
   const processBtn = document.getElementById(
     'process-btn'
   ) as HTMLButtonElement;
-  if (processBtn) processBtn.disabled = false;
+  if (processBtn) processBtn.disabled = true;
 
   const wasInPageMode = mergeState.activeMode === 'page';
 
@@ -601,6 +645,7 @@ export async function refreshMergeUI() {
     newFileModeBtn.classList.add('bg-indigo-600', 'text-white');
     newPageModeBtn.classList.add('bg-gray-700', 'text-gray-300');
   }
+  if (processBtn) processBtn.disabled = false;
 }
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -1,3 +1,4 @@
+import { notifyWorkspaceInputReady } from '../utils/workspace-ready.js';
 import { tesseractLanguages } from '../config/tesseract-languages.js';
 import { showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
@@ -318,6 +319,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   }
 
   if (fileInput && dropZone) {
+    queueMicrotask(notifyWorkspaceInputReady);
     fileInput.addEventListener('change', function (e) {
       handleFileSelect((e.target as HTMLInputElement).files);
     });

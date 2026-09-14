@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A calm workspace for your PDFs. Open documents in tabs, annotate, redact, and explore more than 100 local PDF tools."
+    />
+    <title>PDF Studio — Your PDF workspace</title>
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
+    <link rel="stylesheet" href="/src/css/workspace.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#home-panel">Skip to workspace</a>
+    <div class="studio-shell">
+      <div class="tab-strip">
+        <div
+          class="document-tabs"
+          id="document-tabs"
+          role="tablist"
+          aria-label="Workspace tabs"
+        ></div>
+        <button
+          class="new-tab"
+          id="tab-open"
+          aria-label="Open another PDF"
+          title="Open another PDF"
+        >
+          <i data-lucide="plus"></i>
+        </button>
+      </div>
+      <main class="studio-main">
+        <section
+          id="home-panel"
+          class="home-panel"
+          role="tabpanel"
+          aria-labelledby="home-tab"
+          tabindex="0"
+        >
+          <aside class="home-sidebar" aria-label="Tool library navigation">
+            <div class="sidebar-section-label">Workspace</div>
+            <button class="sidebar-link selected" id="overview-link">
+              <i data-lucide="house"></i>Overview
+            </button>
+            <button class="sidebar-link" id="library-link">
+              <i data-lucide="grid-2x2"></i>All tools<span
+                class="sidebar-count"
+                id="tool-count"
+              ></span>
+            </button>
+            <div class="sidebar-section-label sidebar-categories-label">
+              Collections
+            </div>
+            <nav
+              id="category-nav"
+              class="category-nav"
+              aria-label="Tool collections"
+            ></nav>
+            <div class="sidebar-bottom">
+              <i data-lucide="shield-check"></i
+              ><strong>Private by design</strong>
+              <p>
+                Work directly in your browser.<br />No account. No file uploads.
+              </p>
+              <a href="licensing.html" target="_blank" rel="noopener"
+                >Powered by BentoPDF <i data-lucide="arrow-up-right"></i
+              ></a>
+            </div>
+          </aside>
+          <div class="home-content" id="home-content">
+            <div class="page-heading">
+              <div>
+                <div class="eyebrow">YOUR DOCUMENTS, YOUR SPACE</div>
+                <h1>Your PDF workspace.</h1>
+                <p>Everything you need for your PDFs, in one place.</p>
+              </div>
+              <span class="workspace-date" id="workspace-date"></span>
+            </div>
+            <section
+              class="open-hero"
+              id="drop-zone"
+              aria-label="Open PDF files"
+            >
+              <div class="hero-copy">
+                <span class="hero-label"
+                  ><i data-lucide="sparkles"></i> READ. EDIT. MAKE IT
+                  YOURS.</span
+                >
+                <h2>Your PDFs.<br />One clear workspace.</h2>
+                <p>
+                  Open a PDF to read, annotate, sign, or redact.<br />Keep each
+                  document in its own tab.
+                </p>
+                <button class="button button-primary" id="hero-open">
+                  <i data-lucide="plus"></i>Open a PDF</button
+                ><span class="drop-hint">or drop your PDFs anywhere</span>
+              </div>
+              <div class="hero-art" aria-hidden="true">
+                <div class="art-orbit"></div>
+                <div class="art-sheet art-sheet-back"></div>
+                <div class="art-sheet art-sheet-front">
+                  <span class="art-sheet-tag">PDF</span
+                  ><span class="art-line art-title"></span
+                  ><span class="art-line"></span
+                  ><span class="art-line short"></span>
+                  <div class="art-highlight"><span></span><span></span></div>
+                  <span class="art-line"></span
+                  ><span class="art-line short"></span>
+                  <div class="art-signature">
+                    <svg viewBox="0 0 150 45">
+                      <path
+                        d="M8 34C30 3 36 3 27 25S20 43 43 21 56 9 55 26 62 31 70 23 76 17 79 26 90 28 101 18 117 18 109 27 110 36 140 21"
+                      />
+                    </svg>
+                  </div>
+                  <span class="art-corner"></span>
+                </div>
+                <div class="art-badge">
+                  <i data-lucide="check"></i> A fresh perspective
+                </div>
+              </div>
+            </section>
+            <section
+              id="open-documents-section"
+              class="open-documents-section"
+              hidden
+            >
+              <div class="section-heading">
+                <h2>Open in your workspace</h2>
+                <span id="open-documents-count"></span>
+              </div>
+              <div class="open-documents-grid" id="open-documents-grid"></div>
+            </section>
+            <section class="tool-library" id="tool-library">
+              <div class="library-heading">
+                <div>
+                  <h2 id="library-title">Your everyday toolkit</h2>
+                  <p id="library-description">Small tasks. A smoother day.</p>
+                </div>
+                <label class="tool-search"
+                  ><i data-lucide="search"></i
+                  ><span class="sr-only">Search PDF tools</span
+                  ><input
+                    id="tool-search"
+                    type="search"
+                    placeholder="Find a tool…"
+                    autocomplete="off"
+                  /><kbd>/</kbd></label
+                >
+              </div>
+              <div
+                class="category-pills"
+                id="category-pills"
+                aria-label="Filter tools"
+              ></div>
+              <div class="tool-grid" id="tool-grid"></div>
+              <p class="library-empty" id="library-empty" hidden>
+                No tools match your search. Try “merge”, “sign”, or “convert”.
+              </p>
+              <p class="tool-library-note">
+                <i data-lucide="panel-top"></i>Tools open in tabs inside this
+                workspace.
+              </p>
+            </section>
+            <footer class="home-footer">
+              <span
+                >Your files stay local. Download a copy to keep your
+                changes.</span
+              ><a href="licensing.html" target="_blank" rel="noopener"
+                >Powered by BentoPDF <i data-lucide="arrow-up-right"></i
+              ></a>
+            </footer>
+          </div>
+        </section>
+        <section
+          id="editor-panel"
+          class="editor-panel"
+          role="tabpanel"
+          hidden
+          aria-label="PDF document editor"
+        >
+          <div class="document-command-bar">
+            <div class="document-heading">
+              <i data-lucide="file-text"></i
+              ><span id="active-document-name"></span
+              ><span class="document-state" id="document-state"></span>
+            </div>
+            <div class="document-actions">
+              <button class="button button-quiet" id="editor-tools">
+                <i data-lucide="grid-2x2"></i><span>All tools</span></button
+              ><button
+                class="button button-primary button-download"
+                id="download-document"
+              >
+                <i data-lucide="download"></i><span>Download PDF</span>
+              </button>
+            </div>
+          </div>
+          <div class="document-work-area">
+            <div class="document-canvas-area">
+              <div id="tool-empty-canvas" hidden>
+                <h2>Start with your document</h2>
+                <p>
+                  Choose a file in the tool panel. Your PDF will appear here.
+                </p>
+              </div>
+              <div id="pdf-viewer" class="pdf-viewer"></div>
+            </div>
+            <aside id="workspace-tools" aria-label="Document tools">
+              <div class="document-tools-heading">
+                <button
+                  id="document-tools-back"
+                  class="button button-quiet"
+                  hidden
+                >
+                  ← Tools
+                </button>
+                <h2 id="document-tool-title">Tools</h2>
+              </div>
+              <input
+                id="document-tools-search"
+                type="search"
+                placeholder="Find a tool…"
+                aria-label="Find document tool"
+              />
+              <div id="document-tool-list"></div>
+            </aside>
+          </div>
+          <div class="editor-footnote">
+            <span
+              ><i data-lucide="lock-keyhole"></i> Local session · Download to
+              keep your changes</span
+            ><a href="licensing.html">Powered by BentoPDF</a>
+          </div>
+        </section>
+      </main>
+    </div>
+    <input
+      id="pdf-input"
+      type="file"
+      accept="application/pdf,.pdf"
+      multiple
+      hidden
+    />
+    <div id="drop-overlay" class="drop-overlay" hidden>
+      <div>
+        <i data-lucide="files"></i><strong>A new tab for every PDF.</strong
+        ><span>Drop your files to open them</span>
+      </div>
+    </div>
+    <div
+      id="workspace-status"
+      class="workspace-status"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+    <dialog id="close-dialog" class="studio-dialog">
+      <form method="dialog">
+        <span class="dialog-icon"><i data-lucide="file-warning"></i></span>
+        <h2>Keep your changes?</h2>
+        <p id="close-dialog-description"></p>
+        <p>Download a copy before closing this tab.</p>
+        <div class="dialog-actions">
+          <button class="button button-quiet" value="cancel">
+            Keep working</button
+          ><button class="button button-quiet danger-text" value="discard">
+            Close without saving</button
+          ><button class="button button-primary" value="download">
+            Download &amp; close
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <script type="module" src="/src/js/workspace.ts"></script>
+  </body>
+</html>

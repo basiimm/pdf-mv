@@ -623,6 +623,7 @@ export default defineConfig(() => {
     build: {
       rollupOptions: {
         input: {
+          workspace: resolve(__dirname, 'workspace.html'),
           main:
             process.env.SIMPLE_MODE === 'true'
               ? resolve(__dirname, 'simple-index.html')
