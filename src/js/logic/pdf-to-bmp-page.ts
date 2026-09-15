@@ -4,14 +4,11 @@ import {
   formatBytes,
   readFileAsArrayBuffer,
   getPDFDocument,
-  getCleanPdfFilename,
 } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import JSZip from 'jszip';
-import * as pdfjsLib from 'pdfjs-dist';
-import { PDFPageProxy } from 'pdfjs-dist';
 import { t } from '../i18n/i18n';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
+import { pdfToBmp } from '../engines/pdf-to-bmp.js';
 import '../utils/setup-pdf-worker.js';
 
 let files: File[] = [];
@@ -99,24 +96,18 @@ async function convert() {
     const result = await loadPdfWithPasswordPrompt(files[0], files, 0);
     if (!result) return;
     showLoader(t('tools:pdfToBmp.loader.converting'));
-    const { pdf } = result;
 
-    if (pdf.numPages === 1) {
-      const page = await pdf.getPage(1);
-      const blob = await renderPage(page);
-      downloadFile(blob, getCleanPdfFilename(files[0].name) + '.bmp');
-    } else {
-      const zip = new JSZip();
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const blob = await renderPage(page);
-        if (blob) {
-          zip.file(`page_${i}.bmp`, blob);
-        }
+    const controller = new AbortController();
+    const output = await pdfToBmp(
+      result.file,
+      {},
+      {
+        signal: controller.signal,
+        progress: (p) => showLoader(p.label),
       }
-
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      downloadFile(zipBlob, getCleanPdfFilename(files[0].name) + '_bmps.zip');
+    );
+    for (const out of Array.isArray(output) ? output : [output]) {
+      downloadFile(out, out.name);
     }
 
     showAlert(
@@ -133,25 +124,6 @@ async function convert() {
   } finally {
     hideLoader();
   }
-}
-
-async function renderPage(page: PDFPageProxy): Promise<Blob | null> {
-  const viewport = page.getViewport({ scale: 2.0 });
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
-  canvas.height = viewport.height;
-  canvas.width = viewport.width;
-
-  await page.render({
-    canvasContext: context!,
-    viewport: viewport,
-    canvas,
-  }).promise;
-
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, 'image/bmp')
-  );
-  return blob;
 }
 
 document.addEventListener('DOMContentLoaded', () => {

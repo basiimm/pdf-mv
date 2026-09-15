@@ -2,7 +2,7 @@ import { showLoader, hideLoader, showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { state } from '../state.js';
 import { createIcons, icons } from 'lucide';
-import { loadPyMuPDF } from '../utils/pymupdf-loader.js';
+import { convertEbookToPdf } from '../engines/ebook-to-pdf.js';
 
 const FILETYPE = 'mobi';
 const EXTENSIONS = ['.mobi'];
@@ -88,57 +88,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       showLoader('Loading engine...');
-      const pymupdf = await loadPyMuPDF();
+      const controller = new AbortController();
+      const pdfFile = await convertEbookToPdf(state.files, FILETYPE, {
+        signal: controller.signal,
+        progress: (p) =>
+          showLoader(p.detail ? `${p.label}: ${p.detail}` : p.label),
+      });
+      downloadFile(pdfFile, pdfFile.name);
+      hideLoader();
 
-      if (state.files.length === 1) {
-        const originalFile = state.files[0];
-        showLoader(`Converting ${originalFile.name}...`);
-
-        const pdfBlob = await pymupdf.convertToPdf(originalFile, {
-          filetype: FILETYPE,
-        });
-        const fileName = originalFile.name.replace(/\.[^.]+$/, '') + '.pdf';
-
-        downloadFile(pdfBlob, fileName);
-        hideLoader();
-
-        showAlert(
-          'Conversion Complete',
-          `Successfully converted ${originalFile.name} to PDF.`,
-          'success',
-          () => resetState()
-        );
-      } else {
-        showLoader('Converting files...');
-        const JSZip = (await import('jszip')).default;
-        const zip = new JSZip();
-
-        for (let i = 0; i < state.files.length; i++) {
-          const file = state.files[i];
-          showLoader(
-            `Converting ${i + 1}/${state.files.length}: ${file.name}...`
-          );
-
-          const pdfBlob = await pymupdf.convertToPdf(file, {
-            filetype: FILETYPE,
-          });
-          const baseName = file.name.replace(/\.[^.]+$/, '');
-          const pdfBuffer = await pdfBlob.arrayBuffer();
-          zip.file(`${baseName}.pdf`, pdfBuffer);
-        }
-
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-        downloadFile(zipBlob, `${FILETYPE}-converted.zip`);
-
-        hideLoader();
-
-        showAlert(
-          'Conversion Complete',
-          `Successfully converted ${state.files.length} ${TOOL_NAME} file(s) to PDF.`,
-          'success',
-          () => resetState()
-        );
-      }
+      showAlert(
+        'Conversion Complete',
+        `Successfully converted ${state.files.length} ${TOOL_NAME} file(s) to PDF.`,
+        'success',
+        () => resetState()
+      );
     } catch (e: unknown) {
       console.error(`[${TOOL_NAME}2PDF] ERROR:`, e);
       hideLoader();

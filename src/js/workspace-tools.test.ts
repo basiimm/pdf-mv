@@ -16,11 +16,84 @@ function fixture() {
     attach: vi.fn(),
     result: vi.fn(),
     status: vi.fn(),
+    commit: vi.fn(async () => {}),
+    canUndoCommit: vi.fn(() => false),
+    undoCommit: vi.fn(async () => null),
+    showPreview: vi.fn(async () => {}),
+    applyPreview: vi.fn(async () => {}),
+    cancelPreview: vi.fn(async () => {}),
+    isPreviewing: vi.fn(() => false),
     editMode: vi.fn(async () => {}),
   };
   return { host, controller: setupWorkspaceTools(host), active: () => active };
 }
 describe('workspace tool navigation', () => {
+  it('returns from the embedded text editor without reloading or removing its draft', async () => {
+    const { controller, host } = fixture();
+    await controller.select('edit-pdf-text', true);
+    vi.mocked(host.hasPdf).mockReturnValue(true);
+    const frame = document.querySelector('iframe')!;
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: location.origin,
+        source: frame.contentWindow,
+        data: { type: 'studio-tool-back' },
+      })
+    );
+    expect(document.getElementById('pdf-viewer')!.hidden).toBe(false);
+    expect(frame.hidden).toBe(true);
+    await controller.select('edit-pdf-text');
+    expect(document.querySelector('iframe')).toBe(frame);
+    expect(frame.hidden).toBe(false);
+  });
+
+  it('starts conversion with file selection rather than format menus', async () => {
+    const { controller } = fixture();
+    await controller.select('convert', true);
+    expect(
+      document.querySelector('.workspace-group-controls')?.textContent
+    ).toContain('Choose files to convert');
+    expect(
+      document.querySelector('.workspace-group-controls select')
+    ).toBeNull();
+    expect(document.querySelector('iframe')).toBeNull();
+  });
+  it('routes selected images into native conversion without another upload', async () => {
+    const { controller, host } = fixture();
+    await controller.select('convert', true);
+    controller.chooseSource();
+    const input = document.querySelector<HTMLInputElement>(
+      '[data-conversion-source]'
+    )!;
+    Object.defineProperty(input, 'files', {
+      value: [new File(['image'], 'page.png', { type: 'image/png' })],
+    });
+    input.dispatchEvent(new Event('change'));
+    await vi.waitFor(() =>
+      expect(document.querySelector('.ds-file-row')?.textContent).toContain(
+        'page.png'
+      )
+    );
+    expect(
+      document.querySelector('.workspace-group-controls')?.textContent
+    ).toContain('Detected: PNG');
+    expect(host.createTask).toHaveBeenCalledTimes(1);
+    expect(controller.hasWork('task-1')).toBe(true);
+  });
+  it('shows native Merge in the central area and restores the viewer when switching tools', async () => {
+    const { controller, host } = fixture();
+    await controller.select('merge', true);
+    expect(
+      document.querySelector('.native-merge-canvas')?.parentElement?.className
+    ).toBe('document-canvas-area');
+    expect(document.querySelector('iframe')).toBeNull();
+    vi.mocked(host.hasPdf).mockReturnValue(true);
+    await controller.select('rotate-pdf');
+    expect(
+      (document.querySelector('.native-merge-canvas') as HTMLElement).hidden
+    ).toBe(true);
+    expect(document.getElementById('pdf-viewer')!.hidden).toBe(false);
+  });
   it('creates a new task for every Home group and removes its controls on close', async () => {
     const { host, controller, active } = fixture();
     for (const group of groups) {
@@ -40,16 +113,22 @@ describe('workspace tool navigation', () => {
     expect(host.createTask).toHaveBeenCalledTimes(1);
     expect(host.status).not.toHaveBeenCalled();
   });
+  it('keeps migrated tools in the PDF view without a legacy options page', async () => {
+    const { controller } = fixture();
+    await controller.select('extract-pages', true);
+    expect(document.querySelector('.workspace-mode-switch')).toBeNull();
+    expect(document.querySelector('iframe')).toBeNull();
+  });
   it('retains advanced controls for native features without creating another task', async () => {
     const { controller, host } = fixture();
-    await controller.select('extract-pages', true);
+    await controller.select('header-footer', true);
     const more = document.querySelector(
       '.workspace-mode-switch'
     ) as HTMLButtonElement;
     expect(more.textContent).toBe('More options');
     more.click();
     const frame = document.querySelector('iframe')!;
-    expect(frame.src).toContain('extract-pages.html');
+    expect(frame.src).toContain('header-footer.html');
     expect(frame.hidden).toBe(false);
     (
       document.querySelector('.workspace-mode-switch') as HTMLButtonElement
@@ -59,12 +138,12 @@ describe('workspace tool navigation', () => {
   });
   it('hides previous embedded controls when switching to a native feature', async () => {
     const { controller } = fixture();
-    await controller.select('compress-pdf', true);
+    await controller.select('pdf-workflow', true);
     const frame = document.querySelector('iframe')!;
     expect(frame.hidden).toBe(false);
     await controller.select('rotate-pdf');
     expect(frame.hidden).toBe(true);
-    const native = document.querySelector('.native-mark-panel') as HTMLElement;
+    const native = document.querySelector('.ds-tool-panel') as HTMLElement;
     expect(native.hidden).toBe(false);
     controller.toggle();
     expect(document.getElementById('workspace-tools')!.hidden).toBe(true);
@@ -95,10 +174,11 @@ describe('workspace tool navigation', () => {
       'timestamp-pdf',
     ]) {
       await controller.select(tool, true);
-      const frame = [...document.querySelectorAll('iframe')].find(
-        (frame) => !frame.hidden
+      const panel = document.querySelector(
+        `.ds-tool-panel[data-tool="${tool}"]`
       )!;
-      expect(frame.parentElement?.id).toBe('workspace-tools');
+      expect(panel.closest('#workspace-tools')).not.toBeNull();
+      expect(document.querySelector('iframe:not([hidden])')).toBeNull();
       expect(document.getElementById('pdf-viewer')!.hidden).toBe(false);
       expect(document.getElementById('download-document')!.hidden).toBe(false);
     }

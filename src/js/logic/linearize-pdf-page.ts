@@ -1,14 +1,10 @@
 import { showAlert } from '../ui.js';
-import {
-  downloadFile,
-  formatBytes,
-  initializeQpdf,
-  readFileAsArrayBuffer,
-} from '../utils/helpers.js';
+import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { icons, createIcons } from 'lucide';
 import JSZip from 'jszip';
 import { deduplicateFileName } from '../utils/deduplicate-filename.js';
-import { LinearizePdfState, QpdfInstanceExtended } from '@/types';
+import { LinearizePdfState } from '@/types';
+import { linearizePdf as linearizePdfEngine } from '../engines/linearize-pdf.js';
 
 const pageState: LinearizePdfState = {
   files: [],
@@ -111,64 +107,33 @@ async function linearizePdf() {
 
   const zip = new JSZip();
   const usedNames = new Set<string>();
-  let qpdf: QpdfInstanceExtended;
   let successCount = 0;
   let errorCount = 0;
 
   try {
-    qpdf = await initializeQpdf();
-
     for (let i = 0; i < pdfFiles.length; i++) {
       const file = pdfFiles[i];
-      const inputPath = `/input_${i}.pdf`;
-      const outputPath = `/output_${i}.pdf`;
 
       if (loaderText)
         loaderText.textContent = `Optimizing ${file.name} (${i + 1}/${pdfFiles.length})...`;
 
       try {
-        const fileBuffer = await readFileAsArrayBuffer(file);
-        const uint8Array = new Uint8Array(fileBuffer as ArrayBuffer);
-
-        qpdf.FS.writeFile(inputPath, uint8Array);
-
-        const args = [inputPath, '--linearize', outputPath];
-
-        qpdf.callMain(args);
-
-        const outputFile = qpdf.FS.readFile(outputPath, { encoding: 'binary' });
-        if (!outputFile || outputFile.length === 0) {
-          console.error(
-            `Linearization resulted in an empty file for ${file.name}.`
-          );
-          throw new Error(`Processing failed for ${file.name}.`);
-        }
-
+        const outputFile = await linearizePdfEngine(
+          file,
+          {},
+          { signal: new AbortController().signal, progress: () => {} }
+        );
         const zipEntryName = deduplicateFileName(
           `linearized-${file.name}`,
           usedNames
         );
-        zip.file(zipEntryName, outputFile, { binary: true });
+        zip.file(zipEntryName, await outputFile.arrayBuffer(), {
+          binary: true,
+        });
         successCount++;
       } catch (fileError: unknown) {
         errorCount++;
         console.error(`Failed to linearize ${file.name}:`, fileError);
-      } finally {
-        try {
-          if (qpdf?.FS) {
-            if (qpdf.FS.analyzePath(inputPath).exists) {
-              qpdf.FS.unlink(inputPath);
-            }
-            if (qpdf.FS.analyzePath(outputPath).exists) {
-              qpdf.FS.unlink(outputPath);
-            }
-          }
-        } catch (cleanupError) {
-          console.warn(
-            `Failed to cleanup WASM FS for ${file.name}:`,
-            cleanupError
-          );
-        }
       }
     }
 

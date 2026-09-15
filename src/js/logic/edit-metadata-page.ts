@@ -2,9 +2,9 @@ import { EditMetadataState } from '@/types';
 import { showLoader, hideLoader, showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import { PDFName, PDFString } from 'pdf-lib';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
 import { loadPdfDocument } from '../utils/load-pdf-document.js';
+import { editMetadata } from '../engines/edit-metadata.js';
 
 const pageState: EditMetadataState = {
   file: null,
@@ -283,76 +283,49 @@ async function saveMetadata() {
       'meta-mod-date'
     ) as HTMLInputElement;
 
-    pageState.pdfDoc.setTitle(titleInput.value);
-    pageState.pdfDoc.setAuthor(authorInput.value);
-    pageState.pdfDoc.setSubject(subjectInput.value);
-    pageState.pdfDoc.setCreator(creatorInput.value);
-    pageState.pdfDoc.setProducer(producerInput.value);
-
-    const keywords = keywordsInput.value;
-    pageState.pdfDoc.setKeywords(
-      keywords
-        .split(',')
-        .map(function (k) {
-          return k.trim();
-        })
-        .filter(Boolean)
-    );
-
-    // Handle creation date
-    if (creationDateInput.value) {
-      pageState.pdfDoc.setCreationDate(new Date(creationDateInput.value));
-    }
-
-    // Handle modification date
-    if (modDateInput.value) {
-      pageState.pdfDoc.setModificationDate(new Date(modDateInput.value));
-    } else {
-      pageState.pdfDoc.setModificationDate(new Date());
-    }
-
-    // Handle custom fields
-    // @ts-expect-error getInfoDict is private but accessible at runtime
-    const infoDict = pageState.pdfDoc.getInfoDict();
-    const standardKeys = new Set([
-      'Title',
-      'Author',
-      'Subject',
-      'Keywords',
-      'Creator',
-      'Producer',
-      'CreationDate',
-      'ModDate',
-    ]);
-
-    // Remove existing custom keys
-    const allKeys = infoDict.keys().map(function (key: {
-      asString: () => string;
-    }) {
-      return key.asString().substring(1);
-    });
-
-    allKeys.forEach(function (key: string) {
-      if (!standardKeys.has(key)) {
-        infoDict.delete(PDFName.of(key));
-      }
-    });
-
-    // Add new custom fields
+    // Custom field rows -> "Key: value" lines for the shared engine.
     const customKeys = document.querySelectorAll('.custom-meta-key');
     const customValues = document.querySelectorAll('.custom-meta-value');
+    const customFields = Array.from(customKeys)
+      .map(function (keyInput, index) {
+        const key = (keyInput as HTMLInputElement).value.trim();
+        const value = (customValues[index] as HTMLInputElement).value.trim();
+        return key && value ? `${key}: ${value}` : '';
+      })
+      .filter(Boolean)
+      .join('; ');
 
-    customKeys.forEach(function (keyInput, index) {
-      const key = (keyInput as HTMLInputElement).value.trim();
-      const value = (customValues[index] as HTMLInputElement).value.trim();
-      if (key && value) {
-        infoDict.set(PDFName.of(key), PDFString.of(value));
+    const updated = await editMetadata(
+      pageState.file,
+      {
+        title: titleInput.value,
+        author: authorInput.value,
+        subject: subjectInput.value,
+        keywords: keywordsInput.value,
+        creator: creatorInput.value,
+        producer: producerInput.value,
+        customFields,
+      },
+      { signal: new AbortController().signal, progress: () => {} }
+    );
+
+    // The engine always sets the modification date to now; the legacy page
+    // additionally lets the user pick explicit creation/modification dates,
+    // which the shared engine doesn't cover.
+    let finalBytes = new Uint8Array(await updated.arrayBuffer());
+    if (creationDateInput.value || modDateInput.value) {
+      const doc = await loadPdfDocument(finalBytes);
+      if (creationDateInput.value) {
+        doc.setCreationDate(new Date(creationDateInput.value));
       }
-    });
+      if (modDateInput.value) {
+        doc.setModificationDate(new Date(modDateInput.value));
+      }
+      finalBytes = new Uint8Array(await doc.save());
+    }
 
-    const newPdfBytes = await pageState.pdfDoc.save();
     downloadFile(
-      new Blob([new Uint8Array(newPdfBytes)], { type: 'application/pdf' }),
+      new Blob([finalBytes], { type: 'application/pdf' }),
       pageState.file.name
     );
 

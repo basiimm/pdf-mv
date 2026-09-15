@@ -6,12 +6,12 @@ import {
   getPDFDocument,
 } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import { PDFDocument } from 'pdf-lib';
 import { applyColorAdjustments } from '../utils/image-effects.js';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { AdjustColorsSettings } from '../types/adjust-colors-type.js';
 import { t } from '../i18n/i18n';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
+import { adjustColors as adjustColorsEngine } from '../engines/adjust-colors.js';
 import '../utils/setup-pdf-worker.js';
 
 let files: File[] = [];
@@ -176,60 +176,12 @@ async function processAllPages(): Promise<void> {
 
   try {
     const settings = getSettings();
-    const pdfBytes = (await readFileAsArrayBuffer(files[0])) as ArrayBuffer;
-    const doc = await getPDFDocument({ data: pdfBytes }).promise;
-    const newPdfDoc = await PDFDocument.create();
-
-    for (let i = 1; i <= doc.numPages; i++) {
-      showLoader(`Processing page ${i} of ${doc.numPages}...`);
-
-      const page = await doc.getPage(i);
-      const viewport = page.getViewport({ scale: 2.0 });
-      const renderCanvas = document.createElement('canvas');
-      const renderCtx = renderCanvas.getContext('2d')!;
-      renderCanvas.width = viewport.width;
-      renderCanvas.height = viewport.height;
-
-      await page.render({
-        canvasContext: renderCtx,
-        viewport,
-        canvas: renderCanvas,
-      }).promise;
-
-      const baseData = renderCtx.getImageData(
-        0,
-        0,
-        renderCanvas.width,
-        renderCanvas.height
-      );
-
-      const outputCanvas = document.createElement('canvas');
-      applyEffects(baseData, outputCanvas, settings);
-
-      const pngBlob = await new Promise<Blob | null>((resolve) =>
-        outputCanvas.toBlob(resolve, 'image/png')
-      );
-
-      if (pngBlob) {
-        const pngBytes = await pngBlob.arrayBuffer();
-        const pngImage = await newPdfDoc.embedPng(pngBytes);
-        const origViewport = page.getViewport({ scale: 1.0 });
-        const newPage = newPdfDoc.addPage([
-          origViewport.width,
-          origViewport.height,
-        ]);
-        newPage.drawImage(pngImage, {
-          x: 0,
-          y: 0,
-          width: origViewport.width,
-          height: origViewport.height,
-        });
-      }
-    }
-
-    const resultBytes = await newPdfDoc.save();
+    const resultFile = await adjustColorsEngine(files[0], settings, {
+      signal: new AbortController().signal,
+      progress: (p) => showLoader(p.label + '...'),
+    });
     downloadFile(
-      new Blob([new Uint8Array(resultBytes)], { type: 'application/pdf' }),
+      new Blob([resultFile], { type: 'application/pdf' }),
       files[0]?.name || 'document.pdf'
     );
     showAlert(

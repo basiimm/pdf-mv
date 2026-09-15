@@ -1,14 +1,7 @@
 import { createIcons, icons } from 'lucide';
 import { showAlert, showLoader, hideLoader } from '../ui.js';
-import {
-  downloadFile,
-  hexToRgb,
-  formatBytes,
-  getPDFDocument,
-  readFileAsArrayBuffer,
-} from '../utils/helpers.js';
-import { PDFDocument as PDFLibDocument } from 'pdf-lib';
-import * as pdfjsLib from 'pdfjs-dist';
+import { downloadFile, formatBytes } from '../utils/helpers.js';
+import { textColor as textColorEngine } from '../engines/text-color.js';
 import { TextColorState } from '@/types';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
 import { loadPdfDocument } from '../utils/load-pdf-document.js';
@@ -127,61 +120,18 @@ async function changeTextColor() {
   const colorHex = (
     document.getElementById('text-color-input') as HTMLInputElement
   ).value;
-  const { r, g, b } = hexToRgb(colorHex);
-  const darknessThreshold = 120;
   showLoader('Changing text color...');
   try {
-    const newPdfDoc = await PDFLibDocument.create();
-    const pdf = await getPDFDocument(
-      await readFileAsArrayBuffer(pageState.file)
-    ).promise;
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-      showLoader(`Processing page ${i} of ${pdf.numPages}...`);
-      const page = await pdf.getPage(i);
-      const viewport = page.getViewport({ scale: 2.0 });
-      const canvas = document.createElement('canvas');
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      const context = canvas.getContext('2d')!;
-      await page.render({ canvasContext: context, viewport, canvas }).promise;
-
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-      for (let j = 0; j < data.length; j += 4) {
-        if (
-          data[j] < darknessThreshold &&
-          data[j + 1] < darknessThreshold &&
-          data[j + 2] < darknessThreshold
-        ) {
-          data[j] = r * 255;
-          data[j + 1] = g * 255;
-          data[j + 2] = b * 255;
-        }
+    const resultFile = await textColorEngine(
+      pageState.file,
+      { color: colorHex },
+      {
+        signal: new AbortController().signal,
+        progress: (p) => showLoader(p.label + '...'),
       }
-      context.putImageData(imageData, 0, 0);
-
-      const pngImageBytes = await new Promise<Uint8Array>((resolve) =>
-        canvas.toBlob((blob) => {
-          const reader = new FileReader();
-          reader.onload = () =>
-            resolve(new Uint8Array(reader.result as ArrayBuffer));
-          reader.readAsArrayBuffer(blob!);
-        }, 'image/png')
-      );
-
-      const pngImage = await newPdfDoc.embedPng(pngImageBytes);
-      const newPage = newPdfDoc.addPage([viewport.width, viewport.height]);
-      newPage.drawImage(pngImage, {
-        x: 0,
-        y: 0,
-        width: viewport.width,
-        height: viewport.height,
-      });
-    }
-    const newPdfBytes = await newPdfDoc.save();
+    );
     downloadFile(
-      new Blob([new Uint8Array(newPdfBytes)], { type: 'application/pdf' }),
+      new Blob([resultFile], { type: 'application/pdf' }),
       pageState.file?.name || 'document.pdf'
     );
     showAlert('Success', 'Text color changed successfully!', 'success', () => {

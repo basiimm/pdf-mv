@@ -3,50 +3,23 @@ import {
   downloadFile,
   readFileAsArrayBuffer,
   formatBytes,
-  getPDFDocument,
 } from '../utils/helpers.js';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
 import { state } from '../state.js';
-import { PDFDocument } from 'pdf-lib';
 import { createIcons, icons } from 'lucide';
 import { showWasmRequiredDialog } from '../utils/wasm-provider.js';
-import { loadPyMuPDF, isPyMuPDFAvailable } from '../utils/pymupdf-loader.js';
-import * as pdfjsLib from 'pdfjs-dist';
-import type { PDFDocumentProxy } from 'pdfjs-dist';
+import { isPyMuPDFAvailable } from '../utils/pymupdf-loader.js';
 import '../utils/setup-pdf-worker.js';
+import {
+  compressPdf as compressPdfEngine,
+  type CompressLevel,
+} from '../engines/compress-pdf.js';
 
-const CONDENSE_PRESETS = {
-  light: {
-    images: { quality: 90, dpiTarget: 150, dpiThreshold: 200 },
-    scrub: { metadata: false, thumbnails: true },
-    subsetFonts: true,
-  },
-  balanced: {
-    images: { quality: 75, dpiTarget: 96, dpiThreshold: 150 },
-    scrub: { metadata: true, thumbnails: true },
-    subsetFonts: true,
-  },
-  aggressive: {
-    images: { quality: 50, dpiTarget: 72, dpiThreshold: 100 },
-    scrub: { metadata: true, thumbnails: true, xmlMetadata: true },
-    subsetFonts: true,
-  },
-  extreme: {
-    images: { quality: 30, dpiTarget: 60, dpiThreshold: 96 },
-    scrub: { metadata: true, thumbnails: true, xmlMetadata: true },
-    subsetFonts: true,
-  },
-};
-
-const PHOTON_PRESETS = {
-  light: { scale: 2.0, quality: 0.85 },
-  balanced: { scale: 1.5, quality: 0.65 },
-  aggressive: { scale: 1.2, quality: 0.45 },
-  extreme: { scale: 1.0, quality: 0.25 },
-};
+const noopProgress = () => {};
+const noopSignal = new AbortController().signal;
 
 async function performCondenseCompression(
-  fileBlob: Blob,
+  fileBlob: File,
   level: string,
   customSettings?: {
     imageQuality?: number;
@@ -58,73 +31,22 @@ async function performCondenseCompression(
     removeThumbnails?: boolean;
   }
 ) {
-  // Load PyMuPDF dynamically from user-provided URL
-  const pymupdf = await loadPyMuPDF();
-
-  const preset =
-    CONDENSE_PRESETS[level as keyof typeof CONDENSE_PRESETS] ||
-    CONDENSE_PRESETS.balanced;
-
-  const dpiTarget = customSettings?.dpiTarget ?? preset.images.dpiTarget;
-  const userThreshold =
-    customSettings?.dpiThreshold ?? preset.images.dpiThreshold;
-  const dpiThreshold = Math.max(userThreshold, dpiTarget + 10);
-
-  const options = {
-    images: {
-      enabled: true,
-      quality: customSettings?.imageQuality ?? preset.images.quality,
-      dpiTarget,
-      dpiThreshold,
-      convertToGray: customSettings?.convertToGrayscale ?? false,
+  const resultFile = await compressPdfEngine(
+    fileBlob,
+    {
+      algorithm: 'condense',
+      level: level as CompressLevel,
+      imageQuality: customSettings?.imageQuality,
+      dpiTarget: customSettings?.dpiTarget,
+      dpiThreshold: customSettings?.dpiThreshold,
+      removeMetadata: customSettings?.removeMetadata,
+      subsetFonts: customSettings?.subsetFonts,
+      convertToGrayscale: customSettings?.convertToGrayscale,
+      removeThumbnails: customSettings?.removeThumbnails,
     },
-    scrub: {
-      metadata: customSettings?.removeMetadata ?? preset.scrub.metadata,
-      thumbnails: customSettings?.removeThumbnails ?? preset.scrub.thumbnails,
-      xmlMetadata:
-        'xmlMetadata' in preset.scrub
-          ? (preset.scrub as { xmlMetadata: boolean }).xmlMetadata
-          : false,
-    },
-    subsetFonts: customSettings?.subsetFonts ?? preset.subsetFonts,
-    save: {
-      garbage: 4 as const,
-      deflate: true,
-      clean: true,
-      useObjstms: true,
-    },
-  };
-
-  try {
-    const result = await pymupdf.compressPdf(fileBlob, options);
-    return result;
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    if (
-      errorMessage.includes('PatternType') ||
-      errorMessage.includes('pattern')
-    ) {
-      console.warn(
-        '[CompressPDF] Pattern error detected, retrying without image rewriting:',
-        errorMessage
-      );
-
-      const fallbackOptions = {
-        ...options,
-        images: {
-          ...options.images,
-          enabled: false,
-        },
-      };
-
-      const result = await pymupdf.compressPdf(fileBlob, fallbackOptions);
-      return { ...result, usedFallback: true };
-    }
-
-    throw new Error(`PDF compression failed: ${errorMessage}`, {
-      cause: error,
-    });
-  }
+    { signal: noopSignal, progress: noopProgress }
+  );
+  return { blob: resultFile, compressedSize: resultFile.size };
 }
 
 async function performPhotonCompression(
@@ -132,50 +54,26 @@ async function performPhotonCompression(
   level: string,
   file?: File
 ) {
-  let pdfJsDoc: PDFDocumentProxy;
-  if (file) {
+  let sourceFile = file;
+  if (!sourceFile) {
+    sourceFile = new File([arrayBuffer], 'document.pdf', {
+      type: 'application/pdf',
+    });
+  } else {
     hideLoader();
-    const result = await loadPdfWithPasswordPrompt(file);
+    const result = await loadPdfWithPasswordPrompt(sourceFile);
     if (!result) return null;
     showLoader('Running Photon compression...');
-    pdfJsDoc = result.pdf;
-  } else {
-    pdfJsDoc = await getPDFDocument({ data: arrayBuffer }).promise;
+    result.pdf.destroy();
+    sourceFile = result.file;
   }
-  const newPdfDoc = await PDFDocument.create();
-  const settings =
-    PHOTON_PRESETS[level as keyof typeof PHOTON_PRESETS] ||
-    PHOTON_PRESETS.balanced;
 
-  for (let i = 1; i <= pdfJsDoc.numPages; i++) {
-    const page = await pdfJsDoc.getPage(i);
-    const viewport = page.getViewport({ scale: settings.scale });
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
-
-    await page.render({ canvasContext: context, viewport, canvas: canvas })
-      .promise;
-
-    const jpegBlob = await new Promise<Blob>((resolve) =>
-      canvas.toBlob(
-        (blob) => resolve(blob as Blob),
-        'image/jpeg',
-        settings.quality
-      )
-    );
-    const jpegBytes = await jpegBlob.arrayBuffer();
-    const jpegImage = await newPdfDoc.embedJpg(jpegBytes);
-    const newPage = newPdfDoc.addPage([viewport.width, viewport.height]);
-    newPage.drawImage(jpegImage, {
-      x: 0,
-      y: 0,
-      width: viewport.width,
-      height: viewport.height,
-    });
-  }
-  return await newPdfDoc.save();
+  const resultFile = await compressPdfEngine(
+    sourceFile,
+    { algorithm: 'photon', level: level as CompressLevel },
+    { signal: noopSignal, progress: noopProgress }
+  );
+  return new Uint8Array(await resultFile.arrayBuffer());
 }
 
 document.addEventListener('DOMContentLoaded', () => {

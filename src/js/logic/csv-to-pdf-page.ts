@@ -2,6 +2,7 @@ import { showLoader, hideLoader, showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { state } from '../state.js';
 import { createIcons, icons } from 'lucide';
+import { convertCsvFilesToPdf } from '../engines/text-to-pdf.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   state.files = [];
@@ -90,93 +91,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const { convertCsvToPdf } = await import('../utils/csv-to-pdf.js');
+      const controller = new AbortController();
+      const pdfFile = await convertCsvFilesToPdf(state.files, {
+        signal: controller.signal,
+        progress: (p) =>
+          showLoader(p.detail ? `${p.label}: ${p.detail}` : p.label),
+      });
+      downloadFile(pdfFile, pdfFile.name);
+      hideLoader();
 
-      if (state.files.length === 1) {
-        const originalFile = state.files[0];
-        console.log(
-          '[CSV2PDF] Converting single file:',
-          originalFile.name,
-          'Size:',
-          originalFile.size,
-          'bytes'
-        );
-
-        const pdfBlob = await convertCsvToPdf(originalFile, {
-          onProgress: (percent, message) => {
-            console.log(`[CSV2PDF] Progress: ${percent}% - ${message}`);
-            showLoader(message, percent);
-          },
-        });
-
-        console.log(
-          '[CSV2PDF] Conversion complete! PDF size:',
-          pdfBlob.size,
-          'bytes'
-        );
-
-        const fileName = originalFile.name.replace(/\.csv$/i, '') + '.pdf';
-        downloadFile(pdfBlob, fileName);
-        console.log('[CSV2PDF] File downloaded:', fileName);
-
-        hideLoader();
-
-        showAlert(
-          'Conversion Complete',
-          `Successfully converted ${originalFile.name} to PDF.`,
-          'success',
-          () => resetState()
-        );
-      } else {
-        console.log('[CSV2PDF] Converting multiple files:', state.files.length);
-        showLoader('Preparing conversion...');
-        const JSZip = (await import('jszip')).default;
-        const zip = new JSZip();
-
-        for (let i = 0; i < state.files.length; i++) {
-          const file = state.files[i];
-          console.log(
-            `[CSV2PDF] Converting file ${i + 1}/${state.files.length}:`,
-            file.name
-          );
-
-          const pdfBlob = await convertCsvToPdf(file, {
-            onProgress: (percent) => {
-              const overallPercent =
-                (i / state.files.length) * 100 + percent / state.files.length;
-              showLoader(
-                `Converting ${i + 1}/${state.files.length}: ${file.name}...`,
-                overallPercent
-              );
-            },
-          });
-
-          console.log(
-            `[CSV2PDF] Converted ${file.name}, PDF size:`,
-            pdfBlob.size
-          );
-
-          const baseName = file.name.replace(/\.csv$/i, '');
-          const pdfBuffer = await pdfBlob.arrayBuffer();
-          zip.file(`${baseName}.pdf`, pdfBuffer);
-        }
-
-        console.log('[CSV2PDF] Generating ZIP file...');
-        showLoader('Creating ZIP archive...');
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-        console.log('[CSV2PDF] ZIP size:', zipBlob.size);
-
-        downloadFile(zipBlob, 'csv-converted.zip');
-
-        hideLoader();
-
-        showAlert(
-          'Conversion Complete',
-          `Successfully converted ${state.files.length} CSV file(s) to PDF.`,
-          'success',
-          () => resetState()
-        );
-      }
+      showAlert(
+        'Conversion Complete',
+        `Successfully converted ${state.files.length} CSV file(s) to PDF.`,
+        'success',
+        () => resetState()
+      );
     } catch (e: unknown) {
       console.error('[CSV2PDF] ERROR:', e);
       console.error(

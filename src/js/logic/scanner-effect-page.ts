@@ -6,12 +6,12 @@ import {
   getPDFDocument,
 } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import { PDFDocument } from 'pdf-lib';
 import { applyScannerEffect } from '../utils/image-effects.js';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { ScanSettings } from '../types/scanner-effect-type.js';
 import { t } from '../i18n/i18n';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
+import { scannerEffect as scannerEffectEngine } from '../engines/scanner-effect.js';
 import '../utils/setup-pdf-worker.js';
 
 let files: File[] = [];
@@ -182,77 +182,12 @@ async function processAllPages(): Promise<void> {
 
   try {
     const settings = getSettings();
-    const pdfBytes = (await readFileAsArrayBuffer(files[0])) as ArrayBuffer;
-    const doc = await getPDFDocument({ data: pdfBytes }).promise;
-    const newPdfDoc = await PDFDocument.create();
-    const dpiScale = settings.resolution / 72;
-
-    for (let i = 1; i <= doc.numPages; i++) {
-      showLoader(`Processing page ${i} of ${doc.numPages}...`);
-
-      const page = await doc.getPage(i);
-      const viewport = page.getViewport({ scale: dpiScale });
-      const renderCanvas = document.createElement('canvas');
-      const renderCtx = renderCanvas.getContext('2d')!;
-      renderCanvas.width = viewport.width;
-      renderCanvas.height = viewport.height;
-
-      await page.render({
-        canvasContext: renderCtx,
-        viewport,
-        canvas: renderCanvas,
-      }).promise;
-
-      const baseData = renderCtx.getImageData(
-        0,
-        0,
-        renderCanvas.width,
-        renderCanvas.height
-      );
-      const baselineCopy = new ImageData(
-        new Uint8ClampedArray(baseData.data),
-        baseData.width,
-        baseData.height
-      );
-
-      const outputCanvas = document.createElement('canvas');
-      const pageRotation =
-        settings.rotate +
-        (settings.rotateVariance > 0
-          ? (Math.random() - 0.5) * 2 * settings.rotateVariance
-          : 0);
-
-      applyEffects(
-        baselineCopy,
-        outputCanvas,
-        settings,
-        pageRotation,
-        dpiScale
-      );
-
-      const jpegBlob = await new Promise<Blob | null>((resolve) =>
-        outputCanvas.toBlob(resolve, 'image/jpeg', 0.85)
-      );
-
-      if (jpegBlob) {
-        const jpegBytes = await jpegBlob.arrayBuffer();
-        const jpegImage = await newPdfDoc.embedJpg(jpegBytes);
-        const newPage = newPdfDoc.addPage([
-          outputCanvas.width,
-          outputCanvas.height,
-        ]);
-        newPage.drawImage(jpegImage, {
-          x: 0,
-          y: 0,
-          width: outputCanvas.width,
-          height: outputCanvas.height,
-        });
-      }
-    }
-
-    const resultBytes = await newPdfDoc.save();
+    const resultFile = await scannerEffectEngine(files[0], settings, {
+      signal: new AbortController().signal,
+      progress: (p) => showLoader(p.label + '...'),
+    });
     downloadFile(
-      new Blob([new Uint8Array(resultBytes)], { type: 'application/pdf' }),
+      new Blob([resultFile], { type: 'application/pdf' }),
       files[0]?.name || 'document.pdf'
     );
     showAlert(

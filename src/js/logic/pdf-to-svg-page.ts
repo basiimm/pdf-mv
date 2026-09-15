@@ -1,13 +1,12 @@
 import { showLoader, hideLoader, showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import JSZip from 'jszip';
 import { loadPyMuPDF, isPyMuPDFAvailable } from '../utils/pymupdf-loader.js';
-import type { PyMuPDFInstance } from '@/types';
+import JSZip from 'jszip';
 import { batchDecryptIfNeeded } from '../utils/password-prompt.js';
 import { showWasmRequiredDialog } from '../utils/wasm-provider.js';
+import { pdfToSvg } from '../engines/pdf-to-svg.js';
 
-let pymupdf: PyMuPDFInstance | null = null;
 let files: File[] = [];
 
 const updateUI = () => {
@@ -83,11 +82,6 @@ async function convert() {
   showLoader('Loading Engine...');
 
   try {
-    // Load PyMuPDF dynamically if not already loaded
-    if (!pymupdf) {
-      pymupdf = await loadPyMuPDF();
-    }
-
     hideLoader();
     files = await batchDecryptIfNeeded(files);
     showLoader('Converting to SVG...');
@@ -95,41 +89,26 @@ async function convert() {
     const isSingleFile = files.length === 1;
 
     if (isSingleFile) {
-      const doc = await pymupdf.open(files[0]);
-      const pageCount = doc.pageCount;
-      const baseName = files[0].name.replace(/\.[^/.]+$/, '');
-
-      if (pageCount === 1) {
-        showLoader('Converting to SVG...');
-        const page = doc.getPage(0);
-        const svgContent = page.toSvg();
-        const svgBlob = new Blob([svgContent], { type: 'image/svg+xml' });
-        downloadFile(svgBlob, `${baseName}.svg`);
-        showAlert(
-          'Success',
-          'PDF converted to SVG successfully!',
-          'success',
-          () => resetState()
-        );
-      } else {
-        const zip = new JSZip();
-        for (let i = 0; i < pageCount; i++) {
-          showLoader(`Converting page ${i + 1} of ${pageCount}...`);
-          const page = doc.getPage(i);
-          const svgContent = page.toSvg();
-          zip.file(`page_${i + 1}.svg`, svgContent);
+      const controller = new AbortController();
+      const output = await pdfToSvg(
+        files[0],
+        {},
+        {
+          signal: controller.signal,
+          progress: (p) => showLoader(p.label),
         }
-        showLoader('Creating ZIP file...');
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-        downloadFile(zipBlob, `${baseName}_svg.zip`);
-        showAlert(
-          'Success',
-          `Converted ${pageCount} pages to SVG!`,
-          'success',
-          () => resetState()
-        );
+      );
+      for (const out of Array.isArray(output) ? output : [output]) {
+        downloadFile(out, out.name);
       }
+      showAlert(
+        'Success',
+        'PDF converted to SVG successfully!',
+        'success',
+        () => resetState()
+      );
     } else {
+      const pymupdf = await loadPyMuPDF();
       const zip = new JSZip();
       let totalPages = 0;
 

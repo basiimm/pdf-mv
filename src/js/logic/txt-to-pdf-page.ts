@@ -2,6 +2,7 @@ import { showLoader, hideLoader, showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
 import { loadPyMuPDF } from '../utils/pymupdf-loader.js';
+import { convertTxtToPdf } from '../engines/text-to-pdf.js';
 
 let files: File[] = [];
 let currentMode: 'upload' | 'text' = 'upload';
@@ -102,31 +103,38 @@ async function convert() {
   showLoader('Loading engine...');
 
   try {
-    const pymupdf = await loadPyMuPDF();
-
-    let textContent = '';
+    let pdfBlob: Blob;
 
     if (currentMode === 'upload') {
-      for (const file of files) {
-        const text = await file.text();
-        textContent += text + '\n\n';
-      }
+      const controller = new AbortController();
+      pdfBlob = await convertTxtToPdf(
+        files,
+        {
+          fontSize,
+          pageSize: pageSizeKey as 'a4' | 'letter' | 'legal' | 'a3' | 'a5',
+          fontName: fontName as 'helv' | 'tiro' | 'cour' | 'times',
+          textColor,
+        },
+        {
+          signal: controller.signal,
+          progress: (p) =>
+            showLoader(p.detail ? `${p.label}: ${p.detail}` : p.label),
+        }
+      );
     } else {
       const textInput = document.getElementById(
         'text-input'
       ) as HTMLTextAreaElement;
-      textContent = textInput.value;
+      const pymupdf = await loadPyMuPDF();
+      showLoader('Creating PDF...');
+      pdfBlob = await pymupdf.textToPdf(textInput.value, {
+        fontSize,
+        pageSize: pageSizeKey as 'a4' | 'letter' | 'legal' | 'a3' | 'a5',
+        fontName: fontName as 'helv' | 'tiro' | 'cour' | 'times',
+        textColor,
+        margins: 72,
+      });
     }
-
-    showLoader('Creating PDF...');
-
-    const pdfBlob = await pymupdf.textToPdf(textContent, {
-      fontSize,
-      pageSize: pageSizeKey as 'a4' | 'letter' | 'legal' | 'a3' | 'a5',
-      fontName: fontName as 'helv' | 'tiro' | 'cour' | 'times',
-      textColor,
-      margins: 72,
-    });
 
     downloadFile(pdfBlob, 'text_to_pdf.pdf');
 

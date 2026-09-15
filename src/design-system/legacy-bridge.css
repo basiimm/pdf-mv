@@ -1,0 +1,122 @@
+/*
+ * Temporary bridge: restyles BentoPDF's shared modal markup (present in every
+ * legacy tool page and driven directly by ~15 engine scripts) to match the
+ * kit's dialog and progress components. Loaded on tool pages only.
+ * Delete together with src/pages/*.html in Phase 3.
+ */
+:is(#loader-modal, #alert-modal, #warning-modal) {
+  background: var(--ds-backdrop);
+  backdrop-filter: none;
+  z-index: var(--ds-z-dialog);
+}
+:is(#loader-modal, #alert-modal, #warning-modal) > div {
+  border: 0;
+  border-radius: var(--ds-radius-xl);
+  background: var(--ds-raised);
+  color: var(--ds-text);
+  box-shadow: var(--ds-elevation-2);
+  font-family: var(--ds-font-sans);
+}
+
+/* Loader → progress card */
+#loader-modal > div {
+  min-width: 260px;
+  padding: var(--ds-space-500);
+  gap: var(--ds-space-300);
+}
+#loader-modal .solid-spinner {
+  width: var(--ds-size-m);
+  height: var(--ds-size-m);
+  border: 3px solid var(--ds-inset);
+  border-bottom-color: var(--ds-accent-fill);
+}
+#loader-text {
+  color: var(--ds-text);
+  font-size: var(--ds-text-s);
+  font-weight: var(--ds-weight-medium);
+  text-align: center;
+}
+#loader-modal .loader-progress-container > div {
+  height: 4px;
+  background: var(--ds-inset);
+}
+#loader-modal .loader-progress-bar {
+  background: var(--ds-accent-fill);
+}
+#loader-modal .loader-progress-text {
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Alert → dialog */
+#alert-modal > div {
+  width: min(440px, calc(100vw - 32px));
+  max-width: none;
+  padding: var(--ds-space-500);
+}
+#alert-title,
+#warning-title {
+  margin-bottom: var(--ds-space-200);
+  color: var(--ds-text);
+  font-size: var(--ds-text-xl);
+  font-weight: var(--ds-weight-bold);
+  line-height: var(--ds-leading-tight);
+}
+#alert-message,
+#warning-message {
+  margin-bottom: var(--ds-space-500);
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-s);
+  line-height: var(--ds-leading);
+  white-space: pre-line;
+}
+#alert-ok,
+#warning-confirm-btn,
+#warning-cancel-btn {
+  min-height: var(--ds-size-l);
+  padding: 0 var(--ds-space-500);
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-full);
+  font: var(--ds-weight-medium) var(--ds-text-s) / 1 var(--ds-font-sans);
+  transition: background-color var(--ds-duration-fast) var(--ds-ease-out);
+}
+#alert-ok,
+#warning-confirm-btn {
+  background: var(--ds-accent-fill);
+  color: var(--ds-on-accent);
+}
+#alert-ok:hover,
+#warning-confirm-btn:hover {
+  background: var(--ds-accent-fill-hover);
+}
+#warning-cancel-btn {
+  background: transparent;
+  border-color: var(--ds-border-control);
+  color: var(--ds-text);
+}
+#warning-cancel-btn:hover {
+  background: var(--ds-hover);
+}
+:is(#alert-ok, #warning-confirm-btn, #warning-cancel-btn):focus-visible {
+  outline: var(--ds-focus-width) solid var(--ds-focus-ring);
+  outline-offset: var(--ds-focus-offset);
+}
+
+/* Warning → confirm dialog */
+#warning-modal > div > div:last-child {
+  border-top: 0;
+  background: transparent;
+  padding: 0 var(--ds-space-500) var(--ds-space-500);
+  justify-content: flex-end;
+}
+#warning-modal > div > div:last-child > button {
+  flex: 0 0 auto;
+}
+#warning-icon {
+  background: var(--ds-notice-bg);
+  color: var(--ds-notice);
+}
+#warning-icon svg {
+  color: var(--ds-notice);
+}

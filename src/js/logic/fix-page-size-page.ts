@@ -1,9 +1,9 @@
 import { showAlert } from '../ui.js';
-import { downloadFile, formatBytes, hexToRgb } from '../utils/helpers.js';
-import { fixPageSize as fixPageSizeCore } from '../utils/pdf-operations';
+import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
 import { icons, createIcons } from 'lucide';
 import { FixPageSizeState } from '@/types';
+import { fixPageSize as fixPageSizeEngine } from '../engines/fix-page-size.js';
 
 const pageState: FixPageSizeState = {
   file: null,
@@ -98,9 +98,9 @@ async function fixPageSize() {
       'input[name="scaling-mode"]:checked'
     ) as HTMLInputElement
   ).value;
-  const backgroundColor = hexToRgb(
-    (document.getElementById('background-color') as HTMLInputElement).value
-  );
+  const backgroundColor =
+    (document.getElementById('background-color') as HTMLInputElement)?.value ||
+    '#ffffff';
 
   const loaderModal = document.getElementById('loader-modal');
   const loaderText = document.getElementById('loader-text');
@@ -117,26 +117,30 @@ async function fixPageSize() {
         (document.getElementById('custom-height') as HTMLInputElement)?.value
       ) || 297;
     const customUnits =
-      (document.getElementById('custom-units') as HTMLSelectElement)?.value ||
-      'mm';
+      ((document.getElementById('custom-units') as HTMLSelectElement)?.value as
+        | 'mm'
+        | 'in') || 'mm';
 
-    const arrayBuffer = await pageState.file.arrayBuffer();
-    const pdfBytes = new Uint8Array(arrayBuffer);
-
-    const newPdfBytes = await fixPageSizeCore(pdfBytes, {
-      targetSize,
-      orientation,
-      scalingMode,
-      backgroundColor,
-      customWidth,
-      customHeight,
-      customUnits,
-    });
-
-    downloadFile(
-      new Blob([new Uint8Array(newPdfBytes)], { type: 'application/pdf' }),
-      pageState.file?.name || 'document.pdf'
+    const resultFile = await fixPageSizeEngine(
+      pageState.file,
+      {
+        targetSize,
+        orientation: orientation as 'auto' | 'portrait' | 'landscape',
+        scalingMode: scalingMode as 'fit' | 'fill',
+        backgroundColor,
+        customWidth,
+        customHeight,
+        customUnits,
+      },
+      {
+        signal: new AbortController().signal,
+        progress: (p) => {
+          if (loaderText) loaderText.textContent = p.label;
+        },
+      }
     );
+
+    downloadFile(resultFile, pageState.file?.name || 'document.pdf');
     showAlert(
       'Success',
       'Page sizes standardized successfully!',

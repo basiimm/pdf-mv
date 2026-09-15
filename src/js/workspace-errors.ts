@@ -1,0 +1,106 @@
+import { inlineAlert } from '../design-system/ui/index.js';
+
+export type WorkspaceErrorContext =
+  | 'open'
+  | 'preview'
+  | 'apply'
+  | 'convert'
+  | 'merge';
+export interface WorkspaceErrorDescription {
+  message: string;
+  action: 'retry' | 'choose-file' | 'fix-settings';
+  actionLabel: string;
+  details: string;
+}
+
+/** Keep engine exceptions out of the recovery message, while preserving diagnostics. */
+export function describeWorkspaceError(
+  error: unknown,
+  context: WorkspaceErrorContext = 'apply'
+): WorkspaceErrorDescription {
+  const details =
+    error instanceof Error ? error.message : String(error ?? 'Unknown error');
+  if (
+    /page range|page numbers|preview page|enter some text|font size|valid color|does not support.*characters/i.test(
+      details
+    )
+  ) {
+    return {
+      message: /page range|page numbers|preview page/i.test(details)
+        ? 'Check the page range and use pages in this document, for example 1, 3-5.'
+        : /characters/i.test(details)
+          ? 'One of the characters is unavailable in this font. Try Latin text.'
+          : 'Check the text, font size, angle and color before trying again.',
+      action: 'fix-settings',
+      actionLabel: 'Keep editing',
+      details,
+    };
+  }
+  if (/import|fetch|network|load.*module|chunk|wasm|worker/i.test(details)) {
+    return {
+      message:
+        'The PDF engine could not load. Your file and settings are still available. Check your connection and try again.',
+      action: 'retry',
+      actionLabel: 'Retry engine loading',
+      details,
+    };
+  }
+  // Engines throw short, plain-language messages for expected conditions
+  // (no tables found, wrong password). Show those as written.
+  if (
+    error instanceof Error &&
+    details.length <= 160 &&
+    /^[A-Z][^{}<>\n]*[.!]$/.test(details) &&
+    !/https?:|failed:|exception|undefined|null|\bat\s/i.test(details)
+  ) {
+    return {
+      message: details,
+      action: /password/i.test(details) ? 'fix-settings' : 'retry',
+      // Retrying an expected condition changes nothing; offer no action.
+      actionLabel: /password/i.test(details) ? 'Enter password' : '',
+      details: '',
+    };
+  }
+  if (
+    context === 'open' ||
+    /invalid pdf|no pdf header|parse|encrypted|password|corrupt/i.test(details)
+  ) {
+    return {
+      message:
+        'We could not read this PDF. Try another PDF or export a fresh copy from its original app.',
+      action: 'choose-file',
+      actionLabel: 'Choose another file',
+      details,
+    };
+  }
+  return {
+    message: `We could not ${context === 'preview' ? 'prepare the preview' : context === 'convert' ? 'convert this file' : context === 'merge' ? 'combine these files' : 'create the edited copy'}. Your original file and settings are safe. Try again.`,
+    action: 'retry',
+    actionLabel: 'Try again',
+    details,
+  };
+}
+
+export function renderWorkspaceError(
+  container: HTMLElement,
+  error: unknown,
+  context: WorkspaceErrorContext,
+  onRecover: (action: WorkspaceErrorDescription['action']) => void
+): void {
+  const description = describeWorkspaceError(error, context);
+  container.replaceChildren(
+    inlineAlert({
+      tone: 'negative',
+      message: description.message,
+      actions: !description.actionLabel
+        ? []
+        : [
+            {
+              label: description.actionLabel,
+              onClick: () => onRecover(description.action),
+            },
+          ],
+      details: description.details,
+    })
+  );
+}

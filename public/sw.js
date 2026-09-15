@@ -1,11 +1,11 @@
 /**
- * BentoPDF Service Worker
+ * PDF.mv Service Worker
  * Caches WASM files and static assets for offline support and faster loading
  * Supports both local and CDN delivery with deduplication
  * Version: 1.1.0
  */
 
-const CACHE_VERSION = 'bentopdf-v11';
+const CACHE_VERSION = 'pdfmv-v11';
 const CACHE_NAME = `${CACHE_VERSION}-static`;
 
 const trustedCdnOrigins = new Set(['https://cdn.jsdelivr.net']);
@@ -16,11 +16,18 @@ const getBasePath = () => {
   return url.pathname.replace(/\/$/, '') || '';
 };
 
+const OFFLINE_URL = 'offline.html';
+
+// Always-precached assets that aren't part of the build's PDF engine bundle.
+// Kept separate from PRECACHE_ASSETS below, which scripts/../vite.config.ts's
+// sw-precache plugin rewrites wholesale with the built worker asset list.
+const STATIC_PRECACHE_ASSETS = [OFFLINE_URL];
+
 const PRECACHE_ASSETS = [];
 
 const buildCriticalAssets = () => {
   const basePath = getBasePath();
-  return PRECACHE_ASSETS.map(
+  return [...STATIC_PRECACHE_ASSETS, ...PRECACHE_ASSETS].map(
     (asset) => `${basePath}/${asset.replace(/^\/+/, '')}`
   );
 };
@@ -58,7 +65,13 @@ self.addEventListener('activate', (event) => {
       .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName.startsWith('bentopdf-') && cacheName !== CACHE_NAME) {
+            // Clean up both the current prefix's stale versions and any
+            // cache left over from the pre-rebrand "bentopdf-" prefix.
+            if (
+              (cacheName.startsWith('pdfmv-') ||
+                cacheName.startsWith('bentopdf-')) &&
+              cacheName !== CACHE_NAME
+            ) {
               // console.log('[ServiceWorker] Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
@@ -101,7 +114,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (isLocal && url.pathname.includes('/locales/')) {
+  if (isLocal && event.request.mode === 'navigate') {
+    event.respondWith(navigationStrategy(event.request));
+  } else if (isLocal && url.pathname.includes('/locales/')) {
     event.respondWith(networkFirstStrategy(event.request));
   } else if (shouldCache(url.pathname, isCDN)) {
     event.respondWith(cacheFirstStrategyWithDedup(event.request, isCDN));
@@ -236,6 +251,44 @@ async function removeDuplicateCache(cache, fileName, isCDN) {
         await cache.delete(req);
       }
     }
+  }
+}
+
+/**
+ * Navigation strategy: try the network first (so pages stay fresh), fall
+ * back to a cached copy of that page, and if there is none, serve the
+ * precached offline page instead of a browser error screen.
+ */
+async function navigationStrategy(request) {
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse && networkResponse.status === 200) {
+      const clone = networkResponse.clone();
+      const buffer = await clone.arrayBuffer();
+      if (buffer.byteLength > 0) {
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(
+          request,
+          new Response(buffer, {
+            status: networkResponse.status,
+            statusText: networkResponse.statusText,
+            headers: networkResponse.headers,
+          })
+        );
+      }
+    }
+    return networkResponse;
+  } catch (error) {
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    const basePath = getBasePath();
+    const offlineResponse = await caches.match(`${basePath}/${OFFLINE_URL}`);
+    if (offlineResponse) {
+      return offlineResponse;
+    }
+    throw error;
   }
 }
 

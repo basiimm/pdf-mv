@@ -129,7 +129,6 @@
                   and convert right in your browser — no file uploads.
                 </p>
               </div>
-              <span class="workspace-date" id="workspace-date"></span>
             </div>
             <section
               class="open-hero"
@@ -139,8 +138,8 @@
               <div class="hero-copy">
                 <h2>Your PDFs.<br />One clear workspace.</h2>
                 <p>
-                  Open a PDF to read, annotate, sign, or redact.<br />Keep each
-                  document in its own tab.
+                  Open a PDF to read, annotate, sign, or redact.<br />
+                  Keep each document in its own tab.
                 </p>
                 <button class="button button-primary" id="hero-open">
                   <i data-lucide="plus"></i>Open a PDF</button
@@ -196,7 +195,9 @@
                     type="search"
                     placeholder="Find a tool…"
                     autocomplete="off"
-                  /><kbd>/</kbd></label
+                  /><kbd title="Search tools and documents anywhere"
+                    >⌘K</kbd
+                  ></label
                 >
               </div>
               <div
@@ -248,13 +249,26 @@
           <div class="document-work-area">
             <div class="document-canvas-area">
               <div id="tool-empty-canvas" hidden>
-                <h2>Start with your document</h2>
+                <i data-lucide="file-plus-2" aria-hidden="true"></i>
+                <h2>This task needs a PDF</h2>
                 <p>
-                  Choose a file in the tool panel. Your PDF will appear here.
+                  Choose a file to use with this tool. It will open here when it
+                  is ready.
                 </p>
+                <button id="tool-empty-open" class="button button-primary">
+                  <i data-lucide="folder-open" aria-hidden="true"></i>Choose a
+                  PDF
+                </button>
               </div>
               <div id="pdf-viewer" class="pdf-viewer"></div>
             </div>
+            <button
+              id="tool-drawer-backdrop"
+              class="tool-drawer-backdrop"
+              type="button"
+              aria-label="Close tools"
+              hidden
+            ></button>
             <aside id="workspace-tools" aria-label="Document tools">
               <div class="document-tools-heading">
                 <button
@@ -265,6 +279,14 @@
                   ← Tools
                 </button>
                 <h2 id="document-tool-title">Tools</h2>
+                <button
+                  id="document-tools-close"
+                  class="button button-quiet"
+                  type="button"
+                >
+                  <i data-lucide="arrow-left" aria-hidden="true"></i>Back to
+                  document
+                </button>
               </div>
               <input
                 id="document-tools-search"

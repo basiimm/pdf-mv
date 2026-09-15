@@ -8,10 +8,9 @@ import {
 } from '../utils/helpers.js';
 import { state } from '../state.js';
 import { createIcons, icons } from 'lucide';
-import { loadPyMuPDF } from '../utils/pymupdf-loader.js';
-import type { PyMuPDFInstance } from '@/types';
 import { batchDecryptIfNeeded } from '../utils/password-prompt.js';
 import { deduplicateFileName } from '../utils/deduplicate-filename.js';
+import { preparePdfForAi } from '../engines/prepare-pdf-for-ai.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -103,10 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      showLoader('Loading engine...');
-      const pymupdf = await loadPyMuPDF();
-
-      hideLoader();
       state.files = await batchDecryptIfNeeded(state.files);
       showLoader('Extracting...');
 
@@ -116,17 +111,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (total === 1) {
         const file = state.files[0];
-        showLoader(`Extracting ${file.name} for AI...`);
-
-        const llamaDocs = await (pymupdf as PyMuPDFInstance).pdfToLlamaIndex(
-          file
+        const controller = new AbortController();
+        const output = await preparePdfForAi(
+          file,
+          {},
+          {
+            signal: controller.signal,
+            progress: (p) => showLoader(p.label),
+          }
         );
-        const outName = file.name.replace(/\.pdf$/i, '') + '_llm.json';
-        const jsonContent = JSON.stringify(llamaDocs, null, 2);
-        downloadFile(
-          new Blob([jsonContent], { type: 'application/json' }),
-          outName
-        );
+        downloadFile(output, output.name);
 
         hideLoader();
         showAlert(
@@ -147,13 +141,17 @@ document.addEventListener('DOMContentLoaded', () => {
               `Extracting ${file.name} for AI (${completed + 1}/${total})...`
             );
 
-            const llamaDocs = await (
-              pymupdf as PyMuPDFInstance
-            ).pdfToLlamaIndex(file);
-            const outName = file.name.replace(/\.pdf$/i, '') + '_llm.json';
-            const jsonContent = JSON.stringify(llamaDocs, null, 2);
-            const zipEntryName = deduplicateFileName(outName, usedNames);
-            zip.file(zipEntryName, jsonContent);
+            const controller = new AbortController();
+            const output = await preparePdfForAi(
+              file,
+              {},
+              {
+                signal: controller.signal,
+                progress: (p) => showLoader(p.label),
+              }
+            );
+            const zipEntryName = deduplicateFileName(output.name, usedNames);
+            zip.file(zipEntryName, await output.text());
 
             completed++;
           } catch (error) {

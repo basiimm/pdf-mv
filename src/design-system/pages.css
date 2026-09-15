@@ -1,0 +1,176 @@
+/*
+ * Shared layout for standalone marketing/status pages (404, offline, about,
+ * contact, faq, privacy, terms, licensing). Built entirely on --ds-* tokens
+ * from tokens.css and the .ds-* component kit from components.css, both of
+ * which studioBootPlugin already injects into every Vite-built HTML page.
+ *
+ * Structure:
+ *   <div class="pg-shell">
+ *     <header class="pg-topstrip">...</header>
+ *     <main class="pg-main">...</main>
+ *     <footer class="pg-footer">...</footer>
+ *   </div>
+ */
+
+.pg-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--ds-bg);
+  color: var(--ds-text);
+}
+
+/* ---------- Top strip ---------- */
+.pg-topstrip {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  padding: 0 var(--ds-space-500);
+  border-bottom: 1px solid var(--ds-border);
+  flex: none;
+}
+.pg-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-200);
+  text-decoration: none;
+  color: var(--ds-text);
+}
+.pg-brand img {
+  display: block;
+  height: 24px;
+  width: auto;
+}
+.pg-brand:focus-visible {
+  outline: var(--ds-focus-width) solid var(--ds-focus-ring);
+  outline-offset: var(--ds-focus-offset);
+  border-radius: var(--ds-radius-s);
+}
+
+/* ---------- Main column ---------- */
+.pg-main {
+  flex: 1 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 68ch;
+  margin: 0 auto;
+  padding: var(--ds-space-800) var(--ds-space-500);
+}
+
+/* Status pages (404, offline): center the ds-empty block in the remaining
+   viewport height instead of flowing at the top. */
+.pg-main[data-center] {
+  flex: 1;
+  display: grid;
+  align-content: center;
+  max-width: none;
+  padding: var(--ds-space-500);
+}
+.pg-main[data-center] .ds-empty {
+  max-width: 60ch;
+  margin: 0 auto;
+}
+
+/* ---------- Info page copy ---------- */
+.pg-info h1 {
+  margin: 0 0 var(--ds-space-300);
+  font: var(--ds-weight-bold) var(--ds-text-xxl) / var(--ds-leading-tight)
+    var(--ds-font-sans);
+  letter-spacing: -0.02em;
+  color: var(--ds-text);
+}
+.pg-info h2 {
+  margin: var(--ds-space-700) 0 var(--ds-space-300);
+  font: var(--ds-weight-bold) var(--ds-text-xl) / var(--ds-leading-tight)
+    var(--ds-font-sans);
+  color: var(--ds-text);
+}
+.pg-info p,
+.pg-info li {
+  margin: 0 0 var(--ds-space-400);
+  font-size: var(--ds-text-m);
+  line-height: var(--ds-leading);
+  color: var(--ds-text-muted);
+}
+.pg-info ul,
+.pg-info ol {
+  padding-left: var(--ds-space-500);
+}
+.pg-info dt {
+  margin-top: var(--ds-space-400);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text);
+}
+.pg-info dd {
+  margin: var(--ds-space-100) 0 0;
+  color: var(--ds-text-muted);
+  line-height: var(--ds-leading);
+}
+.pg-info a {
+  color: var(--ds-accent-text);
+}
+.pg-info a:hover {
+  text-decoration-thickness: 2px;
+}
+.pg-lede {
+  font-size: var(--ds-text-l);
+  color: var(--ds-text-muted);
+  line-height: var(--ds-leading);
+  margin: 0 0 var(--ds-space-600);
+}
+.pg-updated {
+  margin: 0 0 var(--ds-space-600);
+  font-size: var(--ds-text-xs);
+  color: var(--ds-text-disabled);
+}
+
+/* ---------- Footer ---------- */
+.pg-footer {
+  flex: none;
+  border-top: 1px solid var(--ds-border);
+  padding: var(--ds-space-500);
+}
+.pg-footer-inner {
+  max-width: 68ch;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-300);
+}
+.pg-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-100) var(--ds-space-400);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pg-footer-links a {
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-s);
+  text-decoration: none;
+}
+.pg-footer-links a:hover {
+  color: var(--ds-text);
+  text-decoration: underline;
+}
+.pg-footer-attrib {
+  margin: 0;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-text-disabled);
+}
+.pg-footer-attrib a {
+  color: var(--ds-text-disabled);
+}
+.pg-footer-attrib a:hover {
+  color: var(--ds-text-muted);
+}
+
+@media (max-width: 480px) {
+  .pg-footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

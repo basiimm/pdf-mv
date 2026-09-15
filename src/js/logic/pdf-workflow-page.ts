@@ -100,7 +100,6 @@ async function initializePage() {
     const statusText = document.getElementById('status-text');
     const runBtn = document.getElementById('run-btn') as HTMLButtonElement;
     runBtn.disabled = true;
-    runBtn.classList.add('opacity-50', 'pointer-events-none');
 
     try {
       await executeWorkflow(editor, engine, area, (progress) => {
@@ -113,7 +112,6 @@ async function initializePage() {
       showAlert('Error', (err as Error).message);
     } finally {
       runBtn.disabled = false;
-      runBtn.classList.remove('opacity-50', 'pointer-events-none');
     }
   });
 
@@ -366,21 +364,24 @@ function showLoadTemplateModal(
     emptyEl.classList.add('hidden');
     for (const name of names) {
       const row = document.createElement('div');
-      row.className =
-        'group flex items-center gap-2 bg-gray-900/60 hover:bg-gray-700/50 rounded-lg px-3 py-2.5 border border-gray-700/50 transition-colors cursor-pointer';
+      row.className = 'wf-template-row group cursor-pointer';
 
       const icon = document.createElement('i');
-      icon.className = 'ph ph-file-text text-base text-gray-500 flex-shrink-0';
+      icon.className = 'ph ph-file-text text-base flex-shrink-0';
+      icon.style.color = 'var(--ds-text-muted)';
       row.appendChild(icon);
 
       const label = document.createElement('span');
-      label.className = 'text-gray-200 text-sm truncate flex-1';
+      label.className = 'text-sm truncate flex-1';
+      label.style.color = 'var(--ds-text)';
       label.textContent = name;
       row.appendChild(label);
 
       const loadBtn = document.createElement('button');
-      loadBtn.className =
-        'bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium px-3 py-1.5 rounded-md transition-colors flex-shrink-0';
+      loadBtn.type = 'button';
+      loadBtn.className = 'ds-button flex-shrink-0';
+      loadBtn.dataset.variant = 'accent';
+      loadBtn.dataset.size = 's';
       loadBtn.textContent = 'Load';
       loadBtn.addEventListener('click', async () => {
         const loaded = await loadWorkflow(editor, area, name);
@@ -395,8 +396,10 @@ function showLoadTemplateModal(
       row.appendChild(loadBtn);
 
       const delBtn = document.createElement('button');
-      delBtn.className =
-        'text-gray-600 hover:text-red-400 transition-colors flex-shrink-0';
+      delBtn.type = 'button';
+      delBtn.className = 'ds-icon-button ds-button flex-shrink-0';
+      delBtn.dataset.variant = 'quiet';
+      delBtn.dataset.size = 's';
       delBtn.innerHTML = '<i class="ph ph-trash text-sm"></i>';
       delBtn.addEventListener('click', () => {
         deleteTemplate(name);
@@ -429,14 +432,13 @@ function buildToolbox() {
   const categorized = getNodesByCategory();
   const categoryOrder: Array<{
     key: NodeCategory;
-    color: string;
   }> = [
-    { key: 'Input', color: 'text-blue-400' },
-    { key: 'Edit & Annotate', color: 'text-indigo-300' },
-    { key: 'Organize & Manage', color: 'text-violet-300' },
-    { key: 'Optimize & Repair', color: 'text-amber-300' },
-    { key: 'Secure PDF', color: 'text-rose-300' },
-    { key: 'Output', color: 'text-teal-300' },
+    { key: 'Input' },
+    { key: 'Edit & Annotate' },
+    { key: 'Organize & Manage' },
+    { key: 'Optimize & Repair' },
+    { key: 'Secure PDF' },
+    { key: 'Output' },
   ];
 
   for (const cat of categoryOrder) {
@@ -449,7 +451,7 @@ function buildToolbox() {
     section.className = 'toolbox-category';
 
     const header = document.createElement('button');
-    header.className = `w-full flex items-center justify-between text-xs font-bold uppercase tracking-wider ${cat.color} mb-1.5 px-1 hover:opacity-80 transition-opacity`;
+    header.className = 'wf-toolbox-header';
     header.type = 'button';
 
     const headerLabel = document.createElement('span');
@@ -475,8 +477,7 @@ function buildToolbox() {
 
     for (const entry of entries) {
       const item = document.createElement('button');
-      item.className =
-        'toolbox-node-item w-full text-left px-2 py-1.5 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white transition-colors text-xs flex items-center gap-2';
+      item.className = 'toolbox-node-item';
       const nodeType = Object.keys(nodeRegistry).find(
         (k) => nodeRegistry[k] === entry
       )!;
@@ -588,17 +589,19 @@ function buildFileList(
 
   filenames.forEach((name, i) => {
     const row = document.createElement('div');
-    row.className =
-      'flex items-center justify-between bg-gray-900 rounded-lg px-3 py-2';
+    row.className = 'wf-file-row';
 
     const nameEl = document.createElement('span');
-    nameEl.className = 'text-sm text-white truncate flex-1 mr-2';
+    nameEl.className = 'text-sm truncate flex-1 mr-2';
+    nameEl.style.color = 'var(--ds-text)';
     nameEl.textContent = name;
     row.appendChild(nameEl);
 
     const removeBtn = document.createElement('button');
-    removeBtn.className =
-      'text-gray-500 hover:text-red-400 text-lg leading-none flex-shrink-0';
+    removeBtn.type = 'button';
+    removeBtn.className = 'ds-icon-button ds-button flex-shrink-0';
+    removeBtn.dataset.variant = 'quiet';
+    removeBtn.dataset.size = 's';
     removeBtn.innerHTML = '&times;';
     removeBtn.addEventListener('click', () => onRemove(i));
     row.appendChild(removeBtn);
@@ -674,7 +677,7 @@ function showNodeSettings(node: BaseWorkflowNode) {
     const fileSection = document.createElement('div');
 
     const label = document.createElement('label');
-    label.className = 'block text-xs text-gray-400 mb-1';
+    label.className = 'ds-field__label block mb-1';
     label.textContent = 'PDF Files';
     fileSection.appendChild(label);
 
@@ -686,8 +689,9 @@ function showNodeSettings(node: BaseWorkflowNode) {
     }
 
     const uploadBtn = document.createElement('button');
-    uploadBtn.className =
-      'w-full bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-2 rounded-lg transition-colors';
+    uploadBtn.className = 'ds-button w-full';
+    uploadBtn.dataset.variant = 'secondary';
+    uploadBtn.dataset.size = 's';
     uploadBtn.textContent = node.hasFile() ? 'Add More Files' : 'Upload PDFs';
 
     const fileInput = document.createElement('input');
@@ -733,12 +737,12 @@ function showNodeSettings(node: BaseWorkflowNode) {
     const fileSection = document.createElement('div');
 
     const label = document.createElement('label');
-    label.className = 'block text-xs text-gray-400 mb-1';
+    label.className = 'ds-field__label block mb-1';
     label.textContent = 'Images';
     fileSection.appendChild(label);
 
     const formatHint = document.createElement('p');
-    formatHint.className = 'text-[10px] text-gray-500 mb-2';
+    formatHint.className = 'ds-field__help mb-2';
     formatHint.textContent =
       'Supported: JPG, PNG, BMP, GIF, TIFF, WebP, HEIC, PSD, SVG, PNM, PGM, PBM, PPM, PAM, JXR, JPX, JP2';
     fileSection.appendChild(formatHint);
@@ -751,8 +755,9 @@ function showNodeSettings(node: BaseWorkflowNode) {
     }
 
     const uploadBtn = document.createElement('button');
-    uploadBtn.className =
-      'w-full bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-2 rounded-lg transition-colors';
+    uploadBtn.className = 'ds-button w-full';
+    uploadBtn.dataset.variant = 'secondary';
+    uploadBtn.dataset.size = 's';
     uploadBtn.textContent = node.hasFile()
       ? 'Add More Images'
       : 'Upload Images';
@@ -784,25 +789,28 @@ function showNodeSettings(node: BaseWorkflowNode) {
     const certSection = document.createElement('div');
 
     const certLabel = document.createElement('label');
-    certLabel.className = 'block text-xs text-gray-400 mb-1';
+    certLabel.className = 'ds-field__label block mb-1';
     certLabel.textContent = 'Certificate (.pfx, .p12, .pem)';
     certSection.appendChild(certLabel);
 
     if (node.hasCertFile()) {
       const certFileDiv = document.createElement('div');
-      certFileDiv.className =
-        'flex items-center justify-between bg-gray-700 px-3 py-2 rounded-lg mb-2';
+      certFileDiv.className = 'wf-file-row mb-2';
 
       const certName = document.createElement('span');
-      certName.className = 'text-xs text-gray-200 truncate flex-1';
+      certName.className = 'text-xs truncate flex-1';
+      certName.style.color = 'var(--ds-text)';
       certName.textContent = node.getCertFilename();
 
       const statusDot = document.createElement('span');
-      statusDot.className = `w-2 h-2 rounded-full flex-shrink-0 mx-2 ${node.hasCert() ? 'bg-green-400' : 'bg-yellow-400'}`;
+      statusDot.className = 'w-2 h-2 rounded-full flex-shrink-0 mx-2';
+      statusDot.style.background = node.hasCert()
+        ? 'var(--ds-positive)'
+        : 'var(--ds-notice)';
 
       const removeBtn = document.createElement('button');
-      removeBtn.className =
-        'text-red-400 hover:text-red-300 text-xs flex-shrink-0';
+      removeBtn.className = 'text-xs flex-shrink-0';
+      removeBtn.style.color = 'var(--ds-negative)';
       removeBtn.textContent = 'Remove';
       removeBtn.addEventListener('click', () => {
         node.removeCert();
@@ -817,7 +825,7 @@ function showNodeSettings(node: BaseWorkflowNode) {
         pwSection.className = 'mb-2';
 
         const pwLabel = document.createElement('label');
-        pwLabel.className = 'block text-xs text-gray-400 mb-1';
+        pwLabel.className = 'ds-field__label block mb-1';
         pwLabel.textContent = 'Certificate Password';
         pwSection.appendChild(pwLabel);
 
@@ -827,12 +835,13 @@ function showNodeSettings(node: BaseWorkflowNode) {
         const pwInput = document.createElement('input');
         pwInput.type = 'password';
         pwInput.placeholder = 'Enter password...';
-        pwInput.className =
-          'flex-1 bg-gray-700 border border-gray-600 text-white text-xs px-3 py-2 rounded-lg focus:outline-none focus:border-indigo-500';
+        pwInput.className = 'ds-input flex-1';
 
         const unlockBtn = document.createElement('button');
-        unlockBtn.className =
-          'bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-2 rounded-lg transition-colors flex-shrink-0';
+        unlockBtn.type = 'button';
+        unlockBtn.className = 'ds-button flex-shrink-0';
+        unlockBtn.dataset.variant = 'accent';
+        unlockBtn.dataset.size = 's';
         unlockBtn.textContent = 'Unlock';
 
         const statusMsg = document.createElement('div');
@@ -850,7 +859,7 @@ function showNodeSettings(node: BaseWorkflowNode) {
             unlockBtn.textContent = 'Unlock';
             unlockBtn.disabled = false;
             statusMsg.textContent = 'Incorrect password';
-            statusMsg.className = 'text-xs mt-1 text-red-400';
+            statusMsg.className = 'text-xs mt-1 ds-field__error';
             statusMsg.classList.remove('hidden');
           }
         };
@@ -865,15 +874,17 @@ function showNodeSettings(node: BaseWorkflowNode) {
         certSection.appendChild(pwSection);
       } else if (node.hasCert()) {
         const okMsg = document.createElement('div');
-        okMsg.className = 'text-xs text-green-400 mb-2';
+        okMsg.className = 'text-xs mb-2';
+        okMsg.style.color = 'var(--ds-positive)';
         okMsg.textContent = 'Certificate unlocked';
         certSection.appendChild(okMsg);
       }
     }
 
     const uploadBtn = document.createElement('button');
-    uploadBtn.className =
-      'w-full bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-2 rounded-lg transition-colors';
+    uploadBtn.className = 'ds-button w-full';
+    uploadBtn.dataset.variant = 'secondary';
+    uploadBtn.dataset.size = 's';
     uploadBtn.textContent = node.hasCertFile()
       ? 'Change Certificate'
       : 'Upload Certificate';
@@ -906,7 +917,8 @@ function showNodeSettings(node: BaseWorkflowNode) {
     content.appendChild(certSection);
 
     const divider = document.createElement('div');
-    divider.className = 'border-t border-gray-700 my-3';
+    divider.className = 'my-3';
+    divider.style.borderTop = '1px solid var(--ds-border)';
     content.appendChild(divider);
   }
 
@@ -1059,13 +1071,13 @@ function showNodeSettings(node: BaseWorkflowNode) {
     const fileSection = document.createElement('div');
 
     const label = document.createElement('label');
-    label.className = 'block text-xs text-gray-400 mb-1';
+    label.className = 'ds-field__label block mb-1';
     label.textContent = fileInputConfig.label;
     fileSection.appendChild(label);
 
     if (fileInputConfig.hint) {
       const hint = document.createElement('p');
-      hint.className = 'text-[10px] text-gray-500 mb-2';
+      hint.className = 'ds-field__help mb-2';
       hint.textContent = fileInputConfig.hint;
       fileSection.appendChild(hint);
     }
@@ -1078,8 +1090,9 @@ function showNodeSettings(node: BaseWorkflowNode) {
     }
 
     const uploadBtn = document.createElement('button');
-    uploadBtn.className =
-      'w-full bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-2 rounded-lg transition-colors';
+    uploadBtn.className = 'ds-button w-full';
+    uploadBtn.dataset.variant = 'secondary';
+    uploadBtn.dataset.size = 's';
     uploadBtn.textContent = fileNode.hasFile()
       ? `Add More ${fileInputConfig.btnLabel}`
       : `Upload ${fileInputConfig.btnLabel}`;
@@ -1108,7 +1121,8 @@ function showNodeSettings(node: BaseWorkflowNode) {
     const controlEntries = Object.entries(node.controls);
     if (controlEntries.length > 0) {
       const divider = document.createElement('div');
-      divider.className = 'border-t border-gray-700 my-3';
+      divider.className = 'my-3';
+      divider.style.borderTop = '1px solid var(--ds-border)';
       content.appendChild(divider);
     } else {
       return;
@@ -1118,7 +1132,7 @@ function showNodeSettings(node: BaseWorkflowNode) {
   const controlEntries = Object.entries(node.controls);
   if (controlEntries.length === 0) {
     const empty = document.createElement('p');
-    empty.className = 'text-xs text-gray-500';
+    empty.className = 'ds-field__help';
     empty.textContent = 'No configurable settings for this node.';
     content.appendChild(empty);
     return;
@@ -1311,8 +1325,7 @@ function showNodeSettings(node: BaseWorkflowNode) {
       "Off (default): natural 1–N numbering. On: each file's original page labels are preserved (may produce duplicate labels).",
   };
 
-  const inputClass =
-    'w-full bg-gray-900 border border-gray-600 text-white rounded-md px-2 py-1.5 text-xs focus:border-indigo-500 focus:outline-none';
+  const inputClass = 'ds-input';
 
   const conditionalVisibility: Record<string, Record<string, string[]>> = {
     redactMode: {
@@ -1335,7 +1348,7 @@ function showNodeSettings(node: BaseWorkflowNode) {
     const currentValue = String(ctrl.value ?? '');
 
     const controlLabel = document.createElement('label');
-    controlLabel.className = 'block text-xs text-gray-400 mb-1';
+    controlLabel.className = 'ds-field__label block mb-1';
     controlLabel.textContent = formatLabel(key);
     wrapper.appendChild(controlLabel);
 
@@ -1357,8 +1370,9 @@ function showNodeSettings(node: BaseWorkflowNode) {
       container.appendChild(tagsDiv);
 
       const listDiv = document.createElement('div');
-      listDiv.className =
-        'max-h-32 overflow-y-auto bg-gray-800 rounded border border-gray-600 mt-1';
+      listDiv.className = 'max-h-32 overflow-y-auto rounded mt-1';
+      listDiv.style.background = 'var(--ds-inset)';
+      listDiv.style.border = '1px solid var(--ds-border-control)';
       container.appendChild(listDiv);
 
       function updateTags() {
@@ -1367,14 +1381,15 @@ function showNodeSettings(node: BaseWorkflowNode) {
           const opt = dropdownOptions[key].find((o) => o.value === val);
           if (!opt) continue;
           const tag = document.createElement('span');
-          tag.className =
-            'inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-600 text-white text-[10px]';
+          tag.className = 'ds-badge';
+          tag.dataset.tone = 'accent';
           tag.textContent = opt.label;
           const removeBtn = document.createElement('button');
           removeBtn.type = 'button';
           removeBtn.textContent = '\u00d7';
-          removeBtn.className =
-            'text-white/70 hover:text-white text-xs leading-none';
+          removeBtn.className = 'text-xs leading-none';
+          removeBtn.style.color = 'inherit';
+          removeBtn.style.opacity = '0.7';
           removeBtn.addEventListener('click', () => {
             selectedValues.delete(val);
             updateTags();
@@ -1398,13 +1413,13 @@ function showNodeSettings(node: BaseWorkflowNode) {
           if (lowerFilter && !opt.label.toLowerCase().includes(lowerFilter))
             continue;
           const label = document.createElement('label');
-          label.className =
-            'flex items-center gap-2 px-2 py-1 hover:bg-gray-700 cursor-pointer text-xs text-gray-300';
+          label.className = 'ds-check';
+          label.style.padding = 'var(--ds-space-100) var(--ds-space-200)';
+          label.style.minHeight = 'auto';
+          label.style.fontSize = 'var(--ds-text-xs)';
           const cb = document.createElement('input');
           cb.type = 'checkbox';
           cb.checked = selectedValues.has(opt.value);
-          cb.className =
-            'w-3 h-3 rounded text-indigo-600 bg-gray-700 border-gray-600';
           cb.addEventListener('change', () => {
             if (cb.checked) {
               selectedValues.add(opt.value);
@@ -1448,17 +1463,16 @@ function showNodeSettings(node: BaseWorkflowNode) {
       const toggle = document.createElement('button');
       toggle.type = 'button';
       const isOn = currentValue === 'true';
-      toggle.className = `relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200 ${isOn ? 'bg-indigo-500' : 'bg-gray-600'}`;
+      toggle.className = 'wf-toggle';
+      toggle.dataset.on = String(isOn);
       const dot = document.createElement('span');
-      dot.className = `pointer-events-none absolute top-[3px] left-[3px] h-[18px] w-[18px] rounded-full bg-white shadow-md transition-transform duration-200 ${isOn ? 'translate-x-5' : 'translate-x-0'}`;
+      dot.className = 'wf-toggle-dot';
       toggle.appendChild(dot);
       toggle.addEventListener('click', () => {
         const newVal =
           (ctrl as { value: string }).value === 'true' ? 'false' : 'true';
         (ctrl as { value: string }).value = newVal;
-        const on = newVal === 'true';
-        toggle.className = `relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200 ${on ? 'bg-indigo-500' : 'bg-gray-600'}`;
-        dot.className = `pointer-events-none absolute top-[3px] left-[3px] h-[18px] w-[18px] rounded-full bg-white shadow-md transition-transform duration-200 ${on ? 'translate-x-5' : 'translate-x-0'}`;
+        toggle.dataset.on = String(newVal === 'true');
       });
       wrapper.appendChild(toggle);
     } else if (colorControls.has(key)) {
@@ -1467,7 +1481,7 @@ function showNodeSettings(node: BaseWorkflowNode) {
       const colorInput = document.createElement('input');
       colorInput.type = 'color';
       colorInput.value = currentValue || '#000000';
-      colorInput.className = 'w-8 h-8 rounded bg-transparent cursor-pointer';
+      colorInput.className = 'ds-input';
       const hexInput = document.createElement('input');
       hexInput.type = 'text';
       hexInput.value = currentValue || '#000000';
@@ -1511,7 +1525,7 @@ function showNodeSettings(node: BaseWorkflowNode) {
 
     if (controlHints[key]) {
       const hint = document.createElement('p');
-      hint.className = 'text-[10px] text-gray-500 mt-1';
+      hint.className = 'ds-field__help mt-1';
       hint.textContent = controlHints[key];
       wrapper.appendChild(hint);
     }
@@ -1552,17 +1566,20 @@ function showNodeSettings(node: BaseWorkflowNode) {
 
   if (hasAdvanced && advancedWrappers.length > 0) {
     const details = document.createElement('details');
-    details.className =
-      'bg-gray-800/50 border border-gray-700 rounded-lg p-2 mt-1';
+    details.className = 'rounded-lg p-2 mt-1';
+    details.style.background = 'var(--ds-inset)';
+    details.style.border = '1px solid var(--ds-border)';
     const summary = document.createElement('summary');
     summary.className =
-      'text-xs font-medium text-gray-400 cursor-pointer select-none flex items-center justify-between';
+      'text-xs font-medium cursor-pointer select-none flex items-center justify-between';
+    summary.style.color = 'var(--ds-text-muted)';
     const summaryText = document.createElement('span');
     summaryText.textContent = 'Advanced Settings';
     summary.appendChild(summaryText);
     const chevron = document.createElement('i');
     chevron.className =
-      'ph ph-caret-down text-xs text-gray-500 transition-transform duration-200';
+      'ph ph-caret-down text-xs transition-transform duration-200';
+    chevron.style.color = 'var(--ds-text-muted)';
     summary.appendChild(chevron);
     details.addEventListener('toggle', () => {
       chevron.style.transform = details.open

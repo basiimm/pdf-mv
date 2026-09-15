@@ -1,9 +1,11 @@
 import { showLoader, hideLoader, showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import JSZip from 'jszip';
-import { loadPyMuPDF } from '../utils/pymupdf-loader.js';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
+import {
+  extractTables,
+  type ExtractTablesFormat,
+} from '../engines/extract-tables.js';
 let file: File | null = null;
 
 const updateUI = () => {
@@ -55,26 +57,6 @@ const resetState = () => {
   updateUI();
 };
 
-function tableToCsv(rows: (string | null)[][]): string {
-  return rows
-    .map((row) =>
-      row
-        .map((cell) => {
-          const cellStr = cell ?? '';
-          if (
-            cellStr.includes(',') ||
-            cellStr.includes('"') ||
-            cellStr.includes('\n')
-          ) {
-            return `"${cellStr.replace(/"/g, '""')}"`;
-          }
-          return cellStr;
-        })
-        .join(',')
-    )
-    .join('\n');
-}
-
 async function extract() {
   if (!file) {
     showAlert('No File', 'Please upload a PDF file first.');
@@ -82,18 +64,15 @@ async function extract() {
   }
 
   const formatRadios = document.querySelectorAll('input[name="export-format"]');
-  let format = 'csv';
+  let format: ExtractTablesFormat = 'csv';
   formatRadios.forEach((radio: Element) => {
     if ((radio as HTMLInputElement).checked) {
-      format = (radio as HTMLInputElement).value;
+      format = (radio as HTMLInputElement).value as ExtractTablesFormat;
     }
   });
 
   try {
     showLoader('Loading Engine...');
-    const pymupdf = await loadPyMuPDF();
-
-    hideLoader();
     const pwResult = await loadPdfWithPasswordPrompt(file);
     if (!pwResult) return;
     pwResult.pdf.destroy();
@@ -101,103 +80,24 @@ async function extract() {
 
     showLoader('Extracting tables...');
 
-    const doc = await pymupdf.open(file);
-    const pageCount = doc.pageCount;
-    const baseName = file.name.replace(/\.[^/.]+$/, '');
-
-    interface TableData {
-      page: number;
-      tableIndex: number;
-      rows: (string | null)[][];
-      markdown: string;
-      rowCount: number;
-      colCount: number;
-    }
-
-    const allTables: TableData[] = [];
-
-    for (let i = 0; i < pageCount; i++) {
-      showLoader(`Scanning page ${i + 1} of ${pageCount}...`);
-      const page = doc.getPage(i);
-      const tables = page.findTables();
-
-      tables.forEach((table, tableIdx) => {
-        allTables.push({
-          page: i + 1,
-          tableIndex: tableIdx + 1,
-          rows: table.rows,
-          markdown: table.markdown,
-          rowCount: table.rowCount,
-          colCount: table.colCount,
-        });
-      });
-    }
-
-    if (allTables.length === 0) {
-      showAlert('No Tables Found', 'No tables were detected in this PDF.');
-      return;
-    }
-
-    if (allTables.length === 1) {
-      const table = allTables[0];
-      let content: string;
-      let ext: string;
-      let mimeType: string;
-
-      if (format === 'csv') {
-        content = tableToCsv(table.rows);
-        ext = 'csv';
-        mimeType = 'text/csv';
-      } else if (format === 'json') {
-        content = JSON.stringify(table.rows, null, 2);
-        ext = 'json';
-        mimeType = 'application/json';
-      } else {
-        content = table.markdown;
-        ext = 'md';
-        mimeType = 'text/markdown';
+    const controller = new AbortController();
+    const output = await extractTables(
+      file,
+      { format },
+      {
+        signal: controller.signal,
+        progress: (p) => showLoader(p.label),
       }
-
-      const blob = new Blob([content], { type: mimeType });
-      downloadFile(blob, `${baseName}_table.${ext}`);
-      showAlert(
-        'Success',
-        `Extracted 1 table successfully!`,
-        'success',
-        resetState
-      );
-    } else {
-      showLoader('Creating ZIP file...');
-      const zip = new JSZip();
-
-      allTables.forEach((table, idx) => {
-        const filename = `table_${idx + 1}_page${table.page}`;
-        let content: string;
-        let ext: string;
-
-        if (format === 'csv') {
-          content = tableToCsv(table.rows);
-          ext = 'csv';
-        } else if (format === 'json') {
-          content = JSON.stringify(table.rows, null, 2);
-          ext = 'json';
-        } else {
-          content = table.markdown;
-          ext = 'md';
-        }
-
-        zip.file(`${filename}.${ext}`, content);
-      });
-
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      downloadFile(zipBlob, `${baseName}_tables.zip`);
-      showAlert(
-        'Success',
-        `Extracted ${allTables.length} tables successfully!`,
-        'success',
-        resetState
-      );
+    );
+    for (const out of Array.isArray(output) ? output : [output]) {
+      downloadFile(out, out.name);
     }
+    showAlert(
+      'Success',
+      'Tables extracted successfully!',
+      'success',
+      resetState
+    );
   } catch (e) {
     console.error(e);
     const message = e instanceof Error ? e.message : 'Unknown error';

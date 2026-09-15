@@ -1,12 +1,8 @@
 import { showAlert } from '../ui.js';
-import {
-  downloadFile,
-  formatBytes,
-  initializeQpdf,
-  readFileAsArrayBuffer,
-} from '../utils/helpers.js';
+import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { icons, createIcons } from 'lucide';
-import { RemoveRestrictionsState, QpdfInstanceExtended } from '@/types';
+import { RemoveRestrictionsState } from '@/types';
+import { removeRestrictions as removeRestrictionsEngine } from '../engines/remove-restrictions.js';
 
 const pageState: RemoveRestrictionsState = {
   file: null,
@@ -96,64 +92,26 @@ async function removeRestrictions() {
     (document.getElementById('owner-password-remove') as HTMLInputElement)
       ?.value || '';
 
-  const inputPath = '/input.pdf';
-  const outputPath = '/output.pdf';
-  let qpdf: QpdfInstanceExtended;
-
   const loaderModal = document.getElementById('loader-modal');
   const loaderText = document.getElementById('loader-text');
 
   try {
     if (loaderModal) loaderModal.classList.remove('hidden');
-    if (loaderText) loaderText.textContent = 'Initializing...';
-
-    qpdf = await initializeQpdf();
-
-    if (loaderText) loaderText.textContent = 'Reading PDF...';
-    const fileBuffer = await readFileAsArrayBuffer(pageState.file);
-    const uint8Array = new Uint8Array(fileBuffer as ArrayBuffer);
-
-    qpdf.FS.writeFile(inputPath, uint8Array);
-
     if (loaderText) loaderText.textContent = 'Removing restrictions...';
 
-    const args = [inputPath];
-
-    if (password) {
-      args.push(`--password=${password}`);
-    }
-
-    args.push('--decrypt', '--remove-restrictions', '--', outputPath);
-
-    try {
-      qpdf.callMain(args);
-    } catch (qpdfError: unknown) {
-      console.error('qpdf execution error:', qpdfError);
-      const qpdfMsg = qpdfError instanceof Error ? qpdfError.message : '';
-      if (qpdfMsg.includes('password') || qpdfMsg.includes('encrypt')) {
-        throw new Error(
-          'Failed to remove restrictions. The PDF may require the correct owner password.',
-          { cause: qpdfError }
-        );
+    const outputFile = await removeRestrictionsEngine(
+      pageState.file,
+      { password },
+      {
+        signal: new AbortController().signal,
+        progress: (p) => {
+          if (loaderText) loaderText.textContent = p.label;
+        },
       }
-
-      throw new Error(
-        'Failed to remove restrictions: ' + (qpdfMsg || 'Unknown error'),
-        { cause: qpdfError }
-      );
-    }
+    );
 
     if (loaderText) loaderText.textContent = 'Preparing download...';
-    const outputFile = qpdf.FS.readFile(outputPath, { encoding: 'binary' });
-
-    if (!outputFile || outputFile.length === 0) {
-      throw new Error('Operation resulted in an empty file.');
-    }
-
-    const blob = new Blob([new Uint8Array(outputFile)], {
-      type: 'application/pdf',
-    });
-    downloadFile(blob, pageState.file.name);
+    downloadFile(outputFile, pageState.file.name);
 
     if (loaderModal) loaderModal.classList.add('hidden');
 
@@ -172,23 +130,6 @@ async function removeRestrictions() {
       'Operation Failed',
       `An error occurred: ${error instanceof Error ? error.message : 'The PDF might be corrupted or password-protected.'}`
     );
-  } finally {
-    try {
-      if (qpdf?.FS) {
-        try {
-          qpdf.FS.unlink(inputPath);
-        } catch (e) {
-          console.warn('Failed to unlink input file:', e);
-        }
-        try {
-          qpdf.FS.unlink(outputPath);
-        } catch (e) {
-          console.warn('Failed to unlink output file:', e);
-        }
-      }
-    } catch (cleanupError) {
-      console.warn('Failed to cleanup WASM FS:', cleanupError);
-    }
   }
 }
 

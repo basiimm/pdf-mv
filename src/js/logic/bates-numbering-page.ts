@@ -1,18 +1,16 @@
 import { createIcons, icons } from 'lucide';
 import { showAlert, showLoader, hideLoader } from '../ui.js';
-import { downloadFile, hexToRgb, formatBytes } from '../utils/helpers.js';
-import { StandardFonts, rgb } from 'pdf-lib';
+import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
 import JSZip from 'jszip';
 import Sortable from 'sortablejs';
 import { FileEntry, Position, StylePreset } from '@/types';
 import { loadPdfDocument } from '../utils/load-pdf-document.js';
-
-const FONT_MAP: Record<string, keyof typeof StandardFonts> = {
-  Helvetica: 'Helvetica',
-  TimesRoman: 'TimesRoman',
-  Courier: 'Courier',
-};
+import {
+  batesNumbering as runBatesNumbering,
+  formatBatesText,
+  type BatesFontFamily,
+} from '../engines/bates-numbering.js';
 
 const STYLE_PRESETS: Record<string, StylePreset> = {
   'full-6': {
@@ -264,23 +262,6 @@ function renderFileList() {
   fileListEl.appendChild(summary);
 }
 
-function formatBatesText(
-  template: string,
-  batesNum: number,
-  pageNum: number,
-  fileNum: number,
-  fileName: string,
-  padding: number
-): string {
-  const batesStr =
-    padding > 0 ? String(batesNum).padStart(padding, '0') : String(batesNum);
-  return template
-    .replace(/\[BATES\]/g, batesStr)
-    .replace(/\[PAGE\]/g, String(pageNum))
-    .replace(/\[FILE\]/g, String(fileNum))
-    .replace(/\[FILENAME\]/g, fileName);
-}
-
 function getActivePadding(): number {
   const presetValue = (
     document.getElementById('style-preset') as HTMLSelectElement
@@ -356,74 +337,6 @@ function updatePreview() {
   previewEl.textContent = lines.join('\n');
 }
 
-function calculatePosition(
-  pageWidth: number,
-  pageHeight: number,
-  xOffset: number,
-  yOffset: number,
-  textWidth: number,
-  fontSize: number,
-  position: Position
-): { x: number; y: number } {
-  const minMargin = 8;
-  const maxMargin = 40;
-  const marginPct = 0.04;
-
-  const hMargin = Math.max(
-    minMargin,
-    Math.min(maxMargin, pageWidth * marginPct)
-  );
-  const vMargin = Math.max(
-    minMargin,
-    Math.min(maxMargin, pageHeight * marginPct)
-  );
-  const safeH = Math.max(hMargin, textWidth / 2 + 3);
-  const safeV = Math.max(vMargin, fontSize + 3);
-
-  let x = 0,
-    y = 0;
-
-  switch (position) {
-    case 'bottom-center':
-      x =
-        Math.max(
-          safeH,
-          Math.min(pageWidth - safeH - textWidth, (pageWidth - textWidth) / 2)
-        ) + xOffset;
-      y = safeV + yOffset;
-      break;
-    case 'bottom-left':
-      x = safeH + xOffset;
-      y = safeV + yOffset;
-      break;
-    case 'bottom-right':
-      x = Math.max(safeH, pageWidth - safeH - textWidth) + xOffset;
-      y = safeV + yOffset;
-      break;
-    case 'top-center':
-      x =
-        Math.max(
-          safeH,
-          Math.min(pageWidth - safeH - textWidth, (pageWidth - textWidth) / 2)
-        ) + xOffset;
-      y = pageHeight - safeV - fontSize + yOffset;
-      break;
-    case 'top-left':
-      x = safeH + xOffset;
-      y = pageHeight - safeV - fontSize + yOffset;
-      break;
-    case 'top-right':
-      x = Math.max(safeH, pageWidth - safeH - textWidth) + xOffset;
-      y = pageHeight - safeV - fontSize + yOffset;
-      break;
-  }
-
-  x = Math.max(xOffset + 3, Math.min(xOffset + pageWidth - textWidth - 3, x));
-  y = Math.max(yOffset + 3, Math.min(yOffset + pageHeight - fontSize - 3, y));
-
-  return { x, y };
-}
-
 function resetState() {
   files.length = 0;
   const fileListEl = document.getElementById('file-list');
@@ -465,59 +378,43 @@ async function applyBatesNumbers() {
       ) || 10;
     const colorHex = (document.getElementById('text-color') as HTMLInputElement)
       .value;
-    const textColor = hexToRgb(colorHex);
 
-    const fontName = FONT_MAP[fontKey] || 'Helvetica';
+    const BATES_FONT_FAMILIES: BatesFontFamily[] = [
+      'Helvetica',
+      'TimesRoman',
+      'Courier',
+    ];
+    const fontFamily: BatesFontFamily = BATES_FONT_FAMILIES.includes(
+      fontKey as BatesFontFamily
+    )
+      ? (fontKey as BatesFontFamily)
+      : 'Helvetica';
     const results: { name: string; bytes: Uint8Array }[] = [];
     let batesCounter = batesStart;
     let fileCounter = fileStart;
+    const abortController = new AbortController();
 
     for (const entry of files) {
-      const arrayBuffer = await entry.file.arrayBuffer();
-      const pdfDoc = await loadPdfDocument(arrayBuffer);
-      const font = await pdfDoc.embedFont(StandardFonts[fontName]);
-      const pages = pdfDoc.getPages();
-      const fileName = entry.file.name.replace(/\.pdf$/i, '');
-
-      for (let i = 0; i < pages.length; i++) {
-        const page = pages[i];
-        const bounds = page.getCropBox() || page.getMediaBox();
-        const text = formatBatesText(
+      const resultFile = await runBatesNumbering(
+        entry.file,
+        {
           template,
-          batesCounter,
-          i + 1,
-          fileCounter,
-          fileName,
-          padding
-        );
-        const textWidth = font.widthOfTextAtSize(text, fontSize);
-
-        const { x, y } = calculatePosition(
-          bounds.width,
-          bounds.height,
-          bounds.x || 0,
-          bounds.y || 0,
-          textWidth,
+          padding,
+          startNumber: batesCounter,
+          fileNumber: fileCounter,
+          position,
+          fontFamily,
           fontSize,
-          position
-        );
+          color: colorHex,
+        },
+        { signal: abortController.signal, progress: () => {} }
+      );
 
-        page.drawText(text, {
-          x,
-          y,
-          font,
-          size: fontSize,
-          color: rgb(textColor.r, textColor.g, textColor.b),
-        });
-
-        batesCounter++;
-      }
-
+      batesCounter += entry.pageCount;
       fileCounter++;
-      const pdfBytes = await pdfDoc.save();
       results.push({
         name: entry.file.name,
-        bytes: new Uint8Array(pdfBytes),
+        bytes: new Uint8Array(await resultFile.arrayBuffer()),
       });
     }
 

@@ -1,8 +1,8 @@
 import { showLoader, hideLoader, showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import { loadPyMuPDF } from '../utils/pymupdf-loader.js';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
+import { pdfToCsv } from '../engines/pdf-to-csv.js';
 let file: File | null = null;
 
 const updateUI = () => {
@@ -54,26 +54,6 @@ const resetState = () => {
   updateUI();
 };
 
-function tableToCsv(rows: (string | null)[][]): string {
-  return rows
-    .map((row) =>
-      row
-        .map((cell) => {
-          const cellStr = cell ?? '';
-          if (
-            cellStr.includes(',') ||
-            cellStr.includes('"') ||
-            cellStr.includes('\n')
-          ) {
-            return `"${cellStr.replace(/"/g, '""')}"`;
-          }
-          return cellStr;
-        })
-        .join(',')
-    )
-    .join('\n');
-}
-
 async function convert() {
   if (!file) {
     showAlert('No File', 'Please upload a PDF file first.');
@@ -83,9 +63,6 @@ async function convert() {
   showLoader('Loading Engine...');
 
   try {
-    const pymupdf = await loadPyMuPDF();
-
-    hideLoader();
     const pwResult = await loadPdfWithPasswordPrompt(file);
     if (!pwResult) return;
     pwResult.pdf.destroy();
@@ -93,31 +70,16 @@ async function convert() {
 
     showLoader('Extracting tables...');
 
-    const doc = await pymupdf.open(file);
-    const pageCount = doc.pageCount;
-    const baseName = file.name.replace(/\.[^/.]+$/, '');
-
-    const allRows: (string | null)[][] = [];
-
-    for (let i = 0; i < pageCount; i++) {
-      showLoader(`Scanning page ${i + 1} of ${pageCount}...`);
-      const page = doc.getPage(i);
-      const tables = page.findTables();
-
-      tables.forEach((table) => {
-        allRows.push(...table.rows);
-        allRows.push([]);
-      });
-    }
-
-    if (allRows.length === 0) {
-      showAlert('No Tables Found', 'No tables were detected in this PDF.');
-      return;
-    }
-
-    const csvContent = tableToCsv(allRows.filter((row) => row.length > 0));
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    downloadFile(blob, `${baseName}.csv`);
+    const controller = new AbortController();
+    const output = await pdfToCsv(
+      file,
+      {},
+      {
+        signal: controller.signal,
+        progress: (p) => showLoader(p.label),
+      }
+    );
+    downloadFile(output, output.name);
     showAlert(
       'Success',
       'PDF converted to CSV successfully!',

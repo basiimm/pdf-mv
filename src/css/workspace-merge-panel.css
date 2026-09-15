@@ -1,0 +1,156 @@
+.native-merge-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-300);
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--ds-space-400);
+  color: var(--ds-text);
+}
+.native-merge-panel[hidden],
+.native-merge-canvas[hidden] {
+  display: none;
+}
+.native-merge-panel p {
+  margin: 0;
+}
+.merge-source-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-200);
+  margin-block: var(--ds-space-200);
+}
+.merge-source-row span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--ds-text-xs);
+}
+.merge-source-row button {
+  font-size: var(--ds-text-xs);
+  padding: var(--ds-space-100) var(--ds-space-200);
+}
+.merge-view-toggle {
+  display: flex;
+  gap: var(--ds-space-200);
+}
+.merge-view-toggle [aria-pressed='true'] {
+  background: var(--ds-selected);
+  color: var(--ds-accent-text);
+}
+.native-merge-panel label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-200);
+}
+.native-merge-panel details label {
+  flex-direction: row;
+  margin-top: var(--ds-space-300);
+}
+.native-merge-panel input:not([type='checkbox']) {
+  width: 100%;
+  padding: var(--ds-space-200);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-m);
+  background: var(--ds-inset);
+  color: inherit;
+}
+.merge-action-footer {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding: var(--ds-space-300) 0;
+  background: var(--ds-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-300);
+}
+.merge-action-footer pre {
+  font-size: var(--ds-text-xs);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.native-merge-canvas {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  padding: var(--ds-space-500);
+  color: inherit;
+}
+.native-merge-canvas h3 {
+  font-size: var(--ds-text-s);
+  overflow-wrap: anywhere;
+  margin: 0 0 var(--ds-space-300);
+}
+.native-merge-canvas section {
+  margin-bottom: var(--ds-space-500);
+}
+.merge-page-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 150px);
+  gap: var(--ds-space-400);
+}
+.merge-page-card {
+  background: var(--ds-raised);
+  padding: var(--ds-space-300);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-m);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ds-space-200);
+}
+.merge-page-card canvas {
+  object-fit: contain;
+  width: 128px;
+  height: 174px;
+  background: #fff; /* literal: paper */
+}
+.merge-page-card label {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-200);
+  font-size: var(--ds-text-xs);
+}
+.merge-page-card > div {
+  display: flex;
+  gap: var(--ds-space-200);
+}
+.merge-page-card button {
+  min-width: var(--ds-size-m);
+  padding: var(--ds-space-100) var(--ds-space-200);
+}
+.merge-file-card {
+  background: var(--ds-raised);
+  max-width: 640px;
+  border: 1px solid var(--ds-border);
+  padding: var(--ds-space-400);
+  border-radius: var(--ds-radius-m);
+  margin-bottom: var(--ds-space-300);
+}
+.merge-file-card button {
+  margin-right: var(--ds-space-200);
+}
+.merge-empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--ds-space-400);
+  padding: var(--ds-space-800) var(--ds-space-400);
+  text-align: center;
+}
+@media (pointer: coarse) {
+  .native-merge-panel button,
+  .native-merge-canvas button {
+    min-height: var(--ds-size-touch);
+  }
+}
+@media (max-width: 600px) {
+  .native-merge-canvas {
+    padding: var(--ds-space-400);
+  }
+  .merge-page-grid {
+    grid-template-columns: repeat(auto-fill, 150px);
+    gap: var(--ds-space-300);
+  }
+}

@@ -8,9 +8,9 @@ import {
 } from '../utils/helpers.js';
 import { state } from '../state.js';
 import { createIcons, icons } from 'lucide';
-import { loadPyMuPDF } from '../utils/pymupdf-loader.js';
 import { batchDecryptIfNeeded } from '../utils/password-prompt.js';
 import { deduplicateFileName } from '../utils/deduplicate-filename.js';
+import { pdfToMarkdown } from '../engines/pdf-to-markdown.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -104,24 +104,24 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      showLoader('Loading PDF converter...');
-      const pymupdf = await loadPyMuPDF();
-
       const includeImages = includeImagesCheckbox?.checked ?? false;
 
-      hideLoader();
       state.files = await batchDecryptIfNeeded(state.files);
       showLoader('Converting...');
 
       if (state.files.length === 1) {
         const file = state.files[0];
-        showLoader(`Converting ${file.name}...`);
+        const controller = new AbortController();
+        const output = await pdfToMarkdown(
+          file,
+          { includeImages },
+          {
+            signal: controller.signal,
+            progress: (p) => showLoader(p.label),
+          }
+        );
 
-        const markdown = await pymupdf.pdfToMarkdown(file, { includeImages });
-        const outName = file.name.replace(/\.pdf$/i, '') + '.md';
-        const blob = new Blob([markdown], { type: 'text/markdown' });
-
-        downloadFile(blob, outName);
+        downloadFile(output, output.name);
         hideLoader();
 
         showAlert(
@@ -141,10 +141,17 @@ document.addEventListener('DOMContentLoaded', () => {
             `Converting ${i + 1}/${state.files.length}: ${file.name}...`
           );
 
-          const markdown = await pymupdf.pdfToMarkdown(file, { includeImages });
-          const baseName = file.name.replace(/\.pdf$/i, '');
-          const zipEntryName = deduplicateFileName(`${baseName}.md`, usedNames);
-          zip.file(zipEntryName, markdown);
+          const controller = new AbortController();
+          const output = await pdfToMarkdown(
+            file,
+            { includeImages },
+            {
+              signal: controller.signal,
+              progress: (p) => showLoader(p.label),
+            }
+          );
+          const zipEntryName = deduplicateFileName(output.name, usedNames);
+          zip.file(zipEntryName, await output.text());
         }
 
         showLoader('Creating ZIP archive...');

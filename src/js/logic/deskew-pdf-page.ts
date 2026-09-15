@@ -1,10 +1,9 @@
-import { loadPyMuPDF } from '../utils/pymupdf-loader.js';
-import type { PyMuPDFInstance } from '@/types';
 import { batchDecryptIfNeeded } from '../utils/password-prompt.js';
 import { createIcons, icons } from 'lucide';
 import { downloadFile } from '../utils/helpers';
 import { isWasmAvailable } from '../config/wasm-cdn-config.js';
 import { showWasmRequiredDialog } from '../utils/wasm-provider.js';
+import { deskewPdf as deskewPdfEngine } from '../engines/deskew-pdf.js';
 
 interface DeskewResult {
   totalPages: number;
@@ -14,14 +13,6 @@ interface DeskewResult {
 }
 
 let selectedFiles: File[] = [];
-let pymupdf: PyMuPDFInstance | null = null;
-
-async function initPyMuPDF(): Promise<PyMuPDFInstance> {
-  if (!pymupdf) {
-    pymupdf = (await loadPyMuPDF()) as PyMuPDFInstance;
-  }
-  return pymupdf;
-}
 
 function showLoader(message: string): void {
   const loader = document.getElementById('loader-modal');
@@ -177,20 +168,19 @@ async function processDeskew(): Promise<void> {
   showLoader('Initializing PyMuPDF...');
 
   try {
-    const pdf = await initPyMuPDF();
-    await pdf.load();
-
     for (const file of selectedFiles) {
       showLoader(`Deskewing ${file.name}...`);
 
-      const { pdf: resultPdf, result } = await pdf.deskewPdf(file, {
-        threshold,
-        dpi,
-      });
+      const resultFile = await deskewPdfEngine(
+        file,
+        { threshold, dpi },
+        {
+          signal: new AbortController().signal,
+          progress: (p) => showLoader(p.label),
+        }
+      );
 
-      displayResults(result);
-
-      downloadFile(resultPdf, file.name);
+      downloadFile(resultFile, resultFile.name);
     }
 
     hideLoader();

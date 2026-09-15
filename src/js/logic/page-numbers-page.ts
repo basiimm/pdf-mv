@@ -1,13 +1,13 @@
 import { createIcons, icons } from 'lucide';
 import { showAlert, showLoader, hideLoader } from '../ui.js';
-import { downloadFile, hexToRgb, formatBytes } from '../utils/helpers.js';
+import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { PDFDocument as PDFLibDocument } from 'pdf-lib';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
 import {
-  addPageNumbers as addPageNumbersToPdf,
+  pageNumbers as runPageNumbers,
   type PageNumberPosition,
   type PageNumberFormat,
-} from '../utils/pdf-operations.js';
+} from '../engines/page-numbers.js';
 import { loadPdfDocument } from '../utils/load-pdf-document.js';
 
 interface PageState {
@@ -167,18 +167,15 @@ async function addPageNumbers() {
         : ('simple' as PageNumberFormat);
     const colorHex = (document.getElementById('text-color') as HTMLInputElement)
       .value;
-    const textColor = hexToRgb(colorHex);
 
-    const pdfBytes = new Uint8Array(await pageState.pdfDoc.save());
-    const resultBytes = await addPageNumbersToPdf(pdfBytes, {
-      position,
-      fontSize,
-      format,
-      color: textColor,
-    });
+    const resultFile = await runPageNumbers(
+      pageState.file as File,
+      { position, fontSize, format, color: colorHex },
+      { signal: new AbortController().signal, progress: () => {} }
+    );
 
     downloadFile(
-      new Blob([resultBytes as unknown as BlobPart], {
+      new Blob([await resultFile.arrayBuffer()], {
         type: 'application/pdf',
       }),
       pageState.file?.name || 'document.pdf'

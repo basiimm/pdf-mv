@@ -2,20 +2,10 @@ import { showLoader, hideLoader, showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { state } from '../state.js';
 import { createIcons, icons } from 'lucide';
-import { loadPyMuPDF } from '../utils/pymupdf-loader.js';
-import type { PyMuPDFInstance } from '@/types';
+import { convertPsdToPdf } from '../engines/images-to-pdf.js';
 
 const ACCEPTED_EXTENSIONS = ['.psd'];
 const FILETYPE_NAME = 'PSD';
-
-let pymupdf: PyMuPDFInstance | null = null;
-
-async function ensurePyMuPDF(): Promise<PyMuPDFInstance> {
-  if (!pymupdf) {
-    pymupdf = (await loadPyMuPDF()) as PyMuPDFInstance;
-  }
-  return pymupdf;
-}
 
 document.addEventListener('DOMContentLoaded', () => {
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -87,33 +77,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     try {
       showLoader('Loading engine...');
-      const mupdf = await ensurePyMuPDF();
-
-      if (state.files.length === 1) {
-        const file = state.files[0];
-        showLoader(`Converting ${file.name}...`);
-        const pdfBlob = await mupdf.imageToPdf(file, { imageType: 'psd' });
-        const baseName = file.name.replace(/\.[^/.]+$/, '');
-        downloadFile(pdfBlob, `${baseName}.pdf`);
-        hideLoader();
-        showAlert(
-          'Conversion Complete',
-          `Successfully converted ${file.name} to PDF.`,
-          'success',
-          () => resetState()
-        );
-      } else {
-        showLoader('Converting multiple files...');
-        const pdfBlob = await mupdf.imagesToPdf(state.files);
-        downloadFile(pdfBlob, 'psd_to_pdf.pdf');
-        hideLoader();
-        showAlert(
-          'Conversion Complete',
-          `Successfully converted ${state.files.length} PSD files to a single PDF.`,
-          'success',
-          () => resetState()
-        );
-      }
+      const controller = new AbortController();
+      const pdfFile = await convertPsdToPdf(state.files, {
+        signal: controller.signal,
+        progress: (p) =>
+          showLoader(p.detail ? `${p.label}: ${p.detail}` : p.label),
+      });
+      downloadFile(pdfFile, pdfFile.name);
+      hideLoader();
+      showAlert(
+        'Conversion Complete',
+        `Successfully converted ${state.files.length} ${FILETYPE_NAME} file(s) to PDF.`,
+        'success',
+        () => resetState()
+      );
     } catch (err) {
       hideLoader();
       const message = err instanceof Error ? err.message : 'Unknown error';

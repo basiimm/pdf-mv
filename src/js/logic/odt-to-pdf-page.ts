@@ -2,10 +2,7 @@ import { showLoader, hideLoader, showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { state } from '../state.js';
 import { createIcons, icons } from 'lucide';
-import {
-  getLibreOfficeConverter,
-  type LoadProgress,
-} from '../utils/libreoffice-loader.js';
+import { convertOfficeToPdf } from '../engines/office-to-pdf.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   state.files = [];
@@ -91,63 +88,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const converter = getLibreOfficeConverter();
-
-      // Initialize LibreOffice if not already done
-      await converter.initialize((progress: LoadProgress) => {
-        showLoader(progress.message, progress.percent);
+      const controller = new AbortController();
+      const pdfFile = await convertOfficeToPdf(state.files, {
+        signal: controller.signal,
+        progress: (p) =>
+          showLoader(p.detail ? `${p.label}: ${p.detail}` : p.label),
       });
+      downloadFile(pdfFile, pdfFile.name);
+      hideLoader();
 
-      if (state.files.length === 1) {
-        const originalFile = state.files[0];
-
-        showLoader('Processing...');
-
-        const pdfBlob = await converter.convertToPdf(originalFile);
-
-        const fileName = originalFile.name.replace(/\.odt$/i, '') + '.pdf';
-
-        downloadFile(pdfBlob, fileName);
-
-        hideLoader();
-
-        showAlert(
-          'Conversion Complete',
-          `Successfully converted ${originalFile.name} to PDF.`,
-          'success',
-          () => resetState()
-        );
-      } else {
-        showLoader('Processing...');
-        const JSZip = (await import('jszip')).default;
-        const zip = new JSZip();
-
-        for (let i = 0; i < state.files.length; i++) {
-          const file = state.files[i];
-          showLoader(
-            `Converting ${i + 1}/${state.files.length}: ${file.name}...`
-          );
-
-          const pdfBlob = await converter.convertToPdf(file);
-
-          const baseName = file.name.replace(/\.odt$/i, '');
-          const pdfBuffer = await pdfBlob.arrayBuffer();
-          zip.file(`${baseName}.pdf`, pdfBuffer);
-        }
-
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-
-        downloadFile(zipBlob, 'odt-converted.zip');
-
-        hideLoader();
-
-        showAlert(
-          'Conversion Complete',
-          `Successfully converted ${state.files.length} ODT file(s) to PDF.`,
-          'success',
-          () => resetState()
-        );
-      }
+      showAlert(
+        'Conversion Complete',
+        `Successfully converted ${state.files.length} OpenDocument text file(s) to PDF.`,
+        'success',
+        () => resetState()
+      );
     } catch (e: unknown) {
       hideLoader();
       showAlert(

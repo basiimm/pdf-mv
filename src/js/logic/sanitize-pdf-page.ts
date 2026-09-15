@@ -2,8 +2,8 @@ import { showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { icons, createIcons } from 'lucide';
 import { SanitizePdfState } from '@/types';
-import { sanitizePdf } from '../utils/sanitize.js';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
+import { sanitizePdf as sanitizePdfEngine } from '../engines/sanitize-pdf.js';
 
 const pageState: SanitizePdfState = {
   file: null,
@@ -143,12 +143,14 @@ async function runSanitize() {
     if (loaderText) loaderText.textContent = 'Sanitizing PDF...';
     loaded.pdf.destroy();
     pageState.file = loaded.file;
-    const result = await sanitizePdf(new Uint8Array(loaded.bytes), options);
+    const resultFile = await sanitizePdfEngine(pageState.file, options, {
+      signal: new AbortController().signal,
+      progress: (p) => {
+        if (loaderText) loaderText.textContent = p.label;
+      },
+    });
 
-    downloadFile(
-      new Blob([new Uint8Array(result.bytes)], { type: 'application/pdf' }),
-      pageState.file?.name || 'document.pdf'
-    );
+    downloadFile(resultFile, pageState.file?.name || 'document.pdf');
     showAlert(
       'Success',
       'PDF has been sanitized and downloaded.',

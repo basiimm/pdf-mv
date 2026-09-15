@@ -1,0 +1,471 @@
+<title>PDF.mv Consistency Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f5f5f5;--surface:#fff;--inset:#ededed;--text:#222;--muted:#5c5c5c;--border:#e1e1e1;--strong:#8f8f8f;
+  --accent:#1a7f37;--accent-text:#15692d;--selected:#e6f4ea;
+  --p0:#b3261e;--p0-bg:#fbe9e7;--p1:#8a5a00;--p1-bg:#fdf1d6;--p2:#3b5b7a;--p2-bg:#e6eef6;
+  --legacy:#111827;--legacy-2:#4f46e5;
+  --sans:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Source Code Pro",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#161616;--surface:#202020;--inset:#292929;--text:#f2f2f2;--muted:#b6b6b6;--border:#333;--strong:#6e6e6e;
+  --accent-text:#3fb950;--selected:#203b29;
+  --p0:#ff8a80;--p0-bg:#3a1d1b;--p1:#f2c14e;--p1-bg:#352a12;--p2:#9ec3e6;--p2-bg:#1c2a38;}}
+:root[data-theme="dark"]{
+  --bg:#161616;--surface:#202020;--inset:#292929;--text:#f2f2f2;--muted:#b6b6b6;--border:#333;--strong:#6e6e6e;
+  --accent-text:#3fb950;--selected:#203b29;
+  --p0:#ff8a80;--p0-bg:#3a1d1b;--p1:#f2c14e;--p1-bg:#352a12;--p2:#9ec3e6;--p2-bg:#1c2a38;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:400 16px/1.6 var(--sans);padding-inline:16px;padding-block:0 64px;-webkit-font-smoothing:antialiased}
+a{color:var(--accent-text);text-underline-offset:2px}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+code,.mono{font-family:var(--mono);font-size:.84em}
+code{background:var(--inset);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+h1,h2,h3{text-wrap:balance;line-height:1.2;margin:0}
+h1{font-size:2.25rem;font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.625rem;font-weight:700;margin-top:56px;padding-top:24px;border-top:1px solid var(--border)}
+h3{font-size:1.125rem;font-weight:600;margin-top:32px}
+p,li{max-width:68ch}
+.label{font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.shell{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:48px}
+@media (min-width:1000px){.shell{grid-template-columns:220px minmax(0,1fr)}}
+header.top{max-width:1180px;margin:0 auto;padding-block:48px 8px;display:grid;gap:12px}
+header.top p{color:var(--muted);margin:0}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--accent-text)}
+.brand i{display:block;width:12px;height:12px;border-radius:3px;background:var(--accent)}
+nav.toc{display:none}
+@media (min-width:1000px){nav.toc{display:block;position:sticky;top:24px;align-self:start;font-size:.9rem}}
+nav.toc ol{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:2px}
+nav.toc a{display:block;padding:6px 10px;border-radius:8px;color:var(--muted);text-decoration:none}
+nav.toc a:hover{background:var(--inset);color:var(--text)}
+main{min-width:0}
+.verdict{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;display:grid;gap:12px}
+.verdict p{margin:0}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:20px}
+.facts div{background:var(--surface);padding:14px 16px;display:grid;gap:2px}
+.facts b{font-size:1.5rem;font-variant-numeric:tabular-nums;line-height:1.1}
+.facts span{font-size:.85rem;color:var(--muted);line-height:1.35}
+.scroll{overflow-x:auto;margin-top:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.92rem;min-width:640px}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:0}
+th{font-size:.75rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--inset)}
+td p{margin:0}
+.chip{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p0{color:var(--p0);background:var(--p0-bg)}.p1{color:var(--p1);background:var(--p1-bg)}.p2{color:var(--p2);background:var(--p2-bg)}
+.ok{color:var(--accent-text);background:var(--selected)}
+/* flicker timeline */
+.timeline{margin-top:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;display:grid;gap:10px}
+.track{display:flex;height:34px;border-radius:6px;overflow:hidden;font-size:.78rem;font-weight:600}
+.track div{display:flex;align-items:center;padding-inline:8px;white-space:nowrap;overflow:hidden}
+.seg-parent{background:var(--inset);color:var(--muted)}
+.seg-legacy{background:var(--legacy);color:#c7cbd3}
+.seg-studio{background:#161616;color:#3fb950;border-left:3px solid var(--accent)}
+.ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.timeline p{margin:0;font-size:.9rem;color:var(--muted)}
+ol.steps{padding-left:22px;display:grid;gap:8px}
+/* tokens */
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-top:16px}
+.sw{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;font-size:.82rem}
+.sw .pair{display:grid;grid-template-columns:1fr 1fr;height:44px}
+.sw .meta{padding:8px 10px;display:grid;gap:1px}
+.sw .meta b{font-family:var(--mono);font-weight:500;font-size:.78rem}
+.sw .meta span{color:var(--muted);font-family:var(--mono);font-size:.72rem}
+.scale{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:flex-end}
+.scale span{font-family:var(--mono);font-size:.75rem;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px}
+.rules{display:grid;gap:12px;margin-top:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.rule{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;display:grid;gap:6px}
+.rule h4{margin:0;font-size:1rem}
+.rule p{margin:0;font-size:.92rem;color:var(--muted)}
+.do,.dont{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.do{color:var(--accent-text)}.dont{color:var(--p0)}
+details{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-top:12px}
+summary{cursor:pointer;padding:14px 16px;font-weight:600}
+details>div{padding:0 16px 16px}
+.phase{display:grid;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:14px}
+.phase header{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline}
+.phase h3{margin:0}
+.phase ul{margin:0;padding-left:20px;display:grid;gap:4px}
+.phase .accept{font-size:.9rem;color:var(--muted);border-top:1px solid var(--border);padding-top:10px}
+.who{font-size:.8rem;color:var(--muted);margin-left:auto}
+blockquote{margin:16px 0 0;padding:12px 16px;border-left:3px solid var(--accent);background:var(--surface);border-radius:0 8px 8px 0}
+blockquote p{margin:0}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<header class="top">
+  <div class="brand"><i aria-hidden="true"></i>PDF.mv · design review</div>
+  <h1>PDF.mv Consistency Plan</h1>
+  <p>UI, design system, tool screens, public pages and user journeys · 15 September 2026 · Review and plan only, no app code changed</p>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Contents">
+  <div class="label">Contents</div>
+  <ol>
+    <li><a href="#summary">Summary</a></li>
+    <li><a href="#flicker">Tool-switch flicker</a></li>
+    <li><a href="#tools">Tool screens</a></li>
+    <li><a href="#public">Public, unused &amp; error pages</a></li>
+    <li><a href="#debt">Design-system debt</a></li>
+    <li><a href="#journeys">Journeys &amp; UX</a></li>
+    <li><a href="#one-view">One PDF view</a></li>
+    <li><a href="#system">Studio design system</a></li>
+    <li><a href="#components">Component kit</a></li>
+    <li><a href="#rules">Usage rules</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#decisions">Decisions needed</a></li>
+    <li><a href="#research">Research &amp; method</a></li>
+  </ol>
+</nav>
+
+<main>
+<section id="summary" class="verdict" aria-labelledby="summary-h">
+  <div class="label" id="summary-h">Verdict</div>
+  <p><strong>The workspace shell is in good shape. Everything around it isn't consistent yet.</strong> Home, the tabs, native panels and the green Spectrum-style chrome are right. The problems are underneath:</p>
+  <ul style="margin:0;padding-left:20px;display:grid;gap:4px">
+    <li>119 BentoPDF tool pages are restyled at runtime by CSS that only takes effect after JavaScript runs. That delay is the flicker.</li>
+    <li>Nine tools never receive the override at all.</li>
+    <li>The shared alert, loader and page-thumbnail components in <code>ui.ts</code> are still BentoPDF's.</li>
+    <li>There is no real token scale yet: 14 control heights, 22 font sizes and 15 corner radii.</li>
+  </ul>
+  <p>Fixing the boot order removes the flicker in days. Consistency after that comes from one token file, one component kit and a lint gate that stops BentoPDF classes from coming back.</p>
+  <div class="facts">
+    <div><b>121 ms</b><span>BentoPDF paint visible inside a tool frame, measured with a warm cache</span></div>
+    <div><b>9</b><span>tools that are fully BentoPDF-styled</span></div>
+    <div><b>~100</b><span>tools that are mostly overridden but leak shared legacy components</span></div>
+    <div><b>3</b><span>visual languages across public pages</span></div>
+    <div><b>14 · 22 · 15</b><span>control heights · font sizes · radii in use</span></div>
+    <div><b>5</b><span>different input styles; 4 segmented controls</span></div>
+  </div>
+</section>
+
+<h2 id="flicker">1. Why BentoPDF flashes when you switch tools</h2>
+<p>I measured this in the dev app by opening <em>Edit PDF text</em> from Home and sampling the tool iframe every 10 ms:</p>
+<div class="timeline" role="img" aria-label="Timeline: 0 to 67 milliseconds parent surface, 67 to 188 milliseconds BentoPDF gray-900 page visible, from 188 milliseconds studio theme applied">
+  <div class="track">
+    <div class="seg-parent" style="width:26%">Empty frame</div>
+    <div class="seg-legacy" style="width:47%">BentoPDF gray-900 · rgb(17,24,39)</div>
+    <div class="seg-studio" style="width:27%">Studio theme</div>
+  </div>
+  <div class="ticks"><span>0 ms</span><span>67 ms</span><span>188 ms</span><span>256 ms</span></div>
+  <p>That's with a warm cache. On a cold load the legacy segment stretches to about a second, which matches what you described: the studio theme waits on a module graph of roughly 1.5 MB (pdfjs, the full lucide icon set and <code>main.ts</code>).</p>
+</div>
+
+<h3>What happens, in order</h3>
+<ol class="steps">
+  <li><code>workspace-tools.ts:544–579</code> creates the iframe and shows it straight away (<code>:462</code> <code>hidden=false</code>). Nothing waits for load or styling.</li>
+  <li>The tool page's <code>&lt;head&gt;</code> loads Tailwind <code>styles.css</code>, which blocks rendering. The body is <code>class="antialiased bg-gray-900"</code> with the navbar partial, <code>bg-gray-800</code> cards and "Back to Tools".</li>
+  <li><strong>First paint is BentoPDF.</strong> Every studio override is gated by <code>html[data-studio-theme]</code> (41 rules), <code>body[data-studio-tool]</code> (56) or <code>.workspace-embedded-tool</code> (18). JavaScript adds all three.</li>
+  <li>The deferred modules run. <code>studio-theme.ts:93</code> sets the theme attribute, <code>:235</code> marks the tool, and <code>workspace-tool-bridge.ts:5</code> adds the embedded class. In dev, <code>studio-theme.css</code> doesn't exist until this moment. Everything then restyles at once.</li>
+  <li>Loading files adds <code>.studio-has-files</code>, so the layout jumps a second time.</li>
+</ol>
+<p><strong>Where it repeats:</strong></p>
+<ul>
+  <li>The frame key includes the document revision (<code>:541</code>), so <strong>every edit rebuilds the iframe</strong>.</li>
+  <li>"Use current PDF" reloads the frame with <code>frame.src = frame.src</code> (<code>:478</code>).</li>
+  <li>Switching conversions deletes the frames (<code>:125–133</code>).</li>
+</ul>
+<p><strong>Workspace itself:</strong> dark-mode users get one light frame first. <code>color-scheme</code> is set from JavaScript, and <code>workspace.css:1–10</code> has its own blue-grey <code>--studio-*</code> values that paint before the studio theme applies.</p>
+
+<h3>Why the old UI is still in the codebase</h3>
+<p>PDF.mv is a fork of BentoPDF. The repo carries 1,031 commits of upstream history, and in BentoPDF <strong>a tool's screen and its processing code are the same thing</strong>. Each of the 119 <code>src/js/logic/*-page.ts</code> files finds its buttons and fields by ID and then runs the PDF engine. There are 2,008 <code>getElementById</code> calls. For example, <code>compress-pdf-page.ts:182–189</code> reads <code>#file-input</code>, <code>#drop-zone</code>, <code>#compress-options</code> and <code>#process-btn</code>. It also writes Tailwind HTML strings and uses BentoPDF's shared alert and loader. Delete the HTML and the engine stops working.</p>
+<p>Our redesign therefore followed the original plan: reuse the upstream engines and avoid a full frontend rewrite. The workspace loads each original page in an iframe and restyles it after load. That kept all 118 tools working from day one and made upstream BentoPDF changes easy to pull in. The cost is what you're seeing:</p>
+<ul>
+  <li>Every tool paints twice: BentoPDF's look first, then ours.</li>
+  <li>The old markup, Tailwind classes, navbar partials and landing pages all still ship.</li>
+  <li>The styling layer can only hide the old UI, not remove it.</li>
+</ul>
+<p><strong>The boot-order fixes below remove the flicker, but they're a stopgap.</strong> The real fix is to separate each engine from its page:</p>
+<ul>
+  <li>Extract the processing into headless functions: <code>engines/compress.ts</code> takes <code>(bytes, options, onProgress)</code> and returns a <code>Blob</code>.</li>
+  <li>Drive those functions from our own panels inside the PDF view (§5b).</li>
+  <li>Delete the page HTML, the Tailwind remap layer and the partials.</li>
+</ul>
+<p>Native Rotate, Delete, Merge and Watermark already work this way. The trade-off is that upstream UI changes stop merging cleanly, while engine fixes stay easy to bring over.</p>
+
+<h3>Fixes, in order of impact</h3>
+<div class="scroll"><table>
+<thead><tr><th>#</th><th>Fix</th><th>Where</th></tr></thead>
+<tbody>
+<tr><td><span class="chip p0">P0</span></td><td><strong>Theme boot in <code>&lt;head&gt;</code> on every HTML entry.</strong> A Vite <code>transformIndexHtml</code> plugin injects:
+  <ul style="margin:4px 0 0;padding-left:18px">
+    <li><code>&lt;meta name="color-scheme"&gt;</code>.</li>
+    <li>A synchronous external <code>/theme-boot.js</code>. The CSP forbids inline scripts. It sets <code>data-studio-theme</code> and <code>color-scheme</code>, plus <code>workspace-embedded-tool</code> when <code>?workspace=1</code> is in an iframe.</li>
+    <li>A render-blocking <code>&lt;link&gt;</code> to the studio CSS.</li>
+  </ul>
+  Stamp <code>data-studio-tool</code> on <code>&lt;html&gt;</code> at build time instead of at runtime.</td><td><code>vite.config.ts:~530</code>, <code>studio-theme.ts:1,93,228–235</code>, <code>security-headers.conf</code></td></tr>
+<tr><td><span class="chip p0">P0</span></td><td><strong>Keep frames hidden until they're styled.</strong> Set <code>data-state="loading"</code> with <code>visibility:hidden</code> and show a panel skeleton in the parent. Reveal on a new <code>studio-tool-styled</code> message sent after two animation frames, with a 3 s fallback. Don't wait for <code>studio-tool-ready</code>, which fires later.</td><td><code>workspace-tools.ts:77,462,544</code>, <code>workspace-tool-bridge.ts</code></td></tr>
+<tr><td><span class="chip p1">P1</span></td><td><strong>Reuse frames.</strong> Remove the revision from the frame key and send the new input again instead of reloading. Replace <code>src = src</code> with that re-send. Keep about three warm frames (an LRU cache) and pre-create one when a tool is hovered or focused.</td><td><code>workspace-tools.ts:125–133,478,541</code></td></tr>
+<tr><td><span class="chip p1">P1</span></td><td><strong>Tokens that work without the attribute.</strong> Put the light theme on <code>:root</code>, dark under <code>prefers-color-scheme</code> guarded by <code>:not([data-studio-theme=light])</code>, and dark again under <code>[data-studio-theme=dark]</code>. Remove the <code>html[data-studio-theme]</code> prefix from component rules.</td><td><code>studio-theme.css</code>, <code>workspace.css:1–10</code></td></tr>
+<tr><td><span class="chip p2">P2</span></td><td><strong>Change the source markup, not just the overrides.</strong> Stop rendering the navbar and breadcrumb in embedded mode and remove the <code>bg-gray-*</code> body classes. Then delete the Tailwind remap layer (<code>studio-theme.css:246–277</code>).</td><td><code>src/partials/navbar.html</code>, <code>src/pages/*.html</code></td></tr>
+<tr><td><span class="chip p2">P2</span></td><td><strong>Shrink the blocking module graph.</strong> Import named lucide icons instead of <code>icons</code> (370 KB) and lazy-load pdfjs from <code>main.ts</code>.</td><td><code>main.ts:6,8</code>, <code>workspace.ts:10</code></td></tr>
+</tbody></table></div>
+<blockquote><p><strong>Test to add:</strong> automate the probe used above in Playwright. For each of the 23 task groups, fail if any sampled frame shows <code>rgb(17,24,39)</code>, any <code>indigo</code> color, or the BentoPDF navbar while visible.</p></blockquote>
+
+<h2 id="tools">2. Tool screens still using BentoPDF's visual language</h2>
+<p>studio-theme.css targets IDs such as <code>#drop-zone</code>, <code>#process-btn</code> and <code>#page-merge-preview</code>. That covers the simple uploader + options tools. Tools that build their own canvas or DOM never match those selectors.</p>
+<h3>Fully legacy</h3>
+<div class="scroll"><table>
+<thead><tr><th>Tool</th><th>Surface</th><th>Evidence</th><th>Fix</th></tr></thead>
+<tbody>
+<tr><td><strong>Edit PDF text</strong></td><td>Large canvas</td><td><code>edit-pdf-text.css</code>: hardcoded <code>#e0483d</code>, <code>#fff</code>/<code>#000</code> panels (L153, 215–266, 421). 58 literal radii, 21 z-indexes. Light theme breaks.</td><td>Re-token the entire file; move its dock to the ToolPanel scaffold.</td></tr>
+<tr><td><strong>Organize pages / Multi tool</strong></td><td>Large canvas</td><td>45 Tailwind gray/indigo strings in <code>pdf-multi-tool.ts</code>; shared <code>ui.ts:230–411</code> thumbnails (<code>bg-indigo-600</code> badge, <code>bg-red-600</code> delete)</td><td>PageThumbnail + PageGrid components (shared with Merge).</td></tr>
+<tr><td><strong>Duplicate &amp; organize</strong></td><td>Large canvas</td><td><code>organize-pdf-page.ts</code> (9) + the same <code>ui.ts</code> grid</td><td>Same as above; consider folding into Multi tool.</td></tr>
+<tr><td><strong>Workflow builder</strong></td><td>Large canvas</td><td>52 hits: node chips <code>bg-gray-900/60</code> (L370), indigo Run button (L383), inputs (L831, 1315); indigo rail on canvas edge (seen live); "Powered by BentoPDF" footer</td><td>Node-editor theme mapped to tokens; toolbar uses Button/IconButton.</td></tr>
+<tr><td><strong>Create PDF form</strong></td><td>Large canvas</td><td>169 Tailwind hits (L560–667). <strong>Writes <code>setAuthor('BentoPDF')</code> into users' PDFs</strong> (L2199)</td><td>Fix metadata now; re-skin field palette + property panel.</td></tr>
+<tr><td><strong>Markdown to PDF</strong></td><td>Large canvas</td><td><code>markdown-editor.css</code> has 90 raw rgb() values and zero tokens. Indigo "Export PDF" button, blue toggle, sample doc titled "Welcome to BentoPDF Markdown Editor" (seen live)</td><td>Re-token; replace sample content; Switch + Button components.</td></tr>
+<tr><td><strong>Compare PDFs</strong></td><td>Large canvas</td><td>11 legacy class strings in diff panels; no hooks for the overrides</td><td>Purpose-built compare layout with SegmentedControl + legend tokens.</td></tr>
+<tr><td><strong>Crop PDF</strong></td><td>Large canvas</td><td>6 hits; crop-box UI colors and canvas toolbar unstyled</td><td>Use accent as the selection color; Toolbar component.</td></tr>
+<tr><td><strong>Edit bookmarks</strong></td><td>Beside PDF</td><td><code>bookmark.css</code> is all hex: <code>#374151</code>, <code>#2b7fff</code> dashed, <code>#3b82f6</code> (L2–128); 61 hits in <code>bookmark-pdf.ts</code></td><td>TreeList component (drag, indent, rename) on tokens.</td></tr>
+</tbody></table></div>
+
+<h3>Mostly overridden, with leaks</h3>
+<p>These are Merge, Split, Compress and the roughly 90 settings-beside-PDF converters, appearance, numbering and security tools. They look right until something happens: every error, success message and progress state goes through BentoPDF components. The EmbedPDF viewer is themed correctly through <code>viewerTheme()</code>, but its hex values are copied separately and have drifted from the CSS.</p>
+<div class="scroll"><table>
+<thead><tr><th>Shared legacy component</th><th>Where</th><th>Replace with</th></tr></thead>
+<tbody>
+<tr><td>Alert / error modal (used by nearly every tool)</td><td><code>ui.ts:28–31, 110–134</code></td><td>Dialog (alert/confirm) + InlineAlert</td></tr>
+<tr><td>Loader overlay with indigo progress fill</td><td><code>ui.ts:52–108</code></td><td>ProgressPanel (phase + determinate bar + cancel)</td></tr>
+<tr><td>Page thumbnail grid and stepper</td><td><code>ui.ts:230–411</code></td><td>PageThumbnail, PageGrid, Stepper</td></tr>
+<tr><td>Upload/drop zone HTML string</td><td><code>ui.ts:477–508</code></td><td>SourcePicker (DropZone + FileRow list)</td></tr>
+<tr><td>File-list rows</td><td><code>ui.ts:455–475</code></td><td>FileRow</td></tr>
+<tr><td>"Powered by BentoPDF" credit, shipped in the production bundle</td><td><code>studio-theme.ts:253</code></td><td>Footer attribution: "Built on BentoPDF (AGPL-3.0) · Source" linking to licensing</td></tr>
+<tr><td>Viewer theme hex duplicates</td><td><code>studio-theme.ts:21–90</code></td><td>Read values from CSS custom properties at runtime</td></tr>
+</tbody></table></div>
+
+<h2 id="public">3. Public, unused and error pages</h2>
+<p>How production is built: <code>SIMPLE_MODE</code> swaps <code>simple-index</code> in for <code>index</code>, <code>prepare-cloudflare.mjs:24</code> copies <code>workspace.html</code> over <code>/</code>, and a text replace changes "BentoPDF" to "PDF.mv" in every HTML file except licensing. That rename touches words only. <strong>Every file in <code>dist-cloudflare</code> can be reached directly</strong>, because the worker has no redirects.</p>
+<div class="scroll"><table>
+<thead><tr><th>Page</th><th>In production</th><th>Visual language</th><th>Recommendation</th></tr></thead>
+<tbody>
+<tr><td><code>/</code>, <code>/workspace</code></td><td>Live (duplicates)</td><td><span class="chip ok">Studio</span></td><td>Keep <code>/</code>; 301 <code>/workspace</code> → <code>/</code>.</td></tr>
+<tr><td><code>index.html</code>, <code>simple-index.html</code> sources</td><td>Not built in production, but served by <code>npm run dev</code> for unknown routes (seen live: BentoPDF "PDF Tools" landing)</td><td><span class="chip p0">BentoPDF</span></td><td>Delete both; point dev's fallback at the 404 page.</td></tr>
+<tr><td><code>/tools</code></td><td>Live, in sitemap</td><td><span class="chip p0">BentoPDF bento grid</span></td><td>301 → <code>/</code> (All tools view). Home already does this job.</td></tr>
+<tr><td><code>/pdf-converter</code>, <code>/pdf-editor</code>, <code>/pdf-merge-split</code>, <code>/pdf-security</code></td><td>Live, in sitemap</td><td><span class="chip p0">BentoPDF</span></td><td>301 → <code>/?group=convert</code> etc. (deep link to Home collections).</td></tr>
+<tr><td>119 tool URLs, e.g. <code>/compress-pdf</code>; also <code>/wasm-settings</code></td><td>Live, in sitemap, ×21 locales</td><td><span class="chip p0">BentoPDF chrome</span> + injected nav</td><td>Top-level visit → redirect to <code>/?tool=compress-pdf</code>, which opens the task tab. Keep <code>?workspace=1</code> for embedding. Keep static SEO copy only if you decide to (see decisions).</td></tr>
+<tr><td><code>/about</code>, <code>/contact</code>, <code>/faq</code>, <code>/privacy</code>, <code>/terms</code></td><td>Live; overwritten by inline HTML in <code>prepare-cloudflare.mjs:143–171</code></td><td><span class="chip p1">Third ad-hoc dark style</span></td><td>Rebuild from one InfoPage template on studio tokens; move the content into source files.</td></tr>
+<tr><td><code>/licensing</code></td><td>Live</td><td><span class="chip p1">BentoPDF</span> (intentional attribution)</td><td>Redesign as InfoPage, but <strong>keep</strong> the AGPL text, original copyright, and the source-code link.</td></tr>
+<tr><td><code>/404</code></td><td>Cloudflare <code>404-page</code> handling</td><td><span class="chip p1">Ad-hoc dark</span></td><td>StatusPage template (below).</td></tr>
+<tr><td>500 / offline / no-JS / engine failure</td><td><strong>Missing.</strong> <code>public/sw.js</code> has no navigation fallback; cache name still <code>bentopdf-v11</code></td><td>—</td><td>StatusPage variants: offline (service worker fallback), <code>&lt;noscript&gt;</code>, engine failed to load (with retry), unsupported browser.</td></tr>
+<tr><td>VitePress <code>docs/</code></td><td>Not in the Cloudflare pipeline</td><td>VitePress default</td><td>Leave out of production or theme it later; confirm.</td></tr>
+</tbody></table></div>
+<h3>StatusPage template (404 and every error)</h3>
+<p>Use the real workspace chrome: tab strip with Home and a quiet surface, not a separate marketing page. The layout is a 48px line icon, a title (22px), one sentence saying what happened and that files are safe, a primary pill button (<em>Go to Home</em>), a quiet secondary button (<em>Open a PDF</em> or <em>Try again</em>), and technical details in a collapsed section. Same template in both themes, loaded with no JavaScript. References: <a href="https://mobbin.com/screens/0cb8a748-4514-4f27-b102-194649e40112">Mercor error page</a> (primary + secondary recovery), <a href="https://mobbin.com/screens/5294ba10-11ee-43dd-892c-840e0fbfdab6">Instagram 404</a> (keeps app navigation visible).</p>
+
+<h2 id="debt">4. Design-system debt</h2>
+<div class="scroll"><table>
+<thead><tr><th>Area</th><th>Today</th><th>Target</th></tr></thead>
+<tbody>
+<tr><td>Token namespaces</td><td><code>--s-*</code> (canonical), <code>--studio-*</code> with conflicting values (<code>#1f883d</code> vs <code>#1a7f37</code>), <code>--ec*</code>, viewer hex copies, Tailwind <code>@theme</code> declared twice</td><td>One <code>tokens.css</code>: primitives → semantic aliases. Viewer reads them at runtime.</td></tr>
+<tr><td>Hardcoded values</td><td><code>workspace.css</code>: 98 hex, 93 literal font sizes; about 40 blue-grey greys. Dark-mode bugs: white active-tab underline (<code>:185</code>), toast colors (<code>:966</code>), dialog backdrop (<code>:993</code>)</td><td>Zero literals outside <code>tokens.css</code>, enforced by Stylelint.</td></tr>
+<tr><td>Fonts</td><td>Inter (never loaded), system-ui, DM Sans</td><td>One family, self-hosted (see type).</td></tr>
+<tr><td>Control heights</td><td>26, 28, 30, 32, 33, 34, 35, 36, 38, 39, 40, 44, 48, 55</td><td>24 / 32 / 40 / 48; 44 minimum on coarse pointers.</td></tr>
+<tr><td>Font sizes</td><td>22 sizes from 8 to 31px; 9–11px text used 46 times</td><td>12 / 14 / 16 / 18 / 22 / 28; nothing below 12.</td></tr>
+<tr><td>Radii</td><td>15 values; primary buttons are pills while quiet buttons use 8px</td><td>4 / 8 / 12 / 16 / full.</td></tr>
+<tr><td>Missing CSS</td><td><code>.button-secondary</code> is used in 4 panels but <strong>has no rule</strong></td><td>Button variants defined once.</td></tr>
+<tr><td>Contrast failures</td><td>Selected text <code>#1a7f37</code> on <code>#e6f4ea</code> 4.47:1; control borders <code>#b8b8b8</code> 1.98:1 and <code>#505050</code>/dark 2.02:1; <code>workspace.css</code> muted <code>#737982</code> 4.23:1, 9px labels 2.9:1</td><td>Text ≥ 4.5:1, control boundaries ≥ 3:1 (values below).</td></tr>
+<tr><td>Elevation, motion, z-index</td><td>7 unrelated shadows; 3 durations with no easing tokens; z-index 1–200 with no scale</td><td>3 elevations, 3 motion tokens, 6 layers.</td></tr>
+</tbody></table></div>
+
+<h2 id="journeys">5. Journeys and UX findings</h2>
+<div class="scroll"><table>
+<thead><tr><th></th><th>Finding</th><th>Change</th></tr></thead>
+<tbody>
+<tr><td><span class="chip p0">P0</span></td><td><strong>Tool switch isn't predictable.</strong> The frame flashes, reloads after every edit, and the layout jumps once files load.</td><td>Fixes in §1. Canvas and thumbnails stay mounted; only the right panel changes, showing a skeleton of the incoming panel's layout.</td></tr>
+<tr><td><span class="chip p0">P0</span></td><td><strong>Three different ways to process a file.</strong> Native panels show inline recovery. Embedded tools use a blocking BentoPDF loader and alert modal. Large-canvas tools each have their own toolbar.</td><td>One ToolPanel scaffold for every tool: header (title, Back to tools), source, essential options, collapsed Advanced section, sticky footer (primary action and output filename), then Progress → Result → Error inside the panel.</td></tr>
+<tr><td><span class="chip p1">P1</span></td><td>No consistent result state: some tools open a new tab, some download, some show a success modal.</td><td>ResultCard: output name, type, size and page count; <em>Open in new tab</em> for PDFs, <em>Download</em> otherwise (ZIP for batches); nothing blocking. Make downloading as few clicks as possible (<a href="https://builtformars.com/case-studies/audible">BFM: Audible checkout</a>).</td></tr>
+<tr><td><span class="chip p1">P1</span></td><td>Long jobs show an indeterminate spinner, or nothing, before the engine loads.</td><td>Any wait over 400 ms shows progress (<a href="https://builtformars.com/ux-glossary/doherty-threshold">BFM: Doherty threshold</a>). Separate "Loading engine…" from "Processing page 4 of 12", and offer Cancel where the engine supports it.</td></tr>
+<tr><td><span class="chip p1">P1</span></td><td>118 tools but no recents, no keyboard launcher, and a dead-end empty search.</td><td>Search field with ⌘K: Recent tools, then Suggested for the open document, then all tools. When nothing matches, suggest related tools and categories (<a href="https://builtformars.com/ux-bites/a-useful-empty-state">BFM: Wise empty state</a>; <a href="https://mobbin.com/screens/5f353fc3-d9ce-4d1c-be9b-cc1b4ad07578">v0 command menu</a>, <a href="https://mobbin.com/screens/d8e46a56-c6c6-4db3-b85f-83bd6cedc01f">fal "I want to…"</a>).</td></tr>
+<tr><td><span class="chip p1">P1</span></td><td>One bad file stops the whole batch with a modal.</td><td>Per-file status in FileRow with Skip, Retry or Remove (<a href="https://builtformars.com/ux-bites/that-product-isnt-available">BFM: IKEA recovery</a>).</td></tr>
+<tr><td><span class="chip p2">P2</span></td><td>Copy and brand leaks: "redact.Keep" is missing a space (Home hero); tool <code>&lt;title&gt;</code> is "PDF tool — PDF Studio" while the product is PDF.mv; the markdown sample and form metadata still say BentoPDF.</td><td>One product name (PDF.mv) everywhere; a copy pass that follows the rules in §7.</td></tr>
+<tr><td><span class="chip p2">P2</span></td><td>On mobile, the hero art and category pills extend past 390px. Pills are in a scroll container, but nothing shows that more pills exist.</td><td>Show an edge fade on scrollable pill rows, or switch to a category select below 480px. Check on a real phone.</td></tr>
+<tr><td><span class="chip p2">P2</span></td><td>Default values vary by tool; some require choices before Apply is enabled.</td><td>Every tool works with one click using sensible defaults (<a href="https://builtformars.com/ux-glossary/default-bias">BFM: default bias</a>).</td></tr>
+</tbody></table></div>
+
+<h3>Target flow: every tool, the same six states</h3>
+<ol class="steps">
+  <li><strong>Pick</strong>: from Home, search/⌘K, or the document tool list. The task tab opens instantly with a panel skeleton.</li>
+  <li><strong>Source</strong>: the open document is used automatically. Otherwise a SourcePicker appears inside the panel, with a large drop target on the empty canvas that opens the same picker.</li>
+  <li><strong>Configure</strong>: essential fields with defaults, Advanced collapsed, preview in the central canvas when the output is visual.</li>
+  <li><strong>Run</strong>: the footer button becomes a progress bar with phase and cancel. Settings stay put.</li>
+  <li><strong>Result</strong>: a ResultCard in the panel. The PDF opens in a new tab and the original stays untouched.</li>
+  <li><strong>Recover</strong>: an InlineAlert says what happened, confirms the document is safe, and offers one recovery action, with details collapsed.</li>
+</ol>
+
+<h2 id="one-view">5b. One PDF view for every tool</h2>
+<p><strong>Goal:</strong> choosing a tool never swaps the user into a different screen. The document, thumbnails, zoom and page position stay where they are. The tool shows up in only three places, always the same three:</p>
+<ul>
+  <li><strong>Toolbar row above the page:</strong> modes and in-canvas tools.</li>
+  <li><strong>On the page itself:</strong> handles, placed fields and previews.</li>
+  <li><strong>Right panel:</strong> options, the primary action and the result.</li>
+</ul>
+<p>The viewer already has a toolbar-mode API: <code>host.editMode(id, 'annotation-toolbar' | 'shapes-toolbar' | 'redaction-toolbar')</code> in <code>workspace-tools.ts:183–212</code>. Every tool should use that same mechanism.</p>
+
+<h3>Tools that open another view today</h3>
+<p>From the routing in <code>workspace-tools.ts</code>:</p>
+<ul>
+  <li><code>canvasTools</code> (<code>:145–155</code>) and Merge hide <code>#pdf-viewer</code> (<code>:448–455</code>).</li>
+  <li>Iframe engines are separate pages with their own upload and preview (<code>:540–562</code>).</li>
+</ul>
+<div class="scroll"><table>
+<thead><tr><th>Behaviour</th><th>Tools</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><strong>Replaces the PDF view with a separate full screen</strong></td><td>Edit PDF text · Crop · Organize / Duplicate &amp; organize · PDF Multi tool · Create PDF form · Fill PDF form · Compare PDFs · Workflow builder · Markdown to PDF · Merge (page grid replaces the viewer) · Watermark and Header &amp; footer <em>while previewing</em> (a second canvas covers the viewer, <code>workspace-mark-panel.ts:102–123</code>)</td><td><span class="chip p0">Another view</span></td></tr>
+<tr><td><strong>Separate mini-view inside the right-panel iframe</strong> (own drop zone and its own page preview next to the real viewer)</td><td>Split (<code>#page-selector-grid</code>) · Remove blank pages (<code>#preview-panel</code>) · Rotate by custom degrees (<code>#page-thumbnails</code>) · Adjust colors and Scanner effect (<code>#preview-canvas</code>) · Posterize (paged preview) · Booklet (<code>#booklet-preview</code>) · Edit bookmarks (<strong>a complete second PDF viewer</strong>, <code>#viewer-section</code>) · Bates numbering, Duplex collate, Digital signature (preview regions found in markup; check each)</td><td><span class="chip p0">Another view</span></td></tr>
+<tr><td><strong>"More options" link</strong> on native tools</td><td>Opens the original engine page (Rotate, Delete, Watermark image &amp; advanced, Header &amp; footer, conversions), which shows its own thumbnails and upload again</td><td><span class="chip p1">Another view</span></td></tr>
+<tr><td><strong>Iframe form, no own preview</strong> (about 70)</td><td>Compress, Page numbers, Page labels, Table of contents, Text/Background color, Invert, Greyscale, N-up, Flatten, Encrypt/Decrypt/Permissions, Sanitize, Repair, OCR, attachments, metadata, PDF→Office/CSV/Markdown/SVG/TIFF/CBZ and similar</td><td><span class="chip p1">Looks inline, but it's a separate page</span>: own upload, loader and alerts, and visual changes can't be previewed on the document</td></tr>
+<tr><td><strong>Creating a PDF from another format</strong></td><td>Word/Excel/PowerPoint/image/e-book/etc → PDF</td><td><span class="chip p2">Acceptable</span>: there's no PDF to show yet. Show a source-file card, then open the output in the viewer.</td></tr>
+<tr><td><strong>Already inside the PDF view</strong></td><td>Read &amp; annotate · Add stamps · Sign PDF · Rotate · Extract · Delete · Reverse · Add blank page · Remove annotations · Remove metadata · PDF→JPG/PNG/WebP/Text · JPG/PNG/WebP→PDF</td><td><span class="chip ok">Target pattern</span></td></tr>
+</tbody></table></div>
+
+<h3>How each kind of tool fits the single PDF view</h3>
+<div class="scroll"><table>
+<thead><tr><th>Viewer mode</th><th>What the user sees</th><th>Tools</th></tr></thead>
+<tbody>
+<tr><td><strong>Toolbar mode</strong></td><td>A tool-specific toolbar replaces the annotation toolbar above the page. Work happens directly on the page; the right panel shows properties of the selection.</td><td>Edit PDF text (font, size, color, alignment) · Crop (handles on the page; this page or all pages) · Create form (text, checkbox, radio, dropdown, signature field; drag onto the page) · Fill form (viewer's form layer; Clear, Flatten) · Redact, Shapes, Stamps (already)</td></tr>
+<tr><td><strong>Page-grid mode</strong></td><td>The same viewer switches from reading to a grid of page thumbnails, with selection, drag and a count. Toolbar shows Rotate · Delete · Duplicate · Insert · Split here.</td><td>Organize · Multi tool · Merge (added files append as pages with a source badge) · Split · Extract/Delete/Rotate by custom degrees · Remove blank pages (detected pages pre-selected) · Reverse · Duplex collate</td></tr>
+<tr><td><strong>Preview overlay</strong></td><td>The viewer renders the result on the actual pages with a "Preview" chip in the toolbar and <em>Cancel · Apply</em>. Changing a setting updates the preview; nothing is committed until Apply.</td><td>Watermark · Header &amp; footer · Page numbers · Page labels · Bates · Adjust colors · Scanner effect · Invert · Text color · Background color · Greyscale · Posterize · N-up · Booklet</td></tr>
+<tr><td><strong>Side-by-side</strong></td><td>The viewer splits into two synced panes, with differences highlighted and a legend in the toolbar.</td><td>Compare PDFs</td></tr>
+<tr><td><strong>Left sidebar tab</strong></td><td>Next to Thumbnails: Bookmarks, Attachments, Layers. Edit in the list; the page jumps as you go.</td><td>Edit bookmarks · Table of contents · Add/Edit/Extract attachments · PDF layers (OCG)</td></tr>
+<tr><td><strong>Panel-only</strong></td><td>No visual change to preview: options and action in the right panel, result in a ResultCard, the document stays in view.</td><td>Compress · Encrypt/Decrypt/Permissions · Sanitize · Repair · Linearize · Flatten · Metadata · OCR (then text becomes selectable in the viewer) · all PDF→other exports</td></tr>
+<tr><td><strong>Exceptions</strong></td><td>Their main object isn't a PDF page.</td><td><em>Markdown to PDF</em>: the editor goes in the right panel (or a resizable left pane) and the live output renders in the PDF view. <em>Workflow builder</em>: a node graph can't live on a page; keep its own canvas, but use the same chrome and component kit, and open each run's output in the PDF view.</td></tr>
+</tbody></table></div>
+<blockquote><p><strong>Rule:</strong> selecting a tool may change the toolbar row, what's drawn on the page, and the right panel. It never hides the viewer, never asks to upload a document that's already open, and never opens a second copy of the page preview.</p></blockquote>
+<p><strong>Feasibility notes, to check before committing:</strong></p>
+<ul>
+  <li><strong>Edit PDF text</strong> uses its own text-reflow renderer, so it's the hardest to host inside the EmbedPDF viewer. Prototype it first.</li>
+  <li><strong>Page-grid and preview-overlay modes</strong> need the viewer to show either temporary rendered pages or a thumbnail grid. Check the EmbedPDF plugin API; the fallback is our own layer drawn inside the viewer's scroll container, keeping zoom and page position.</li>
+</ul>
+
+<h2 id="system">6. PDF.mv Studio design system: foundations</h2>
+<p>Spectrum 2 principles with PDF.mv's green. Place it at <code>src/design-system/</code>: <code>tokens.css</code> (primitives and semantic tokens), <code>components.css</code> (<code>.ds-*</code> classes), <code>ui/*.ts</code> (DOM factories that return these classes; no framework), and a living <code>kit.html</code> page showing every component in both themes.</p>
+
+<h3>Color: semantic tokens</h3>
+<div class="swatches">
+  <div class="sw"><div class="pair"><div style="background:#f5f5f5"></div><div style="background:#161616"></div></div><div class="meta"><b>--ds-bg</b><span>#f5f5f5 · #161616</span></div></div>
+  <div class="sw"><div class="pair"><div style="background:#fff"></div><div style="background:#202020"></div></div><div class="meta"><b>--ds-surface</b><span>#ffffff · #202020</span></div></div>
+  <div class="sw"><div class="pair"><div style="background:#fff"></div><div style="background:#292929"></div></div><div class="meta"><b>--ds-raised</b><span>#ffffff · #292929</span></div></div>
+  <div class="sw"><div class="pair"><div style="background:#e9e9e9"></div><div style="background:#101010"></div></div><div class="meta"><b>--ds-canvas</b><span>#e9e9e9 · #101010</span></div></div>
+  <div class="sw"><div class="pair"><div style="background:#222"></div><div style="background:#f2f2f2"></div></div><div class="meta"><b>--ds-text</b><span>#222222 · #f2f2f2</span></div></div>
+  <div class="sw"><div class="pair"><div style="background:#5c5c5c"></div><div style="background:#b6b6b6"></div></div><div class="meta"><b>--ds-text-muted</b><span>#5c5c5c · #b6b6b6</span></div></div>
+  <div class="sw"><div class="pair"><div style="background:#e1e1e1"></div><div style="background:#333"></div></div><div class="meta"><b>--ds-border</b> decorative<span>#e1e1e1 · #333333</span></div></div>
+  <div class="sw"><div class="pair"><div style="background:#8f8f8f"></div><div style="background:#6e6e6e"></div></div><div class="meta"><b>--ds-border-control</b> ≥3:1<span>#8f8f8f · #6e6e6e</span></div></div>
+  <div class="sw"><div class="pair"><div style="background:#1a7f37"></div><div style="background:#1a7f37"></div></div><div class="meta"><b>--ds-accent-fill</b> CTA<span>#1a7f37 · #1a7f37</span></div></div>
+  <div class="sw"><div class="pair"><div style="background:#15692d"></div><div style="background:#3fb950"></div></div><div class="meta"><b>--ds-accent-text</b><span>#15692d · #3fb950</span></div></div>
+  <div class="sw"><div class="pair"><div style="background:#e6f4ea"></div><div style="background:#203b29"></div></div><div class="meta"><b>--ds-selected</b><span>#e6f4ea · #203b29</span></div></div>
+  <div class="sw"><div class="pair"><div style="background:#b3261e"></div><div style="background:#ff8a80"></div></div><div class="meta"><b>--ds-negative</b><span>#b3261e · #ff8a80</span></div></div>
+  <div class="sw"><div class="pair"><div style="background:#8a5a00"></div><div style="background:#f2c14e"></div></div><div class="meta"><b>--ds-notice</b><span>#8a5a00 · #f2c14e</span></div></div>
+  <div class="sw"><div class="pair"><div style="background:#2c6aa0"></div><div style="background:#8cc4f2"></div></div><div class="meta"><b>--ds-informative</b><span>#2c6aa0 · #8cc4f2</span></div></div>
+</div>
+<p>Primitives are a 12-step neutral ramp (<code>--gray-25…900</code>) and a 10-step green ramp. Semantic tokens reference only primitives. Changes from today: selected and link text on light backgrounds darkens to <code>#15692d</code> (4.47 → about 6:1), control borders move to 3:1, and <code>#3fb950</code> is <strong>never</strong> a fill behind white text (2.54:1). Positive status reuses the accent ramp. Semantic colors are never used for decoration.</p>
+
+<h3>Scales</h3>
+<p class="label">Size (controls)</p>
+<div class="scale"><span>S 24</span><span>M 32 · default desktop</span><span>L 40 · panel primary</span><span>XL 48 · empty-state CTA</span><span>touch min 44</span></div>
+<p class="label" style="margin-top:20px">Spacing (4px base)</p>
+<div class="scale"><span>2</span><span>4</span><span>8</span><span>12</span><span>16</span><span>24</span><span>32</span><span>40</span><span>48</span><span>64</span></div>
+<p class="label" style="margin-top:20px">Radius</p>
+<div class="scale"><span>4 · checkbox, thumbnail, kbd</span><span>8 · input, select, menu item</span><span>12 · card, panel, toast</span><span>16 · dialog, sheet</span><span>full · buttons, chips, segmented</span></div>
+<p class="label" style="margin-top:20px">Type (one self-hosted family; Source Sans 3 is Adobe-designed and a close open match for Adobe Clean)</p>
+<div class="scale"><span>12/16 caption, label</span><span>14/20 body, controls</span><span>16/24 body-L, mobile input</span><span>18/24 panel title</span><span>22/28 page title</span><span>28/36 home heading</span><span>weights 400 · 600 · 700</span></div>
+<p class="label" style="margin-top:20px">Elevation · Motion · Layers</p>
+<div class="scale"><span>e0 flat + border</span><span>e1 menu, popover</span><span>e2 dialog, sheet</span><span>fast 120ms ease-out</span><span>base 200ms cubic-bezier(.2,0,0,1)</span><span>drawer 220ms cubic-bezier(.32,.72,0,1)</span><span>z: sticky 10 · drawer 100 · popover 200 · dialog 300 · toast 400</span></div>
+
+<h2 id="components">7. Component kit</h2>
+<p>Each component is one CSS class plus one TypeScript factory, with defined variants and states: default, hover, active, focus, disabled, loading, invalid. No BentoPDF component is used anywhere once this kit exists.</p>
+<div class="scroll"><table>
+<thead><tr><th>Component</th><th>Variants / sizes</th><th>Replaces</th></tr></thead>
+<tbody>
+<tr><td><strong>Button</strong></td><td>accent (one per surface) · secondary (outline) · quiet · negative; S/M/L; icon-leading; loading</td><td><code>.button</code>, <code>-primary</code>, <code>-quiet</code>, missing <code>-secondary</code>; Tailwind <code>.btn</code>; indigo Run/Export</td></tr>
+<tr><td><strong>IconButton</strong></td><td>quiet · outline; S/M; required <code>aria-label</code> + tooltip</td><td>tab close, new tab, viewer/tool toolbars</td></tr>
+<tr><td><strong>TextField / NumberField / Select</strong></td><td>M/L; label above; help text; error text; 16px on touch</td><td>5 input styles</td></tr>
+<tr><td><strong>Checkbox · Radio · Switch</strong></td><td>accent-colored, 16px box, 32px row</td><td>unstyled native; markdown blue toggle</td></tr>
+<tr><td><strong>Slider · ColorSwatch</strong></td><td>with value label; swatch 24/32 + custom</td><td>hardcoded <code>accent-color</code>; signature swatches</td></tr>
+<tr><td><strong>SegmentedControl</strong></td><td>text · icon; selected = raised surface, never an outline</td><td>appearance icons, signature modes, merge view toggle, merge options</td></tr>
+<tr><td><strong>Disclosure</strong></td><td>"Advanced" section; chevron rotates</td><td>3 summary styles</td></tr>
+<tr><td><strong>Tabs</strong></td><td>DocumentTab (empty / loading / loaded / edited, close) · PanelTabs</td><td>workspace tab vs tool-page nav tab</td></tr>
+<tr><td><strong>SearchField + CommandMenu</strong></td><td>inline · ⌘K overlay; recents, suggestions, empty state</td><td><code>.tool-search</code>, <code>#document-tools-search</code></td></tr>
+<tr><td><strong>ToolCard · ToolListItem</strong></td><td>card (Home) · row (document panel); same icon, title and description rules</td><td>two catalog systems</td></tr>
+<tr><td><strong>ToolPanel scaffold</strong></td><td>header · source · body · Advanced · sticky footer</td><td><code>.native-mark-panel</code>, <code>.native-merge-panel</code>, embedded page layouts</td></tr>
+<tr><td><strong>SourcePicker · DropZone · FileRow</strong></td><td>empty / has files; row states: queued, processing, done, failed (Skip/Retry/Remove)</td><td><code>ui.ts</code> drop zone + file list, <code>.native-source-row</code>, <code>.merge-source-row</code></td></tr>
+<tr><td><strong>PageThumbnail · PageGrid</strong></td><td>selectable, draggable, page number, source badge, keyboard move</td><td>3 thumbnail variants + <code>ui.ts</code> grid</td></tr>
+<tr><td><strong>ProgressBar · ProgressPanel</strong></td><td>determinate / indeterminate; phase label; cancel</td><td><code>ui.ts</code> loader overlay</td></tr>
+<tr><td><strong>ResultCard</strong></td><td>PDF → open in tab; file → download; batch → ZIP</td><td>success modals, ad-hoc results</td></tr>
+<tr><td><strong>InlineAlert · Toast</strong></td><td>informative / positive / notice / negative; action slot; details</td><td><code>ui.ts</code> alert modal, <code>.workspace-status</code></td></tr>
+<tr><td><strong>Dialog · Drawer/Sheet</strong></td><td>confirm (named consequence) · alert; right drawer · bottom sheet</td><td><code>.studio-dialog</code>, mobile tools drawer</td></tr>
+<tr><td><strong>EmptyState · Skeleton · StatusPage</strong></td><td>icon + title + one action; panel/grid skeletons; 404/offline/error/no-JS</td><td>3 empty-state styles; 404 and info pages</td></tr>
+<tr><td><strong>Toolbar · Tooltip · Kbd · Badge</strong></td><td>canvas toolbar groups; 12px tooltip; key hints; count/status</td><td>crop/compare/workflow/edit-text toolbars</td></tr>
+<tr><td><strong>InfoPage</strong></td><td>workspace chrome + readable 68ch column</td><td>about, faq, privacy, terms, contact, licensing</td></tr>
+</tbody></table></div>
+
+<h2 id="rules">8. Usage rules</h2>
+<div class="rules">
+  <div class="rule"><h4>One accent action per surface</h4><p><span class="do">Do</span> use the accent pill for the single main action in a panel footer or dialog.</p><p><span class="dont">Don't</span> use accent for decoration, links next to buttons, or several actions in a row.</p></div>
+  <div class="rule"><h4>Tokens only</h4><p><span class="do">Do</span> reference <code>--ds-*</code> tokens in every component.</p><p><span class="dont">Don't</span> add hex, rgb() or Tailwind <code>gray-/indigo-/blue-</code> classes anywhere in <code>src/</code>. Stylelint and a CI grep fail the build.</p></div>
+  <div class="rule"><h4>Size by context</h4><p><span class="do">Do</span> use M (32) in desktop chrome, L (40) for panel footer actions, 44 minimum on coarse pointers.</p><p><span class="dont">Don't</span> invent heights, or use text below 12px.</p></div>
+  <div class="rule"><h4>Selection vs focus</h4><p><span class="do">Do</span> show selection with <code>--ds-selected</code> fill; focus is always a 2px accent ring offset by 2px.</p><p><span class="dont">Don't</span> use an outline to mean "selected".</p></div>
+  <div class="rule"><h4>One PDF view</h4><p><span class="do">Do</span> put tools in the toolbar row, on the page, or in the right panel, and keep zoom and page position.</p><p><span class="dont">Don't</span> hide the viewer, open a second preview, or ask to upload a document that's already open.</p></div>
+  <div class="rule"><h4>Panels, not pages</h4><p><span class="do">Do</span> put every tool inside the ToolPanel scaffold, with results and errors inline.</p><p><span class="dont">Don't</span> open blocking modals for success, or show breadcrumbs or "Back to Tools" in the workspace.</p></div>
+  <div class="rule"><h4>Defaults first</h4><p><span class="do">Do</span> ship defaults so Apply works immediately; hide rarely changed settings under Advanced.</p><p><span class="dont">Don't</span> keep the primary action disabled until the user makes choices.</p></div>
+  <div class="rule"><h4>Honest progress</h4><p><span class="do">Do</span> show progress after 400 ms, with phase and units, and Cancel when cancelling really stops the work.</p><p><span class="dont">Don't</span> show a Cancel that does nothing, or a spinner with no label.</p></div>
+  <div class="rule"><h4>Errors that recover</h4><p><span class="do">Do</span> write: what happened · your document is safe · one action · details collapsed.</p><p><span class="dont">Don't</span> show <code>error.message</code>, apologize, or leave a dead end.</p></div>
+  <div class="rule"><h4>Motion with purpose</h4><p><span class="do">Do</span> animate drawers, sheets and toasts with transform and opacity, using the motion tokens. Keep tab switches and keyboard actions instant.</p><p><span class="dont">Don't</span> stagger or animate on page load. Reduced motion = opacity only.</p></div>
+  <div class="rule"><h4>Copy</h4><p><span class="do">Do</span> use sentence case, verb-first buttons ("Merge PDFs", "Download ZIP"), and "PDF.mv" as the only product name.</p><p><span class="dont">Don't</span> write "PDF Studio", "Process", "Submit", or star-studded marketing copy inside the app.</p></div>
+</div>
+
+<h2 id="roadmap">9. Roadmap</h2>
+<p>The phases are in order: each depends on the one before. Model assignments aim for the lowest cost that can do the work reliably.</p>
+
+<div class="phase"><header><span class="chip p0">Phase 0</span><h3>Stop the flicker and brand leaks</h3><span class="who">Opus 5 (main) · ~2–3 days</span></header>
+<ul><li>Head boot plugin, <code>theme-boot.js</code>, color-scheme meta, build-time <code>data-studio-tool</code>.</li><li>Keep frames hidden until styled; skeleton; reuse frames on revision change; remove <code>src = src</code>.</li><li>Replace "Powered by BentoPDF" with compliant attribution; <code>setAuthor('PDF.mv')</code>; markdown sample; tool <code>&lt;title&gt;</code> → "Tool — PDF.mv"; fix "redact.Keep".</li><li>Playwright flicker test across the 23 task groups, both themes.</li></ul>
+<p class="accept"><strong>Done when:</strong> no sampled frame shows legacy colors or BentoPDF chrome, cold or warm, dev or prod; editing a document doesn't reload the tool.</p></div>
+
+<div class="phase"><header><span class="chip p0">Phase 1</span><h3>Foundations and guardrails</h3><span class="who">Opus (tokens, contrast) · Haiku (literal inventory) · ~3 days</span></header>
+<ul><li><code>src/design-system/tokens.css</code> with primitives + semantic tokens, working without JS; delete <code>--studio-*</code>, <code>--ec*</code> aliases after migration.</li><li><code>viewerTheme()</code> reads computed tokens instead of hex copies.</li><li>Self-host one font; remove Inter/DM Sans references.</li><li>Stylelint (no color/size literals outside tokens) + CI grep for Tailwind legacy classes, running in warn mode with a baseline count that may only go down.</li></ul>
+<p class="accept"><strong>Done when:</strong> every token is defined once; contrast table passes; the lint baseline is recorded.</p></div>
+
+<div class="phase"><header><span class="chip p1">Phase 2</span><h3>Component kit and shared replacements</h3><span class="who">Opus 5 (API + kit page) · Sonnet (migration) · ~1–1.5 weeks</span></header>
+<ul><li>Build the kit in §7 with <code>kit.html</code> showing every state in both themes.</li><li>Replace <code>ui.ts</code> alert, loader, drop zone, file list and thumbnail grid with kit components. This single change fixes about 100 tools.</li><li>Rebuild action, mark, merge and signature panels on the ToolPanel scaffold; delete duplicate CSS files.</li></ul>
+<p class="accept"><strong>Done when:</strong> <code>ui.ts</code> contains no Tailwind classes; native panels share one scaffold; lint baseline drops at least 60%.</p></div>
+
+<div class="phase"><header><span class="chip p1">Phase 3</span><h3>Headless engines and one PDF view</h3><span class="who">Opus 5 (viewer modes API, Edit-text prototype) · Sonnet per engine family (parallel worktrees) · ~3–4 weeks</span></header>
+<ul><li>Add viewer modes to the host: toolbar mode, page grid, preview overlay, side-by-side, sidebar tabs (§5b).</li><li>Extract engines from <code>logic/*-page.ts</code> into <code>engines/*</code> as <code>(bytes, options, onProgress) → Blob</code>, family by family: page-grid tools → preview-overlay tools → panel-only tools → bookmarks/attachments → Crop, Forms, Compare → Edit PDF text → Markdown and Workflow.</li><li>Rebuild each tool as a native panel on the ToolPanel scaffold; remove its iframe route and "More options" link.</li><li>Delete migrated page HTML, the <code>ui.ts</code> legacy helpers, the navbar/footer partials and the <code>studio-theme.css</code> remap layer. Tool URLs redirect into the workspace.</li></ul>
+<p class="accept"><strong>Done when:</strong> <code>canvasTools</code> is empty, no tool creates an iframe, <code>#pdf-viewer</code> is never hidden while a PDF is open, and the legacy-class grep returns 0. Then screenshot-review all 23 groups in both themes at 390px and desktop width.</p></div>
+
+<div class="phase"><header><span class="chip p1">Phase 4</span><h3>Public, unused and error pages</h3><span class="who">Sonnet · ~3 days</span></header>
+<ul><li>Delete <code>index.html</code>/<code>simple-index.html</code>; 301 <code>/workspace</code>, <code>/tools</code> and the category hubs; tool URLs deep-link into the workspace (per decision below); update sitemap.</li><li>StatusPage: 404, offline (service worker navigation fallback), engine failure, no-JS. InfoPage for about/faq/privacy/terms/contact/licensing, with content moved out of <code>prepare-cloudflare.mjs</code>.</li><li>Rename the service worker cache; check the i18n output of the new templates.</li></ul>
+<p class="accept"><strong>Done when:</strong> every reachable URL renders in the studio language or redirects; AGPL notices and source link intact.</p></div>
+
+<div class="phase"><header><span class="chip p2">Phase 5</span><h3>Journey polish</h3><span class="who">Opus 5 (flows) · Sonnet (build) · ~1 week</span></header>
+<ul><li>Six-state tool flow everywhere: ProgressPanel, ResultCard, per-file recovery.</li><li>⌘K command menu with recents and suggestions for the open document; helpful empty search.</li><li>Mobile: scroll affordance on pill rows or a category select; bottom-sheet tool panel; check on a real phone.</li></ul>
+<p class="accept"><strong>Done when:</strong> five-person moderated test (open→sign→download, merge two, Word→PDF, watermark selected pages, recover from an invalid file) with no re-uploads and no confusion about which file downloads.</p></div>
+
+<h2 id="decisions">10. Decisions needed from you</h2>
+<div class="scroll"><table>
+<thead><tr><th>Question</th><th>Recommendation</th></tr></thead>
+<tbody>
+<tr><td>Standalone tool URLs (<code>/compress-pdf</code> × 21 locales): redirect into the workspace, or keep as SEO landing pages redesigned in the studio language?</td><td>Redirect to <code>/?tool=…</code> for people. If organic search matters, keep a lightweight InfoPage per tool with one "Open Compress PDF" button. Never the legacy chrome.</td></tr>
+<tr><td>Attribution wording that replaces "Powered by BentoPDF"</td><td>A footer line in Home and InfoPages: "Built on BentoPDF · AGPL-3.0 · Source code". Confirm with whoever owns licensing.</td></tr>
+<tr><td>Diverge from upstream BentoPDF UI (headless engines, delete tool pages)?</td><td>Yes. Keep engine code close to upstream file-for-file so fixes can still be brought over, and stop tracking upstream UI.</td></tr>
+<tr><td>Typeface</td><td>Source Sans 3, self-hosted (keeps the no-third-party-requests promise). Alternative: system UI stack only.</td></tr>
+<tr><td>Button shape</td><td>Pills for all buttons (Spectrum 2); 8px for inputs. Today's mix of pill primaries and 8px quiet buttons goes away.</td></tr>
+<tr><td>Workflow builder and Markdown editor: migrate, or hide from Home until migrated?</td><td>Keep in search, remove from Popular until Phase 3 finishes them.</td></tr>
+</tbody></table></div>
+
+<h2 id="research">11. Research and method</h2>
+<details open><summary>Evidence used</summary><div>
+<ul>
+<li><strong>Live checks</strong> in the dev app at 1440px and 390px: Home, Edit PDF text, Workflow builder, Markdown to PDF, standalone Compress PDF, unknown-route fallback. The iframe paint probe gave the flicker timeline.</li>
+<li><strong>Code audit</strong> by four parallel agents: tool screens (Sonnet), public/error pages and the Cloudflare pipeline (Sonnet), tokens, components and flicker root cause (Opus), Built for Mars research (Sonnet). I verified and combined the results. Fable 5.1 wasn't needed for this review.</li>
+<li><strong>Mobbin</strong> (searched directly): <a href="https://mobbin.com/screens/0cb8a748-4514-4f27-b102-194649e40112">Mercor error</a>, <a href="https://mobbin.com/screens/5294ba10-11ee-43dd-892c-840e0fbfdab6">Instagram 404</a>, <a href="https://mobbin.com/screens/6b56d60a-fe8a-456c-a155-c007db13b612">Dropbox Dash home</a>, <a href="https://mobbin.com/flows/10684cb5-9a08-47f6-a4f2-ec22a989a62a">DocuSign upload flow</a> (inline per-file progress in the thumbnail slot), <a href="https://mobbin.com/screens/5f353fc3-d9ce-4d1c-be9b-cc1b4ad07578">v0</a> and <a href="https://mobbin.com/screens/d8e46a56-c6c6-4db3-b85f-83bd6cedc01f">fal</a> command menus, <a href="https://mobbin.com/screens/ecb45110-d6d6-4126-8ffb-b95cc64b47fd">Framer editor</a> (persistent canvas, panel-only swaps). Earlier references from the 14 Sept review (PandaDoc, Craft, Fibery) still apply.</li>
+<li><strong>Built for Mars</strong>: <a href="https://builtformars.com/ux-glossary/doherty-threshold">Doherty threshold</a>, <a href="https://builtformars.com/ux-glossary/cognitive-drift">Cognitive drift</a>, <a href="https://builtformars.com/ux-glossary/default-bias">Default bias</a>, <a href="https://builtformars.com/ux-bites/a-useful-empty-state">Wise empty state</a>, <a href="https://builtformars.com/ux-bites/that-product-isnt-available">IKEA recovery</a>, <a href="https://builtformars.com/case-studies/linkedin">LinkedIn noise</a>, <a href="https://builtformars.com/case-studies/audible">Audible checkout</a>. Recommendations built on them are my inferences, not measured outcomes.</li>
+</ul>
+<p>Limits: no real-device testing, no screen-reader pass, and no production (Cloudflare) runtime check. Flicker was measured in dev; the production analysis comes from reading the built HTML and chunks.</p>
+</div></details>
+</main>
+</div>

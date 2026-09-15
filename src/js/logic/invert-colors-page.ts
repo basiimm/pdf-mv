@@ -1,9 +1,7 @@
 import { createIcons, icons } from 'lucide';
 import { showAlert, showLoader, hideLoader } from '../ui.js';
-import { downloadFile, formatBytes, getPDFDocument } from '../utils/helpers.js';
-import { PDFDocument as PDFLibDocument } from 'pdf-lib';
-import { applyInvertColors } from '../utils/image-effects.js';
-import * as pdfjsLib from 'pdfjs-dist';
+import { downloadFile, formatBytes } from '../utils/helpers.js';
+import { invertColors as invertColorsEngine } from '../engines/invert-colors.js';
 import { InvertColorsState } from '@/types';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
 import { loadPdfDocument } from '../utils/load-pdf-document.js';
@@ -121,45 +119,16 @@ async function invertColors() {
   }
   showLoader('Inverting PDF colors...');
   try {
-    const newPdfDoc = await PDFLibDocument.create();
-    const pdfBytes = await pageState.pdfDoc.save();
-    const pdfjsDoc = await getPDFDocument({ data: pdfBytes }).promise;
-
-    for (let i = 1; i <= pdfjsDoc.numPages; i++) {
-      showLoader(`Processing page ${i} of ${pdfjsDoc.numPages}...`);
-      const page = await pdfjsDoc.getPage(i);
-      const viewport = page.getViewport({ scale: 1.5 });
-      const canvas = document.createElement('canvas');
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      const ctx = canvas.getContext('2d')!;
-      await page.render({ canvasContext: ctx, viewport, canvas }).promise;
-
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      applyInvertColors(imageData);
-      ctx.putImageData(imageData, 0, 0);
-
-      const pngImageBytes = await new Promise<Uint8Array>((resolve) =>
-        canvas.toBlob((blob) => {
-          const reader = new FileReader();
-          reader.onload = () =>
-            resolve(new Uint8Array(reader.result as ArrayBuffer));
-          reader.readAsArrayBuffer(blob!);
-        }, 'image/png')
-      );
-
-      const image = await newPdfDoc.embedPng(pngImageBytes);
-      const newPage = newPdfDoc.addPage([image.width, image.height]);
-      newPage.drawImage(image, {
-        x: 0,
-        y: 0,
-        width: image.width,
-        height: image.height,
-      });
-    }
-    const newPdfBytes = await newPdfDoc.save();
+    const resultFile = await invertColorsEngine(
+      pageState.file,
+      {},
+      {
+        signal: new AbortController().signal,
+        progress: (p) => showLoader(p.label + '...'),
+      }
+    );
     downloadFile(
-      new Blob([new Uint8Array(newPdfBytes)], { type: 'application/pdf' }),
+      new Blob([resultFile], { type: 'application/pdf' }),
       pageState.file?.name || 'document.pdf'
     );
     showAlert('Success', 'Colors inverted successfully!', 'success', () => {

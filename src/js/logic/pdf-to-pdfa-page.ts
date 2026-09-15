@@ -8,12 +8,12 @@ import {
 } from '../utils/helpers.js';
 import { state } from '../state.js';
 import { createIcons, icons } from 'lucide';
-import { convertFileToPdfA, type PdfALevel } from '../utils/ghostscript-loader';
-import { loadPyMuPDF, isPyMuPDFAvailable } from '../utils/pymupdf-loader.js';
-import type { PyMuPDFInstance } from '@/types';
+import { type PdfALevel } from '../utils/ghostscript-loader';
+import { isPyMuPDFAvailable } from '../utils/pymupdf-loader.js';
 import { showWasmRequiredDialog } from '../utils/wasm-provider.js';
 import { batchDecryptIfNeeded } from '../utils/password-prompt.js';
 import { deduplicateFileName } from '../utils/deduplicate-filename.js';
+import { pdfToPdfA as pdfToPdfAEngine } from '../engines/pdf-to-pdfa.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -122,43 +122,23 @@ document.addEventListener('DOMContentLoaded', () => {
         ) as HTMLInputElement;
         const shouldPreFlatten = preFlattenCheckbox?.checked || false;
 
-        let fileToConvert = originalFile;
-
-        // Pre-flatten using PyMuPDF rasterization if checkbox is checked
-        if (shouldPreFlatten) {
-          if (!isPyMuPDFAvailable()) {
-            showWasmRequiredDialog('pymupdf');
-            return;
-          }
-
-          showLoader('Pre-flattening PDF...');
-          const pymupdf = await loadPyMuPDF();
-
-          // Rasterize PDF to images and back to PDF (300 DPI for quality)
-          const flattenedBlob = await (pymupdf as PyMuPDFInstance).rasterizePdf(
-            originalFile,
-            {
-              dpi: 300,
-              format: 'png',
-            }
-          );
-
-          fileToConvert = new File([flattenedBlob], originalFile.name, {
-            type: 'application/pdf',
-          });
+        if (shouldPreFlatten && !isPyMuPDFAvailable()) {
+          showWasmRequiredDialog('pymupdf');
+          return;
         }
 
         showLoader('Initializing Ghostscript...');
 
-        const convertedBlob = await convertFileToPdfA(
-          fileToConvert,
-          level,
-          (msg) => showLoader(msg)
+        const convertedFile = await pdfToPdfAEngine(
+          originalFile,
+          { level, preFlatten: shouldPreFlatten },
+          {
+            signal: new AbortController().signal,
+            progress: (p) => showLoader(p.label),
+          }
         );
 
-        const fileName = originalFile.name.replace(/\.pdf$/i, '') + '_pdfa.pdf';
-
-        downloadFile(convertedBlob, fileName);
+        downloadFile(convertedFile, convertedFile.name);
 
         hideLoader();
 
@@ -180,17 +160,20 @@ document.addEventListener('DOMContentLoaded', () => {
             `Converting ${i + 1}/${state.files.length}: ${file.name}...`
           );
 
-          const convertedBlob = await convertFileToPdfA(file, level, (msg) =>
-            showLoader(msg)
+          const convertedFile = await pdfToPdfAEngine(
+            file,
+            { level, preFlatten: false },
+            {
+              signal: new AbortController().signal,
+              progress: (p) => showLoader(p.label),
+            }
           );
 
-          const baseName = file.name.replace(/\.pdf$/i, '');
-          const blobBuffer = await convertedBlob.arrayBuffer();
           const zipEntryName = deduplicateFileName(
-            `${baseName}_pdfa.pdf`,
+            convertedFile.name,
             usedNames
           );
-          zip.file(zipEntryName, blobBuffer);
+          zip.file(zipEntryName, await convertedFile.arrayBuffer());
         }
 
         const zipBlob = await zip.generateAsync({ type: 'blob' });

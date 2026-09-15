@@ -3,7 +3,6 @@ import type {
   AddPageLabelsState,
   LabelRule,
   PageLabelStyleName,
-  CpdfInstance,
 } from '@/types';
 import { showAlert, showLoader, hideLoader } from '../ui.js';
 import { t } from '../i18n/index.js';
@@ -12,14 +11,14 @@ import {
   formatBytes,
   readFileAsArrayBuffer,
 } from '../utils/helpers.js';
-import { getCpdf, isCpdfAvailable } from '../utils/cpdf-helper.js';
+import { isCpdfAvailable } from '../utils/cpdf-helper.js';
 import { showWasmRequiredDialog } from '../utils/wasm-provider.js';
 import {
   PAGE_LABEL_STYLE_OPTIONS,
   normalizePageLabelStartValue,
-  resolvePageLabelStyle,
 } from '../utils/page-labels.js';
 import { loadPdfDocument } from '../utils/load-pdf-document.js';
+import { addPageLabels as runAddPageLabels } from '../engines/add-page-labels.js';
 
 let labelRuleCounter = 0;
 
@@ -441,67 +440,24 @@ async function addPageLabels() {
       ) as HTMLInputElement | null
     )?.checked ?? true;
 
-  let cpdf: CpdfInstance | null = null;
-  let pdf: unknown = null;
-
   try {
-    cpdf = await getCpdf();
-    cpdf.setSlow?.();
-
-    const inputBytes = new Uint8Array(await pageState.file.arrayBuffer());
-    pdf = cpdf.fromMemory(inputBytes, '');
-
-    if (removeExistingLabels) {
-      cpdf.removePageLabels(pdf);
-    }
-
-    for (let index = 0; index < pageState.rules.length; index += 1) {
-      const rule = pageState.rules[index];
-      const trimmedRange = rule.pageRange.trim();
-
-      let range: unknown;
-      try {
-        range = trimmedRange
-          ? cpdf.parsePagespec(pdf, trimmedRange)
-          : cpdf.all(pdf);
-      } catch (error) {
-        throw new Error(
-          translate(
-            'tools:addPageLabels.invalidRangeMessage',
-            `Rule ${index + 1} has an invalid page range: ${trimmedRange || 'all pages'}`,
-            {
-              number: index + 1,
-              range:
-                trimmedRange ||
-                translate('tools:addPageLabels.allPages', 'all pages'),
-            }
-          ),
-          { cause: error }
-        );
-      }
-
-      cpdf.addPageLabels(
-        pdf,
-        resolvePageLabelStyle(cpdf, rule.style),
-        rule.prefix.trim(),
-        normalizePageLabelStartValue(rule.startValue),
-        range,
-        rule.progress
-      );
-    }
-
-    const outputBytes = new Uint8Array(cpdf.toMemory(pdf, false, false));
-    if (!outputBytes || outputBytes.length === 0) {
-      throw new Error(
-        translate(
-          'tools:addPageLabels.emptyOutputMessage',
-          'CoherentPDF produced an empty file.'
-        )
-      );
-    }
+    const resultFile = await runAddPageLabels(
+      pageState.file,
+      {
+        removeExistingLabels,
+        rules: pageState.rules.map((rule) => ({
+          pageRange: rule.pageRange,
+          style: rule.style,
+          prefix: rule.prefix,
+          startValue: normalizePageLabelStartValue(rule.startValue),
+          progress: rule.progress,
+        })),
+      },
+      { signal: new AbortController().signal, progress: () => {} }
+    );
 
     downloadFile(
-      new Blob([outputBytes], { type: 'application/pdf' }),
+      new Blob([await resultFile.arrayBuffer()], { type: 'application/pdf' }),
       pageState.file?.name || 'document.pdf'
     );
     showAlert(
@@ -526,14 +482,6 @@ async function addPageLabels() {
           );
     showAlert(translate('common.error', 'Error'), message);
   } finally {
-    if (cpdf && pdf) {
-      try {
-        cpdf.deletePdf(pdf);
-      } catch (cleanupError) {
-        console.warn('Failed to cleanup CoherentPDF document:', cleanupError);
-      }
-    }
-
     hideLoader();
   }
 }

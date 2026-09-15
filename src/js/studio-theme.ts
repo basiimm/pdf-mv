@@ -1,4 +1,5 @@
-import '../css/studio-theme.css';
+// Stylesheet and initial theme are injected into <head> by the studio-boot Vite plugin.
+import { palette, type ThemeName } from '../design-system/tokens.js';
 
 type Preference = 'system' | 'light' | 'dark';
 const key = 'pdf-studio-theme';
@@ -18,75 +19,55 @@ export function resolvedTheme(): 'light' | 'dark' {
       : 'light'
     : preference;
 }
+function viewerPalette(theme: ThemeName) {
+  const t = palette[theme];
+  return {
+    accent: {
+      primary: t['accent-fill'],
+      primaryHover: t['accent-fill-hover'],
+      primaryActive: t['accent-fill-hover'],
+      primaryLight: t.selected,
+      primaryForeground: t['on-accent'],
+    },
+    background: {
+      app: t.canvas,
+      surface: t.surface,
+      surfaceAlt: t.bg,
+      elevated: t.raised,
+      input: theme === 'dark' ? t.inset : t.surface,
+    },
+    foreground: {
+      primary: t.text,
+      secondary: t['text-muted'],
+      muted: t['text-muted'],
+      disabled: t['text-disabled'],
+      onAccent: t['on-accent'],
+    },
+    border: {
+      default: t.border,
+      subtle: t['border-subtle'],
+      strong: t['border-control'],
+    },
+    interactive: {
+      hover: t.hover,
+      active: t.active,
+      selected: t.selected,
+      focus: t['focus-ring'],
+      focusRing: t['focus-ring'],
+    },
+    scrollbar: {
+      track: t.surface,
+      thumb: t['scrollbar-thumb'],
+      thumbHover: t['border-control'],
+    },
+    tooltip: { background: t['tooltip-bg'], foreground: t['tooltip-text'] },
+  };
+}
 export function viewerTheme() {
   return {
     preference: resolvedTheme(),
-    light: {
-      accent: {
-        primary: '#1a7f37',
-        primaryHover: '#197935',
-        primaryActive: '#166b2e',
-        primaryLight: '#e6f4ea',
-        primaryForeground: '#ffffff',
-      },
-      background: {
-        app: '#e9e9e9',
-        surface: '#ffffff',
-        surfaceAlt: '#f5f5f5',
-        elevated: '#ffffff',
-        input: '#ffffff',
-      },
-      foreground: {
-        primary: '#242424',
-        secondary: '#505050',
-        muted: '#6b6b6b',
-        disabled: '#999999',
-        onAccent: '#ffffff',
-      },
-      border: { default: '#e3e3e3', subtle: '#ededed', strong: '#b8b8b8' },
-      interactive: {
-        hover: '#f0f0f0',
-        active: '#e6e6e6',
-        selected: '#e6f4ea',
-        focus: '#1a7f37',
-        focusRing: '#b8dfc2',
-      },
-      scrollbar: { track: '#f5f5f5', thumb: '#cccccc', thumbHover: '#999999' },
-      tooltip: { background: '#242424', foreground: '#ffffff' },
-    },
-    dark: {
-      accent: {
-        primary: '#1a7f37',
-        primaryHover: '#166b2e',
-        primaryActive: '#145c28',
-        primaryLight: '#203b29',
-        primaryForeground: '#ffffff',
-      },
-      background: {
-        app: '#101010',
-        surface: '#202020',
-        surfaceAlt: '#292929',
-        elevated: '#292929',
-        input: '#181818',
-      },
-      foreground: {
-        primary: '#f2f2f2',
-        secondary: '#d4d4d4',
-        muted: '#b6b6b6',
-        disabled: '#777777',
-        onAccent: '#ffffff',
-      },
-      border: { default: '#303030', subtle: '#292929', strong: '#505050' },
-      interactive: {
-        hover: '#333333',
-        active: '#3b3b3b',
-        selected: '#203b29',
-        focus: '#3fb950',
-        focusRing: '#285c36',
-      },
-      scrollbar: { track: '#202020', thumb: '#505050', thumbHover: '#707070' },
-      tooltip: { background: '#f2f2f2', foreground: '#202020' },
-    },
+    light: viewerPalette('light'),
+    dark: viewerPalette('dark'),
   };
 }
 function applyTheme(): void {
@@ -235,7 +216,7 @@ if (workspaceTabs) {
   document.body.dataset.studioTool = '';
   const nav = document.createElement('nav');
   nav.className = 'studio-tool-nav';
-  nav.setAttribute('aria-label', 'PDF workspace');
+  nav.setAttribute('aria-label', 'PDF.mv workspace');
   const home = document.createElement('a');
   home.href = `${import.meta.env.BASE_URL}workspace.html`;
   home.textContent = '⌂  Home';
@@ -244,13 +225,13 @@ if (workspaceTabs) {
   current.setAttribute('aria-current', 'page');
   current.textContent =
     document.querySelector('h1')?.textContent?.trim() || 'PDF tool';
-  document.title = `${current.textContent} — PDF Studio`;
+  document.title = `${current.textContent} — PDF.mv`;
   nav.append(home, current, createThemeControl());
   document.body.prepend(nav);
   const credits = document.createElement('a');
   credits.className = 'studio-tool-credits';
   credits.href = `${import.meta.env.BASE_URL}licensing.html`;
-  credits.textContent = 'Powered by BentoPDF';
+  credits.textContent = 'Built on BentoPDF · AGPL-3.0 · Source';
   document.body.append(credits);
   const back = document.getElementById('back-to-tools');
   back?.addEventListener(

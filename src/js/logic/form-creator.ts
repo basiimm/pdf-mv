@@ -189,12 +189,10 @@ if (toggleGridBtn) {
     gridAlwaysVisible = !gridAlwaysVisible;
 
     if (gridAlwaysVisible) {
-      toggleGridBtn.classList.add('bg-indigo-600');
-      toggleGridBtn.classList.remove('bg-gray-600');
+      toggleGridBtn.classList.add('fc-active');
       if (gridEnabled) renderGrid();
     } else {
-      toggleGridBtn.classList.remove('bg-indigo-600');
-      toggleGridBtn.classList.add('bg-gray-600');
+      toggleGridBtn.classList.remove('fc-active');
       removeGrid();
     }
   });
@@ -213,8 +211,7 @@ function renderGrid() {
     const stepX = canvas.offsetWidth / gridV;
     for (let i = 0; i <= gridV; i++) {
       const line = document.createElement('div');
-      line.className =
-        'absolute top-0 bottom-0 border-l-2 border-indigo-500 opacity-60';
+      line.className = 'absolute top-0 bottom-0 fc-grid-line-v';
       line.style.left = i * stepX + 'px';
       gridContainer.appendChild(line);
     }
@@ -224,8 +221,7 @@ function renderGrid() {
     const stepY = canvas.offsetHeight / gridH;
     for (let i = 0; i <= gridH; i++) {
       const line = document.createElement('div');
-      line.className =
-        'absolute left-0 right-0 border-t-2 border-indigo-500 opacity-60';
+      line.className = 'absolute left-0 right-0 fc-grid-line-h';
       line.style.top = i * stepY + 'px';
       gridContainer.appendChild(line);
     }
@@ -281,18 +277,16 @@ toolItems.forEach((item) => {
     if (selectedToolType === type) {
       // Deselect
       selectedToolType = null;
-      item.classList.remove('ring-2', 'ring-indigo-400', 'bg-indigo-600');
+      item.classList.remove('fc-active');
       canvas.style.cursor = 'default';
     } else {
       // Deselect previous tool
       if (selectedToolType) {
-        toolItems.forEach((t) =>
-          t.classList.remove('ring-2', 'ring-indigo-400', 'bg-indigo-600')
-        );
+        toolItems.forEach((t) => t.classList.remove('fc-active'));
       }
       // Select new tool
       selectedToolType = type;
-      item.classList.add('ring-2', 'ring-indigo-400', 'bg-indigo-600');
+      item.classList.add('fc-active');
       canvas.style.cursor = 'crosshair';
     }
   });
@@ -375,9 +369,7 @@ canvas.addEventListener('click', (e) => {
     const y = e.clientY - rect.top - 15;
     createField(selectedToolType as FormCreatorFieldType, x, y);
 
-    toolItems.forEach((item) =>
-      item.classList.remove('ring-2', 'ring-indigo-400', 'bg-indigo-600')
-    );
+    toolItems.forEach((item) => item.classList.remove('fc-active'));
     selectedToolType = null;
     canvas.style.cursor = 'default';
     return;
@@ -458,32 +450,10 @@ function applyFieldContainerState(
   field: FormField,
   selected: boolean
 ): void {
-  container.classList.remove(
-    'border-indigo-200',
-    'group-hover:border-dashed',
-    'group-hover:border-indigo-300',
-    'border-dashed',
-    'border-indigo-500',
-    'bg-indigo-50',
-    'bg-indigo-50/30',
-    'bg-transparent'
-  );
-
-  if (selected) {
-    container.classList.add('border-dashed', 'border-indigo-500');
-    container.classList.add(
-      hasTransparentBackground(field) ? 'bg-transparent' : 'bg-indigo-50'
-    );
-    return;
-  }
-
-  container.classList.add(
-    'border-indigo-200',
-    'group-hover:border-dashed',
-    'group-hover:border-indigo-300'
-  );
-  container.classList.add(
-    hasTransparentBackground(field) ? 'bg-transparent' : 'bg-indigo-50/30'
+  container.classList.toggle('selected', selected);
+  container.toggleAttribute(
+    'data-transparent-bg',
+    hasTransparentBackground(field)
   );
 }
 
@@ -567,12 +537,9 @@ function renderField(field: FormField): void {
   // Create label - hidden by default, shown on group hover or selection
   const label = document.createElement('div');
   label.className =
-    'field-label absolute left-0 w-full text-xs font-semibold pointer-events-none select-none opacity-0 group-hover:opacity-100 transition-opacity';
+    'field-label absolute left-0 w-full pointer-events-none select-none opacity-0 group-hover:opacity-100 transition-opacity';
   label.style.bottom = '100%';
   label.style.marginBottom = '4px';
-  label.style.color = '#374151';
-  label.style.fontSize = '11px';
-  label.style.lineHeight = '1';
   label.style.whiteSpace = 'nowrap';
   label.style.overflow = 'hidden';
   label.style.textOverflow = 'ellipsis';
@@ -654,8 +621,9 @@ function renderField(field: FormField): void {
       '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m6 9 6 6 6-6"/></svg>';
     fieldContainer.appendChild(arrow);
   } else if (field.type === 'optionlist') {
-    contentEl.className =
-      'w-full h-full flex flex-col text-sm overflow-hidden border border-gray-300';
+    // Literal: previews the PDF widget as it renders on the (always white) page.
+    contentEl.className = 'w-full h-full flex flex-col text-sm overflow-hidden';
+    contentEl.style.border = '1px solid #d1d5db'; /* literal: paper */
     contentEl.style.backgroundColor = getPreviewBackgroundColor(
       field,
       '#ffffff'
@@ -673,7 +641,9 @@ function renderField(field: FormField): void {
           : index === 0;
 
         if (isSelected) {
-          optEl.className += ' bg-blue-600 text-white';
+          /* literal: paper — mimics the real PDF widget selection highlight */
+          optEl.style.backgroundColor = '#2563eb';
+          optEl.style.color = '#ffffff';
         } else {
           optEl.className += ' text-black';
         }
@@ -696,8 +666,8 @@ function renderField(field: FormField): void {
     contentEl.style.color = field.textColor || '#000000';
     contentEl.textContent = field.label || 'Button';
   } else if (field.type === 'signature') {
-    contentEl.className =
-      'w-full h-full flex items-center justify-center text-gray-400';
+    contentEl.className = 'w-full h-full flex items-center justify-center';
+    contentEl.style.color = '#9ca3af'; /* literal: paper */
     contentEl.style.backgroundColor = getPreviewBackgroundColor(
       field,
       '#f9fafb'
@@ -706,8 +676,9 @@ function renderField(field: FormField): void {
       '<div class="flex flex-col items-center"><i data-lucide="pen-tool" class="w-6 h-6 mb-1"></i><span class="text-[10px]">Sign Here</span></div>';
     setTimeout(() => (window as LucideWindow).lucide?.createIcons(), 0);
   } else if (field.type === 'date') {
-    contentEl.className =
-      'w-full h-full flex items-center justify-center text-gray-600 border border-gray-300';
+    contentEl.className = 'w-full h-full flex items-center justify-center';
+    contentEl.style.color = '#4b5563'; /* literal: paper */
+    contentEl.style.border = '1px solid #d1d5db'; /* literal: paper */
     contentEl.style.backgroundColor = getPreviewBackgroundColor(
       field,
       '#ffffff'
@@ -715,8 +686,9 @@ function renderField(field: FormField): void {
     contentEl.innerHTML = `<div class="flex items-center gap-2 px-2"><i data-lucide="calendar" class="w-4 h-4"></i><span class="text-sm date-format-text">${escapeHtml(field.dateFormat || 'mm/dd/yyyy')}</span></div>`;
     setTimeout(() => (window as LucideWindow).lucide?.createIcons(), 0);
   } else if (field.type === 'image') {
-    contentEl.className =
-      'w-full h-full flex items-center justify-center text-gray-500 border border-gray-300';
+    contentEl.className = 'w-full h-full flex items-center justify-center';
+    contentEl.style.color = '#6b7280'; /* literal: paper */
+    contentEl.style.border = '1px solid #d1d5db'; /* literal: paper */
     contentEl.style.backgroundColor = getPreviewBackgroundColor(
       field,
       '#f3f4f6'
@@ -750,11 +722,11 @@ function renderField(field: FormField): void {
           String(field.name).replace(/[\r\n]+/g, ' '),
           error
         );
-        contentEl.innerHTML = `<div class="flex flex-col items-center text-center p-1 text-gray-400"><i data-lucide="qr-code" class="w-6 h-6 mb-1"></i><span class="text-[10px] leading-tight">Invalid data</span></div>`;
+        contentEl.innerHTML = `<div class="flex flex-col items-center text-center p-1" style="color:#9ca3af"><i data-lucide="qr-code" class="w-6 h-6 mb-1"></i><span class="text-[10px] leading-tight">Invalid data</span></div>`;
         setTimeout(() => (window as LucideWindow).lucide?.createIcons(), 0);
       }
     } else {
-      contentEl.innerHTML = `<div class="flex flex-col items-center text-center p-1 text-gray-400"><i data-lucide="qr-code" class="w-6 h-6 mb-1"></i><span class="text-[10px] leading-tight">Barcode</span></div>`;
+      contentEl.innerHTML = `<div class="flex flex-col items-center text-center p-1" style="color:#9ca3af"><i data-lucide="qr-code" class="w-6 h-6 mb-1"></i><span class="text-[10px] leading-tight">Barcode</span></div>`;
       setTimeout(() => (window as LucideWindow).lucide?.createIcons(), 0);
     }
   }
@@ -821,7 +793,7 @@ function renderField(field: FormField): void {
   const handles = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
   handles.forEach((pos) => {
     const handle = document.createElement('div');
-    handle.className = `absolute w-2.5 h-2.5 bg-white border border-indigo-600 z-10 cursor-${pos}-resize resize-handle hidden`; // Added hidden class
+    handle.className = `absolute z-10 cursor-${pos}-resize resize-handle hidden`; // Added hidden class
     const positions: Record<string, string> = {
       nw: 'top-0 left-0 -translate-x-1/2 -translate-y-1/2',
       ne: 'top-0 right-0 translate-x-1/2 -translate-y-1/2',
@@ -1090,92 +1062,92 @@ function showProperties(field: FormField): void {
   if (field.type === 'text') {
     specificProps = `
         <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Value</label>
-            <input type="text" id="propValue" value="${escapeHtml(field.defaultValue)}" ${field.combCells > 0 ? `maxlength="${field.combCells}"` : field.maxLength > 0 ? `maxlength="${field.maxLength}"` : ''} class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="fc-prop-label">Value</label>
+            <input type="text" id="propValue" value="${escapeHtml(field.defaultValue)}" ${field.combCells > 0 ? `maxlength="${field.combCells}"` : field.maxLength > 0 ? `maxlength="${field.maxLength}"` : ''} class="ds-input">
         </div>
         <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Max Length (0 for unlimited)</label>
-            <input type="number" id="propMaxLength" value="${field.maxLength}" min="0" ${field.combCells > 0 ? 'disabled' : ''} class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50">
+            <label class="fc-prop-label">Max Length (0 for unlimited)</label>
+            <input type="number" id="propMaxLength" value="${field.maxLength}" min="0" ${field.combCells > 0 ? 'disabled' : ''} class="ds-input">
         </div>
         <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Divide into boxes (0 to disable)</label>
-            <input type="number" id="propComb" value="${field.combCells}" min="0" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="fc-prop-label">Divide into boxes (0 to disable)</label>
+            <input type="number" id="propComb" value="${field.combCells}" min="0" class="ds-input">
         </div>
         <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Font Size</label>
-            <input type="number" id="propFontSize" value="${field.fontSize}" min="8" max="72" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="fc-prop-label">Font Size</label>
+            <input type="number" id="propFontSize" value="${field.fontSize}" min="8" max="72" class="ds-input">
         </div>
         <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Text Color</label>
+            <label class="fc-prop-label">Text Color</label>
             <input type="color" id="propTextColor" value="${field.textColor}">
         </div>
         <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Alignment</label>
-            <select id="propAlignment" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="fc-prop-label">Alignment</label>
+            <select id="propAlignment" class="ds-select">
             <option value="left" ${field.alignment === 'left' ? 'selected' : ''}>Left</option>
             <option value="center" ${field.alignment === 'center' ? 'selected' : ''}>Center</option>
             <option value="right" ${field.alignment === 'right' ? 'selected' : ''}>Right</option>
             </select>
         </div>
-        <div class="flex items-center justify-between bg-gray-600 p-2 rounded mt-2">
-            <label for="propMultiline" class="text-xs font-semibold text-gray-300">Multi-line</label>
-            <button id="propMultilineBtn" class="w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none ${field.multiline ? 'bg-indigo-600' : 'bg-gray-500'} relative">
-                <span class="absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ${field.multiline ? 'translate-x-6' : 'translate-x-0'}"></span>
+        <div class="fc-prop-toggle-row mt-2">
+            <label for="propMultiline" class="fc-prop-label" style="margin:0">Multi-line</label>
+            <button id="propMultilineBtn" class="fc-switch relative ${field.multiline ? 'fc-active' : ''}">
+                <span class="fc-switch__thumb ${field.multiline ? 'translate-x-5' : 'translate-x-0'}"></span>
             </button>
         </div>
         `;
   } else if (field.type === 'checkbox') {
     specificProps = `
-        <div class="flex items-center justify-between bg-gray-600 p-2 rounded">
-            <label for="propChecked" class="text-xs font-semibold text-gray-300">Checked State</label>
-            <button id="propCheckedBtn" class="w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none ${field.checked ? 'bg-indigo-600' : 'bg-gray-500'} relative">
-                <span class="absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ${field.checked ? 'translate-x-6' : 'translate-x-0'}"></span>
+        <div class="fc-prop-toggle-row">
+            <label for="propChecked" class="fc-prop-label" style="margin:0">Checked State</label>
+            <button id="propCheckedBtn" class="fc-switch relative ${field.checked ? 'fc-active' : ''}">
+                <span class="fc-switch__thumb ${field.checked ? 'translate-x-5' : 'translate-x-0'}"></span>
             </button>
         </div>
         `;
   } else if (field.type === 'radio') {
     specificProps = `
         <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Group Name (Must be same for group)</label>
-            <input type="text" id="propGroupName" value="${escapeHtml(field.groupName)}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="fc-prop-label">Group Name (Must be same for group)</label>
+            <input type="text" id="propGroupName" value="${escapeHtml(field.groupName)}" class="ds-input">
         </div>
         <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Export Value</label>
-            <input type="text" id="propExportValue" value="${escapeHtml(field.exportValue)}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="fc-prop-label">Export Value</label>
+            <input type="text" id="propExportValue" value="${escapeHtml(field.exportValue)}" class="ds-input">
         </div>
-        <div class="flex items-center justify-between bg-gray-600 p-2 rounded mt-2">
-            <label for="propChecked" class="text-xs font-semibold text-gray-300">Checked State</label>
-            <button id="propCheckedBtn" class="w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none ${field.checked ? 'bg-indigo-600' : 'bg-gray-500'} relative">
-                <span class="absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ${field.checked ? 'translate-x-6' : 'translate-x-0'}"></span>
+        <div class="fc-prop-toggle-row mt-2">
+            <label for="propChecked" class="fc-prop-label" style="margin:0">Checked State</label>
+            <button id="propCheckedBtn" class="fc-switch relative ${field.checked ? 'fc-active' : ''}">
+                <span class="fc-switch__thumb ${field.checked ? 'translate-x-5' : 'translate-x-0'}"></span>
             </button>
         </div>
         `;
   } else if (field.type === 'dropdown' || field.type === 'optionlist') {
     specificProps = `
         <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Options (One per line or comma separated)</label>
-            <textarea id="propOptions" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500 h-24">${escapeHtml(field.options?.join('\n') ?? '')}</textarea>
+            <label class="fc-prop-label">Options (One per line or comma separated)</label>
+            <textarea id="propOptions" class="ds-textarea h-24">${escapeHtml(field.options?.join('\n') ?? '')}</textarea>
         </div>
         <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Selected Option</label>
-            <select id="propSelectedOption" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="fc-prop-label">Selected Option</label>
+            <select id="propSelectedOption" class="ds-select">
                 <option value="">None</option>
                 ${field.options?.map((opt) => `<option value="${escapeHtml(opt)}" ${field.defaultValue === opt ? 'selected' : ''}>${escapeHtml(opt)}</option>`).join('')}
             </select>
         </div>
-        <div class="text-xs text-gray-400 italic mt-2">
+        <div class="fc-prop-hint italic mt-2">
             To actually fill or change the options, use our PDF Form Filler tool.
         </div>
         `;
   } else if (field.type === 'button') {
     specificProps = `
         <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Label</label>
-            <input type="text" id="propLabel" value="${escapeHtml(field.label)}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="fc-prop-label">Label</label>
+            <input type="text" id="propLabel" value="${escapeHtml(field.label)}" class="ds-input">
         </div>
         <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Action</label>
-            <select id="propAction" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="fc-prop-label">Action</label>
+            <select id="propAction" class="ds-select">
                 <option value="none" ${field.action === 'none' ? 'selected' : ''}>None</option>
                 <option value="reset" ${field.action === 'reset' ? 'selected' : ''}>Reset Form</option>
                 <option value="print" ${field.action === 'print' ? 'selected' : ''}>Print Form</option>
@@ -1185,17 +1157,17 @@ function showProperties(field: FormField): void {
             </select>
         </div>
         <div id="propUrlContainer" class="${field.action === 'url' ? '' : 'hidden'}">
-            <label class="block text-xs font-semibold text-gray-300 mb-1">URL</label>
-            <input type="text" id="propActionUrl" value="${escapeHtml(field.actionUrl || '')}" placeholder="https://example.com" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="fc-prop-label">URL</label>
+            <input type="text" id="propActionUrl" value="${escapeHtml(field.actionUrl || '')}" placeholder="https://example.com" class="ds-input">
         </div>
         <div id="propJsContainer" class="${field.action === 'js' ? '' : 'hidden'}">
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Javascript Code</label>
-            <textarea id="propJsScript" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500 h-24 font-mono">${escapeHtml(field.jsScript || '')}</textarea>
+            <label class="fc-prop-label">Javascript Code</label>
+            <textarea id="propJsScript" class="ds-textarea h-24 font-mono">${escapeHtml(field.jsScript || '')}</textarea>
         </div>
         <div id="propShowHideContainer" class="${field.action === 'showHide' ? '' : 'hidden'}">
             <div class="mb-2">
-                <label class="block text-xs font-semibold text-gray-300 mb-1">Target Field</label>
-                <select id="propTargetField" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                <label class="fc-prop-label">Target Field</label>
+                <select id="propTargetField" class="ds-select">
                     <option value="">Select a field...</option>
                     ${fields
                       .filter((f) => f.id !== field.id)
@@ -1207,8 +1179,8 @@ function showProperties(field: FormField): void {
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-semibold text-gray-300 mb-1">Visibility</label>
-                <select id="propVisibilityAction" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                <label class="fc-prop-label">Visibility</label>
+                <select id="propVisibilityAction" class="ds-select">
                     <option value="show" ${field.visibilityAction === 'show' ? 'selected' : ''}>Show</option>
                     <option value="hide" ${field.visibilityAction === 'hide' ? 'selected' : ''}>Hide</option>
                     <option value="toggle" ${field.visibilityAction === 'toggle' ? 'selected' : ''}>Toggle</option>
@@ -1218,7 +1190,7 @@ function showProperties(field: FormField): void {
         `;
   } else if (field.type === 'signature') {
     specificProps = `
-        <div class="text-xs text-gray-400 italic mb-2">
+        <div class="fc-prop-hint italic mb-2">
             Signature fields are AcroForm signature fields and would only be visible in an advanced PDF viewer.
         </div>
         `;
@@ -1259,22 +1231,22 @@ function showProperties(field: FormField): void {
     const isCustom = !formats.includes(field.dateFormat || 'mm/dd/yyyy');
     specificProps = `
         <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Date Format</label>
-            <select id="propDateFormat" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="fc-prop-label">Date Format</label>
+            <select id="propDateFormat" class="ds-select">
                 ${formats.map((f) => `<option value="${f}" ${field.dateFormat === f ? 'selected' : ''}>${f}</option>`).join('')}
                 <option value="custom" ${isCustom ? 'selected' : ''}>Custom</option>
             </select>
         </div>
         <div id="customFormatContainer" class="${isCustom ? '' : 'hidden'} mt-2">
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Custom Format</label>
-            <input type="text" id="propCustomFormat" value="${isCustom ? escapeHtml(field.dateFormat ?? '') : ''}" placeholder="e.g. dd/mm/yyyy HH:MM:ss" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="fc-prop-label">Custom Format</label>
+            <input type="text" id="propCustomFormat" value="${isCustom ? escapeHtml(field.dateFormat ?? '') : ''}" placeholder="e.g. dd/mm/yyyy HH:MM:ss" class="ds-input">
         </div>
-        <div class="mt-3 p-2 bg-gray-700 rounded">
-            <span class="text-xs text-gray-400">Example of current format:</span>
-            <span id="dateFormatExample" class="text-sm text-white font-medium ml-2"></span>
+        <div class="mt-3 p-2" style="background: var(--ds-inset); border-radius: var(--ds-radius-m)">
+            <span class="fc-prop-hint">Example of current format:</span>
+            <span id="dateFormatExample" class="text-sm font-medium ml-2" style="color: var(--ds-text)"></span>
         </div>
-        <div class="bg-blue-900/30 border border-blue-700/50 rounded p-2 mt-2">
-            <p class="text-xs text-blue-200">
+        <div class="ds-alert mt-2">
+            <p class="ds-alert__message text-xs">
                 <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
                 <span><strong>Browser Note:</strong> Firefox and Chrome may show their native date picker format during selection. The correct format will apply when you finish entering the date.</span>
             </p>
@@ -1283,18 +1255,18 @@ function showProperties(field: FormField): void {
   } else if (field.type === 'image') {
     specificProps = `
         <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Label / Prompt</label>
-            <input type="text" id="propLabel" value="${escapeHtml(field.label)}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="fc-prop-label">Label / Prompt</label>
+            <input type="text" id="propLabel" value="${escapeHtml(field.label)}" class="ds-input">
         </div>
-        <div class="text-xs text-gray-400 italic mt-2">
+        <div class="fc-prop-hint italic mt-2">
             Clicking this field in the PDF will open a file picker to upload an image.
         </div>
         `;
   } else if (field.type === 'barcode') {
     specificProps = `
         <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Barcode Format</label>
-            <select id="propBarcodeFormat" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="fc-prop-label">Barcode Format</label>
+            <select id="propBarcodeFormat" class="ds-select">
                 <option value="qrcode" ${field.barcodeFormat === 'qrcode' ? 'selected' : ''}>QR Code</option>
                 <option value="code128" ${field.barcodeFormat === 'code128' ? 'selected' : ''}>Code 128</option>
                 <option value="code39" ${field.barcodeFormat === 'code39' ? 'selected' : ''}>Code 39</option>
@@ -1305,18 +1277,18 @@ function showProperties(field: FormField): void {
             </select>
         </div>
         <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Barcode Value</label>
-            <input type="text" id="propBarcodeValue" value="${escapeHtml(field.barcodeValue || '')}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="fc-prop-label">Barcode Value</label>
+            <input type="text" id="propBarcodeValue" value="${escapeHtml(field.barcodeValue || '')}" class="ds-input">
         </div>
-        <div id="barcodeFormatHint" class="text-xs text-gray-400 italic"></div>
+        <div id="barcodeFormatHint" class="fc-prop-hint italic"></div>
         `;
   }
 
   const propertiesHtml = `
     <div class="space-y-3">
       <div>
-        <label class="block text-xs font-semibold text-gray-300 mb-1">Field Name ${field.type === 'radio' ? '(Group Name)' : ''}</label>
-        <input type="text" id="propName" value="${escapeHtml(field.name)}" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+        <label class="fc-prop-label">Field Name ${field.type === 'radio' ? '(Group Name)' : ''}</label>
+        <input type="text" id="propName" value="${escapeHtml(field.name)}" class="ds-input">
         <div id="nameError" class="hidden text-red-400 text-xs mt-1"></div>
       </div>
       ${
@@ -1325,8 +1297,8 @@ function showProperties(field: FormField): void {
           fields.some((f) => f.type === 'radio' && f.id !== field.id))
           ? `
       <div>
-        <label class="block text-xs font-semibold text-gray-300 mb-1">Existing Radio Groups</label>
-        <select id="existingGroups" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+        <label class="fc-prop-label">Existing Radio Groups</label>
+        <select id="existingGroups" class="ds-select">
           <option value="">-- Select existing group --</option>
           ${Array.from(existingRadioGroups)
             .map(
@@ -1348,37 +1320,37 @@ function showProperties(field: FormField): void {
             )
             .join('')}
         </select>
-        <p class="text-xs text-gray-400 mt-1">Select to add this button to an existing group</p>
+        <p class="fc-prop-hint mt-1">Select to add this button to an existing group</p>
       </div>
       `
           : ''
       }
       ${specificProps}
       <div>
-        <label class="block text-xs font-semibold text-gray-300 mb-1">Tooltip / Help Text</label>
-        <input type="text" id="propTooltip" value="${escapeHtml(field.tooltip)}" placeholder="Description for screen readers" class="w-full bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+        <label class="fc-prop-label">Tooltip / Help Text</label>
+        <input type="text" id="propTooltip" value="${escapeHtml(field.tooltip)}" placeholder="Description for screen readers" class="ds-input">
       </div>
-      <div class="flex items-center">
-        <input type="checkbox" id="propRequired" ${field.required ? 'checked' : ''} class="mr-2">
-        <label for="propRequired" class="text-xs font-semibold text-gray-300">Required</label>
-      </div>
-      <div class="flex items-center">
-        <input type="checkbox" id="propReadOnly" ${field.readOnly ? 'checked' : ''} class="mr-2">
-        <label for="propReadOnly" class="text-xs font-semibold text-gray-300">Read Only</label>
-      </div>
+      <label class="ds-check">
+        <input type="checkbox" id="propRequired" ${field.required ? 'checked' : ''}>
+        <span>Required</span>
+      </label>
+      <label class="ds-check">
+        <input type="checkbox" id="propReadOnly" ${field.readOnly ? 'checked' : ''}>
+        <span>Read Only</span>
+      </label>
       <div>
-        <label class="block text-xs font-semibold text-gray-300 mb-1">Border Color</label>
-        <input type="color" id="propBorderColor" value="${field.borderColor || '#000000'}">
+        <label class="fc-prop-label">Border Color</label>
+        <input type="color" id="propBorderColor" value="${field.borderColor || '#000000'}" class="fc-color-input">
       </div>
-      <div class="flex items-center">
-        <input type="checkbox" id="propHideBorder" ${field.hideBorder ? 'checked' : ''} class="mr-2">
-        <label for="propHideBorder" class="text-xs font-semibold text-gray-300">Hide Border</label>
-      </div>
-      <div class="flex items-center">
-        <input type="checkbox" id="propTransparentBackground" ${field.transparentBackground ? 'checked' : ''} class="mr-2">
-        <label for="propTransparentBackground" class="text-xs font-semibold text-gray-300">Transparent Background</label>
-      </div>
-      <button id="deleteBtn" class="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700 transition text-sm font-semibold">
+      <label class="ds-check">
+        <input type="checkbox" id="propHideBorder" ${field.hideBorder ? 'checked' : ''}>
+        <span>Hide Border</span>
+      </label>
+      <label class="ds-check">
+        <input type="checkbox" id="propTransparentBackground" ${field.transparentBackground ? 'checked' : ''}>
+        <span>Transparent Background</span>
+      </label>
+      <button id="deleteBtn" class="ds-button" data-variant="negative" data-block>
         Delete Field
       </button>
     </div>
@@ -1667,14 +1639,12 @@ function showProperties(field: FormField): void {
         // Update Toggle Button UI
         const span = propMultilineBtn.querySelector('span');
         if (field.multiline) {
-          propMultilineBtn.classList.remove('bg-gray-500');
-          propMultilineBtn.classList.add('bg-indigo-600');
+          propMultilineBtn.classList.add('fc-active');
           span?.classList.remove('translate-x-0');
-          span?.classList.add('translate-x-6');
+          span?.classList.add('translate-x-5');
         } else {
-          propMultilineBtn.classList.remove('bg-indigo-600');
-          propMultilineBtn.classList.add('bg-gray-500');
-          span?.classList.remove('translate-x-6');
+          propMultilineBtn.classList.remove('fc-active');
+          span?.classList.remove('translate-x-5');
           span?.classList.add('translate-x-0');
         }
 
@@ -1709,14 +1679,12 @@ function showProperties(field: FormField): void {
       // Update Toggle Button UI
       const span = propCheckedBtn.querySelector('span');
       if (field.checked) {
-        propCheckedBtn.classList.remove('bg-gray-500');
-        propCheckedBtn.classList.add('bg-indigo-600');
+        propCheckedBtn.classList.add('fc-active');
         span?.classList.remove('translate-x-0');
-        span?.classList.add('translate-x-6');
+        span?.classList.add('translate-x-5');
       } else {
-        propCheckedBtn.classList.remove('bg-indigo-600');
-        propCheckedBtn.classList.add('bg-gray-500');
-        span?.classList.remove('translate-x-6');
+        propCheckedBtn.classList.remove('fc-active');
+        span?.classList.remove('translate-x-5');
         span?.classList.add('translate-x-0');
       }
 
@@ -2070,7 +2038,7 @@ function showProperties(field: FormField): void {
 // Hide properties panel
 function hideProperties(): void {
   propertiesPanel.innerHTML =
-    '<p class="text-gray-500 text-sm">Select a field to edit properties</p>';
+    '<p class="fc-panel__hint">Select a field to edit properties</p>';
 }
 
 // Delete field
@@ -2090,9 +2058,7 @@ document.addEventListener('keydown', (e) => {
     deleteField(selectedField);
   } else if (e.key === 'Escape' && selectedToolType) {
     // Cancel tool selection
-    toolItems.forEach((item) =>
-      item.classList.remove('ring-2', 'ring-indigo-400', 'bg-indigo-600')
-    );
+    toolItems.forEach((item) => item.classList.remove('fc-active'));
     selectedToolType = null;
     canvas.style.cursor = 'default';
   }
@@ -2196,7 +2162,7 @@ downloadBtn.addEventListener('click', async () => {
 
     // Set document metadata for accessibility
     pdfDoc.setTitle('Fillable Form');
-    pdfDoc.setAuthor('BentoPDF');
+    pdfDoc.setAuthor('PDF.mv');
     pdfDoc.setLanguage('en-US');
 
     const radioGroups = new Map<
@@ -2796,7 +2762,7 @@ function resetToInitial(): void {
   canvas.innerHTML = '';
 
   propertiesPanel.innerHTML =
-    '<p class="text-gray-500 text-sm">Select a field to edit properties</p>';
+    '<p class="fc-panel__hint">Select a field to edit properties</p>';
 
   updateFieldCount();
 
@@ -2914,16 +2880,16 @@ function updatePageNavigation(): void {
 // Drag and drop handlers for upload area
 dropZone.addEventListener('dragover', (e) => {
   e.preventDefault();
-  dropZone.classList.add('border-indigo-500', 'bg-gray-600');
+  dropZone.setAttribute('data-dragging', '');
 });
 
 dropZone.addEventListener('dragleave', () => {
-  dropZone.classList.remove('border-indigo-500', 'bg-gray-600');
+  dropZone.removeAttribute('data-dragging');
 });
 
 dropZone.addEventListener('drop', (e) => {
   e.preventDefault();
-  dropZone.classList.remove('border-indigo-500', 'bg-gray-600');
+  dropZone.removeAttribute('data-dragging');
   const files = e.dataTransfer?.files;
   if (files && files.length > 0 && files[0].type === 'application/pdf') {
     handlePdfUpload(files[0]);

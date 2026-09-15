@@ -67,18 +67,14 @@ function loadPages(): Set<string> {
 
   const rootPages = [
     'index',
+    'workspace',
     'about',
     'contact',
     'faq',
     'privacy',
     'terms',
     'licensing',
-    'tools',
     '404',
-    'pdf-converter',
-    'pdf-editor',
-    'pdf-security',
-    'pdf-merge-split',
   ];
   rootPages.forEach((p) => pages.add(p));
 
@@ -111,6 +107,16 @@ function createLanguageMiddleware(isDev: boolean): Connect.NextHandleFunction {
       pathname = '/' + pathname;
     }
 
+    // The workspace is the public homepage; its source filename is
+    // "workspace.html" (not "index.html", which no longer exists as a
+    // source file). Serve it for the root and for direct /index.html
+    // requests in dev, where there is no build step to produce a physical
+    // index.html copy.
+    if (isDev && (pathname === '/' || pathname === '/index.html')) {
+      req.url = '/workspace.html' + (queryString ? `?${queryString}` : '');
+      return next();
+    }
+
     const match = pathname.match(LANG_REGEX);
 
     if (match) {
@@ -130,7 +136,7 @@ function createLanguageMiddleware(isDev: boolean): Connect.NextHandleFunction {
 
       if (rest === '' || rest === '/') {
         if (isDev) {
-          req.url = '/index.html' + (queryString ? `?${queryString}` : '');
+          req.url = '/workspace.html' + (queryString ? `?${queryString}` : '');
         } else {
           const langIndexPath = resolve(__dirname, 'dist', lang, 'index.html');
           if (fs.existsSync(langIndexPath)) {
@@ -394,10 +400,6 @@ function flattenPagesPlugin(): Plugin {
         }
       }
 
-      if (process.env.SIMPLE_MODE === 'true' && bundle['simple-index.html']) {
-        moves.push({ from: 'simple-index.html', to: 'index.html' });
-      }
-
       for (const { from, to } of moves) {
         const oldPath = resolve(outDir, from);
         const newPath = resolve(outDir, to);
@@ -405,6 +407,16 @@ function flattenPagesPlugin(): Plugin {
         fs.mkdirSync(resolve(newPath, '..'), { recursive: true });
         if (fs.existsSync(newPath)) fs.rmSync(newPath, { force: true });
         fs.renameSync(oldPath, newPath);
+      }
+
+      // The workspace is the public homepage. Make it available as
+      // index.html too so a plain `vite build` (without prepare-cloudflare,
+      // which does its own copy for the Cloudflare output) still serves the
+      // workspace at "/".
+      const workspacePath = resolve(outDir, 'workspace.html');
+      const indexPath = resolve(outDir, 'index.html');
+      if (fs.existsSync(workspacePath)) {
+        fs.copyFileSync(workspacePath, indexPath);
       }
 
       const pagesDir = resolve(outDir, 'src/pages');
@@ -469,6 +481,50 @@ function swPrecachePlugin(): Plugin {
   };
 }
 
+// Studio theme must be active at first paint on every page. Injects a
+// synchronous boot script plus the studio stylesheet into <head>, and marks
+// tool pages at build time instead of waiting for runtime JavaScript.
+function studioBootPlugin(): Plugin {
+  const base = (process.env.BASE_URL || '/').replace(/\/?$/, '/');
+  return {
+    name: 'studio-boot',
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html, ctx) {
+        const file = (ctx.filename || ctx.path || '').replace(/\\/g, '/');
+        const isTool = /\/src\/pages\/[^/]+\.html$/.test(file);
+        const toolName = isTool
+          ? file.match(/\/src\/pages\/([^/]+)\.html$/)![1]
+          : '';
+        const redirectable = isTool && toolName !== 'wasm-settings';
+        const boot =
+          '<meta name="color-scheme" content="light dark" />\n' +
+          `    <script src="${base}theme-boot.js"${redirectable ? ` data-tool="${toolName}"` : ''}></script>`;
+        const stylesheet = [
+          '<link rel="stylesheet" href="/src/css/studio-theme.css" />',
+          '<link rel="stylesheet" href="/src/design-system/components.css" />',
+          isTool &&
+            '<link rel="stylesheet" href="/src/design-system/legacy-bridge.css" />',
+        ]
+          .filter(Boolean)
+          .join('\n    ');
+        // Directly after <meta charset> (or <head>), ahead of any stylesheet.
+        let out = /<meta\s+charset=[^>]*>/i.test(html)
+          ? html.replace(
+              /<meta\s+charset=[^>]*>/i,
+              (meta) => `${meta}\n    ${boot}`
+            )
+          : html.replace(/<head>/i, (head) => `${head}\n    ${boot}`);
+        // After the page's own stylesheets so studio rules win the cascade.
+        out = out.replace(/<\/head>/i, `    ${stylesheet}\n  </head>`);
+        if (isTool)
+          out = out.replace(/<body(\s|>)/i, '<body data-studio-tool$1');
+        return out;
+      },
+    },
+  };
+}
+
 function rewriteHtmlPathsPlugin(): Plugin {
   const baseUrl = process.env.BASE_URL || '/';
   const normalizedBase = baseUrl.replace(/\/?$/, '/');
@@ -529,6 +585,7 @@ export default defineConfig(() => {
     },
     plugins: [
       // basicSsl(),
+      studioBootPlugin(),
       handlebars({
         partialDirectory: resolve(__dirname, 'src/partials'),
         context: {
@@ -624,23 +681,13 @@ export default defineConfig(() => {
       rollupOptions: {
         input: {
           workspace: resolve(__dirname, 'workspace.html'),
-          main:
-            process.env.SIMPLE_MODE === 'true'
-              ? resolve(__dirname, 'simple-index.html')
-              : resolve(__dirname, 'index.html'),
           about: resolve(__dirname, 'about.html'),
           contact: resolve(__dirname, 'contact.html'),
           faq: resolve(__dirname, 'faq.html'),
           privacy: resolve(__dirname, 'privacy.html'),
           terms: resolve(__dirname, 'terms.html'),
           licensing: resolve(__dirname, 'licensing.html'),
-          tools: resolve(__dirname, 'tools.html'),
           '404': resolve(__dirname, '404.html'),
-          // Category Hub Pages
-          'pdf-converter': resolve(__dirname, 'pdf-converter.html'),
-          'pdf-editor': resolve(__dirname, 'pdf-editor.html'),
-          'pdf-security': resolve(__dirname, 'pdf-security.html'),
-          'pdf-merge-split': resolve(__dirname, 'pdf-merge-split.html'),
           // Tool Pages
           bookmark: resolve(__dirname, 'src/pages/bookmark.html'),
           'table-of-contents': resolve(

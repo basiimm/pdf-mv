@@ -2,8 +2,7 @@ import { showLoader, hideLoader, showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { state } from '../state.js';
 import { createIcons, icons } from 'lucide';
-import { convertXmlToPdf } from '../utils/xml-to-pdf.js';
-import { deduplicateFileName } from '../utils/deduplicate-filename.js';
+import { convertXmlFilesToPdf } from '../engines/text-to-pdf.js';
 
 const ACCEPTED_EXTENSIONS = ['.xml'];
 const FILETYPE_NAME = 'XML';
@@ -87,60 +86,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      if (state.files.length === 1) {
-        const file = state.files[0];
-        const pdfBlob = await convertXmlToPdf(file, {
-          onProgress: (percent, message) => {
-            showLoader(message, percent);
-          },
-        });
+      showLoader('Converting files...');
+      const controller = new AbortController();
+      const pdfFile = await convertXmlFilesToPdf(state.files, {
+        signal: controller.signal,
+        progress: (p) =>
+          showLoader(p.detail ? `${p.label}: ${p.detail}` : p.label),
+      });
+      downloadFile(pdfFile, pdfFile.name);
 
-        const baseName = file.name.replace(/\.[^/.]+$/, '');
-        downloadFile(pdfBlob, `${baseName}.pdf`);
-
-        hideLoader();
-        showAlert(
-          'Conversion Complete',
-          `Successfully converted ${file.name} to PDF.`,
-          'success',
-          () => resetState()
-        );
-      } else {
-        showLoader('Converting multiple files...');
-        const JSZip = (await import('jszip')).default;
-        const zip = new JSZip();
-        const usedNames = new Set<string>();
-
-        for (let i = 0; i < state.files.length; i++) {
-          const file = state.files[i];
-          const pdfBlob = await convertXmlToPdf(file, {
-            onProgress: (percent, message) => {
-              showLoader(
-                `File ${i + 1}/${state.files.length}: ${message}`,
-                percent
-              );
-            },
-          });
-
-          const baseName = file.name.replace(/\.[^/.]+$/, '');
-          const zipEntryName = deduplicateFileName(
-            `${baseName}.pdf`,
-            usedNames
-          );
-          zip.file(zipEntryName, pdfBlob);
-        }
-
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-        downloadFile(zipBlob, `${FILETYPE_NAME.toLowerCase()}-to-pdf.zip`);
-
-        hideLoader();
-        showAlert(
-          'Conversion Complete',
-          `Successfully converted ${state.files.length} files to PDF.`,
-          'success',
-          () => resetState()
-        );
-      }
+      hideLoader();
+      showAlert(
+        'Conversion Complete',
+        `Successfully converted ${state.files.length} file(s) to PDF.`,
+        'success',
+        () => resetState()
+      );
     } catch (err) {
       hideLoader();
       const message = err instanceof Error ? err.message : 'Unknown error';
