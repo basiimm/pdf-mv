@@ -242,3 +242,13 @@
 body {
   font-family: var(--ds-font-sans);
 }
+
+/*
+ * Legacy scripts hide elements by toggling Tailwind's `hidden`, which lives
+ * in a cascade layer and loses to unlayered `display` rules from restyled
+ * components. Keep it authoritative, except for responsive/state variants
+ * (e.g. `hidden md:flex`), whose class lists contain a colon.
+ */
+.hidden:not([class*=':']) {
+  display: none !important;
+}

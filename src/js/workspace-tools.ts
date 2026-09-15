@@ -740,7 +740,9 @@ export function setupWorkspaceTools(host: ToolHost) {
         entry.state =
           entry.tool === 'pdf-workflow'
             ? 'Build your workflow below.'
-            : 'Choose a source file below.';
+            : canvasTools.has(entry.tool)
+              ? 'Choose a PDF in the document area to start.'
+              : 'Choose a source file below.';
       if (host.activeId() === id) sync();
     }
     if (event.data.type === 'studio-tool-input-received') {
