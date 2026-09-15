@@ -1,10 +1,15 @@
 import { showLoader, hideLoader, showAlert } from '../ui.js';
 import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import { PDFDocument as PDFLibDocument, degrees, PageSizes } from 'pdf-lib';
+import { PDFDocument as PDFLibDocument, PageSizes } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
 import { loadPdfDocument } from '../utils/load-pdf-document.js';
+import {
+  pdfBooklet,
+  BookletGridMode,
+  BookletRotationMode,
+} from '../engines/pdf-booklet.js';
 import '../utils/setup-pdf-worker.js';
 
 interface BookletState {
@@ -393,29 +398,6 @@ async function generatePreview() {
   downloadBtn.disabled = false;
 }
 
-function applyRotation(doc: PDFLibDocument, mode: string) {
-  const pages = doc.getPages();
-  pages.forEach((page, index) => {
-    let rotation: number;
-    switch (mode) {
-      case '90cw':
-        rotation = 90;
-        break;
-      case '90ccw':
-        rotation = -90;
-        break;
-      case 'alternate':
-        rotation = index % 2 === 0 ? 90 : -90;
-        break;
-      default:
-        rotation = 0;
-    }
-    if (rotation !== 0) {
-      page.setRotation(degrees(page.getRotation().angle + rotation));
-    }
-  });
-}
-
 async function createBooklet() {
   if (!pageState.pdfBytes) {
     showAlert('Error', 'Please load a PDF first.');
@@ -425,101 +407,50 @@ async function createBooklet() {
   showLoader('Creating Booklet...');
 
   try {
-    const sourceDoc = await loadPdfDocument(pageState.pdfBytes.slice());
-    const rotationMode =
+    const rotationMode = ((
+      document.querySelector(
+        'input[name="rotation"]:checked'
+      ) as HTMLInputElement
+    )?.value || 'none') as BookletRotationMode;
+    const gridMode = ((
+      document.querySelector(
+        'input[name="grid-mode"]:checked'
+      ) as HTMLInputElement
+    )?.value || '1x2') as BookletGridMode;
+    const orientation =
       (
         document.querySelector(
-          'input[name="rotation"]:checked'
+          'input[name="orientation"]:checked'
         ) as HTMLInputElement
-      )?.value || 'none';
-    applyRotation(sourceDoc, rotationMode);
+      )?.value || 'auto';
+    const paperSizeKey = (
+      document.getElementById('paper-size') as HTMLSelectElement
+    ).value;
 
-    const totalPages = sourceDoc.getPageCount();
-    const { rows, cols } = getGridDimensions();
-    const pagesPerSheet = rows * cols;
-    const isBookletMode = rows === 1 && cols === 2;
+    const sourceFile = new File(
+      [pageState.pdfBytes.slice()],
+      pageState.file?.name || 'document.pdf',
+      { type: 'application/pdf' }
+    );
 
-    const { width: sheetWidth, height: sheetHeight } =
-      getSheetDimensions(isBookletMode);
-
-    const outputDoc = await PDFLibDocument.create();
-
-    let numSheets: number;
-    let totalRounded: number;
-    if (isBookletMode) {
-      totalRounded = Math.ceil(totalPages / 4) * 4;
-      numSheets = Math.ceil(totalPages / 4) * 2;
-    } else {
-      totalRounded = totalPages;
-      numSheets = Math.ceil(totalPages / pagesPerSheet);
-    }
-
-    const cellWidth = sheetWidth / cols;
-    const cellHeight = sheetHeight / rows;
-    const padding = 10;
-
-    for (let sheetIndex = 0; sheetIndex < numSheets; sheetIndex++) {
-      const outputPage = outputDoc.addPage([sheetWidth, sheetHeight]);
-
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const slotIndex = r * cols + c;
-          let pageNumber: number;
-
-          if (isBookletMode) {
-            const physicalSheet = Math.floor(sheetIndex / 2);
-            const isFrontSide = sheetIndex % 2 === 0;
-            if (isFrontSide) {
-              pageNumber =
-                c === 0
-                  ? totalRounded - 2 * physicalSheet
-                  : 2 * physicalSheet + 1;
-            } else {
-              pageNumber =
-                c === 0
-                  ? 2 * physicalSheet + 2
-                  : totalRounded - 2 * physicalSheet - 1;
-            }
-          } else {
-            pageNumber = sheetIndex * pagesPerSheet + slotIndex + 1;
-          }
-
-          if (pageNumber >= 1 && pageNumber <= totalPages) {
-            const [embeddedPage] = await outputDoc.embedPdf(sourceDoc, [
-              pageNumber - 1,
-            ]);
-            const { width: srcW, height: srcH } = embeddedPage;
-
-            const availableWidth = cellWidth - padding * 2;
-            const availableHeight = cellHeight - padding * 2;
-            const scale = Math.min(
-              availableWidth / srcW,
-              availableHeight / srcH
-            );
-
-            const scaledWidth = srcW * scale;
-            const scaledHeight = srcH * scale;
-
-            const x =
-              c * cellWidth + padding + (availableWidth - scaledWidth) / 2;
-            const y =
-              sheetHeight -
-              (r + 1) * cellHeight +
-              padding +
-              (availableHeight - scaledHeight) / 2;
-
-            outputPage.drawPage(embeddedPage, {
-              x,
-              y,
-              width: scaledWidth,
-              height: scaledHeight,
-            });
-          }
-        }
+    const resultFile = await pdfBooklet(
+      sourceFile,
+      {
+        gridMode,
+        orientation: orientation as 'auto' | 'portrait' | 'landscape',
+        paperSize: paperSizeKey,
+        rotation: rotationMode,
+      },
+      {
+        signal: new AbortController().signal,
+        progress: (p) => showLoader(p.label),
       }
-    }
+    );
 
-    const pdfBytes = await outputDoc.save();
+    const pdfBytes = await resultFile.arrayBuffer();
+    const numSheets = (
+      await PDFLibDocument.load(pdfBytes.slice(0))
+    ).getPageCount();
     downloadFile(
       new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' }),
       pageState.file?.name || 'document.pdf'

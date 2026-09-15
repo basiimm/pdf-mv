@@ -1,16 +1,13 @@
 import { showLoader, hideLoader, showAlert } from '../ui.js';
-import {
-  downloadFile,
-  formatBytes,
-  hexToRgb,
-  getPDFDocument,
-} from '../utils/helpers.js';
+import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import { PDFDocument as PDFLibDocument, rgb } from 'pdf-lib';
-import * as pdfjsLib from 'pdfjs-dist';
 import { CombineSinglePageState } from '@/types';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
 import { loadPdfDocument } from '../utils/load-pdf-document.js';
+import {
+  combineSinglePage,
+  CombineOrientation,
+} from '../engines/combine-single-page.js';
 import '../utils/setup-pdf-worker.js';
 
 const pageState: CombineSinglePageState = {
@@ -123,122 +120,29 @@ async function combineToSinglePage() {
     document.getElementById('separator-color') as HTMLInputElement
   ).value;
 
-  const backgroundColor = hexToRgb(backgroundColorHex);
-  const separatorColor = hexToRgb(separatorColorHex);
-
   showLoader('Combining pages...');
 
   try {
-    const sourceDoc = pageState.pdfDoc;
-    const newDoc = await PDFLibDocument.create();
-
-    const pdfBytes = await sourceDoc.save();
-    const pdfjsDoc = await getPDFDocument({ data: pdfBytes }).promise;
-
-    const sourcePages = sourceDoc.getPages();
-    let maxWidth = 0;
-    let maxHeight = 0;
-    let totalWidth = 0;
-    let totalHeight = 0;
-
-    sourcePages.forEach(function (page) {
-      const { width, height } = page.getSize();
-      if (width > maxWidth) maxWidth = width;
-      if (height > maxHeight) maxHeight = height;
-      totalWidth += width;
-      totalHeight += height;
-    });
-
-    let finalWidth: number, finalHeight: number;
-    if (orientation === 'horizontal') {
-      finalWidth = totalWidth + Math.max(0, sourcePages.length - 1) * spacing;
-      finalHeight = maxHeight;
-    } else {
-      finalWidth = maxWidth;
-      finalHeight = totalHeight + Math.max(0, sourcePages.length - 1) * spacing;
-    }
-
-    const newPage = newDoc.addPage([finalWidth, finalHeight]);
-
-    if (backgroundColorHex.toUpperCase() !== '#FFFFFF') {
-      newPage.drawRectangle({
-        x: 0,
-        y: 0,
-        width: finalWidth,
-        height: finalHeight,
-        color: rgb(backgroundColor.r, backgroundColor.g, backgroundColor.b),
-      });
-    }
-
-    let currentX = 0;
-    let currentY = finalHeight;
-
-    for (let i = 0; i < sourcePages.length; i++) {
-      showLoader(`Processing page ${i + 1} of ${sourcePages.length}...`);
-      const sourcePage = sourcePages[i];
-      const { width, height } = sourcePage.getSize();
-
-      try {
-        const page = await pdfjsDoc.getPage(i + 1);
-        const scale = 2.0;
-        const viewport = page.getViewport({ scale });
-
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        const context = canvas.getContext('2d')!;
-
-        await page.render({
-          canvasContext: context,
-          viewport,
-          canvas,
-        }).promise;
-
-        const pngDataUrl = canvas.toDataURL('image/png');
-        const pngImage = await newDoc.embedPng(pngDataUrl);
-
-        if (orientation === 'horizontal') {
-          const y = (finalHeight - height) / 2;
-          newPage.drawImage(pngImage, { x: currentX, y, width, height });
-        } else {
-          currentY -= height;
-          const x = (finalWidth - width) / 2;
-          newPage.drawImage(pngImage, { x, y: currentY, width, height });
-        }
-      } catch (renderError) {
-        console.warn(`Failed to render page ${i + 1}:`, renderError);
+    const sourceBytes = await pageState.pdfDoc.save();
+    const resultFile = await combineSinglePage(
+      new File([new Uint8Array(sourceBytes)], pageState.file.name, {
+        type: 'application/pdf',
+      }),
+      {
+        orientation: orientation as CombineOrientation,
+        spacing,
+        backgroundColor: backgroundColorHex,
+        addSeparator,
+        separatorThickness,
+        separatorColor: separatorColorHex,
+      },
+      {
+        signal: new AbortController().signal,
+        progress: (p) => showLoader(p.label),
       }
+    );
 
-      if (addSeparator && i < sourcePages.length - 1) {
-        if (orientation === 'horizontal') {
-          const lineX = currentX + width + spacing / 2;
-          newPage.drawLine({
-            start: { x: lineX, y: 0 },
-            end: { x: lineX, y: finalHeight },
-            thickness: separatorThickness,
-            color: rgb(separatorColor.r, separatorColor.g, separatorColor.b),
-          });
-          currentX += width + spacing;
-        } else {
-          const lineY = currentY - spacing / 2;
-          newPage.drawLine({
-            start: { x: 0, y: lineY },
-            end: { x: finalWidth, y: lineY },
-            thickness: separatorThickness,
-            color: rgb(separatorColor.r, separatorColor.g, separatorColor.b),
-          });
-          currentY -= spacing;
-        }
-      } else {
-        if (orientation === 'horizontal') {
-          currentX += width + spacing;
-        } else {
-          currentY -= spacing;
-        }
-      }
-    }
-
-    const newPdfBytes = await newDoc.save();
+    const newPdfBytes = await resultFile.arrayBuffer();
     downloadFile(
       new Blob([new Uint8Array(newPdfBytes)], { type: 'application/pdf' }),
       pageState.file.name

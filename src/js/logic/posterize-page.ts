@@ -5,10 +5,10 @@ import {
   formatBytes,
 } from '../utils/helpers.js';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
-import { PDFDocument, PageSizes } from 'pdf-lib';
-import * as pdfjsLib from 'pdfjs-dist';
+import { PageSizes } from 'pdf-lib';
 import { createIcons, icons } from 'lucide';
 import { PosterizeState } from '@/types';
+import { posterizePdf } from '../engines/posterize-pdf.js';
 import '../utils/setup-pdf-worker.js';
 
 const pageState: PosterizeState = {
@@ -196,114 +196,25 @@ async function posterize() {
       document.getElementById('page-range') as HTMLInputElement
     ).value;
 
-    let overlapInPoints = overlap;
-    if (overlapUnits === 'in') overlapInPoints = overlap * 72;
-    else if (overlapUnits === 'mm') overlapInPoints = overlap * (72 / 25.4);
-
-    const newDoc = await PDFDocument.create();
-    const totalPages = pageState.pdfJsDoc.numPages;
-    const pageIndicesToProcess = parsePageRanges(pageRangeInput, totalPages);
-
-    if (pageIndicesToProcess.length === 0) {
-      throw new Error('Invalid page range specified.');
-    }
-
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
-
-    if (!tempCtx) {
-      throw new Error('Could not create canvas context.');
-    }
-
-    for (const pageIndex of pageIndicesToProcess) {
-      const page = await pageState.pdfJsDoc.getPage(Number(pageIndex) + 1);
-      const viewport = page.getViewport({ scale: 2.0 });
-      tempCanvas.width = viewport.width;
-      tempCanvas.height = viewport.height;
-      await page.render({
-        canvasContext: tempCtx,
-        viewport,
-        canvas: tempCanvas,
-      }).promise;
-
-      let [targetWidth, targetHeight] = PageSizes[pageSizeKey] || PageSizes.A4;
-      let currentOrientation = orientation;
-
-      if (currentOrientation === 'auto') {
-        currentOrientation =
-          viewport.width > viewport.height ? 'landscape' : 'portrait';
+    const resultFile = await posterizePdf(
+      pageState.file as File,
+      {
+        rows,
+        cols,
+        pageSize: pageSizeKey,
+        orientation: orientation as 'auto' | 'portrait' | 'landscape',
+        scalingMode: scalingMode as 'fit' | 'fill',
+        overlap,
+        overlapUnit: overlapUnits as 'pt' | 'in' | 'mm',
+        pages: pageRangeInput,
+      },
+      {
+        signal: new AbortController().signal,
+        progress: (p) => showLoader(p.label),
       }
+    );
 
-      if (currentOrientation === 'landscape' && targetWidth < targetHeight) {
-        [targetWidth, targetHeight] = [targetHeight, targetWidth];
-      } else if (
-        currentOrientation === 'portrait' &&
-        targetWidth > targetHeight
-      ) {
-        [targetWidth, targetHeight] = [targetHeight, targetWidth];
-      }
-
-      const tileWidth = tempCanvas.width / cols;
-      const tileHeight = tempCanvas.height / rows;
-
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const sx = c * tileWidth - (c > 0 ? overlapInPoints : 0);
-          const sy = r * tileHeight - (r > 0 ? overlapInPoints : 0);
-          const sWidth =
-            tileWidth +
-            (c > 0 ? overlapInPoints : 0) +
-            (c < cols - 1 ? overlapInPoints : 0);
-          const sHeight =
-            tileHeight +
-            (r > 0 ? overlapInPoints : 0) +
-            (r < rows - 1 ? overlapInPoints : 0);
-
-          const tileCanvas = document.createElement('canvas');
-          tileCanvas.width = sWidth;
-          tileCanvas.height = sHeight;
-          const tileCtx = tileCanvas.getContext('2d');
-
-          if (tileCtx) {
-            tileCtx.drawImage(
-              tempCanvas,
-              sx,
-              sy,
-              sWidth,
-              sHeight,
-              0,
-              0,
-              sWidth,
-              sHeight
-            );
-
-            const tileImage = await newDoc.embedPng(
-              tileCanvas.toDataURL('image/png')
-            );
-            const newPage = newDoc.addPage([targetWidth, targetHeight]);
-
-            const scaleX = newPage.getWidth() / sWidth;
-            const scaleY = newPage.getHeight() / sHeight;
-            const scale =
-              scalingMode === 'fit'
-                ? Math.min(scaleX, scaleY)
-                : Math.max(scaleX, scaleY);
-
-            const scaledWidth = sWidth * scale;
-            const scaledHeight = sHeight * scale;
-
-            newPage.drawImage(tileImage, {
-              x: (newPage.getWidth() - scaledWidth) / 2,
-              y: (newPage.getHeight() - scaledHeight) / 2,
-              width: scaledWidth,
-              height: scaledHeight,
-            });
-          }
-        }
-      }
-    }
-
-    const newPdfBytes = await newDoc.save();
+    const newPdfBytes = await resultFile.arrayBuffer();
     downloadFile(
       new Blob([new Uint8Array(newPdfBytes)], { type: 'application/pdf' }),
       pageState.file?.name || 'document.pdf'

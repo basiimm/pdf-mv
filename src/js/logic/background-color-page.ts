@@ -1,7 +1,7 @@
 import { createIcons, icons } from 'lucide';
 import { showAlert, showLoader, hideLoader } from '../ui.js';
-import { downloadFile, hexToRgb, formatBytes } from '../utils/helpers.js';
-import { PDFDocument as PDFLibDocument, rgb } from 'pdf-lib';
+import { downloadFile, formatBytes } from '../utils/helpers.js';
+import { backgroundColor as backgroundColorEngine } from '../engines/background-color.js';
 import { BackgroundColorState } from '@/types';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
 import { loadPdfDocument } from '../utils/load-pdf-document.js';
@@ -112,34 +112,25 @@ function resetState() {
 }
 
 async function changeBackgroundColor() {
-  if (!pageState.pdfDoc) {
+  if (!pageState.pdfDoc || !pageState.file) {
     showAlert('Error', 'Please upload a PDF file first.');
     return;
   }
   const colorHex = (
     document.getElementById('background-color') as HTMLInputElement
   ).value;
-  const color = hexToRgb(colorHex);
   showLoader('Changing background color...');
   try {
-    const newPdfDoc = await PDFLibDocument.create();
-    for (let i = 0; i < pageState.pdfDoc.getPageCount(); i++) {
-      const [originalPage] = await newPdfDoc.copyPages(pageState.pdfDoc, [i]);
-      const { width, height } = originalPage.getSize();
-      const newPage = newPdfDoc.addPage([width, height]);
-      newPage.drawRectangle({
-        x: 0,
-        y: 0,
-        width,
-        height,
-        color: rgb(color.r, color.g, color.b),
-      });
-      const embeddedPage = await newPdfDoc.embedPage(originalPage);
-      newPage.drawPage(embeddedPage, { x: 0, y: 0, width, height });
-    }
-    const newPdfBytes = await newPdfDoc.save();
+    const resultFile = await backgroundColorEngine(
+      pageState.file,
+      { color: colorHex },
+      {
+        signal: new AbortController().signal,
+        progress: (p) => showLoader(p.label + '...'),
+      }
+    );
     downloadFile(
-      new Blob([new Uint8Array(newPdfBytes)], { type: 'application/pdf' }),
+      new Blob([resultFile], { type: 'application/pdf' }),
       pageState.file?.name || 'document.pdf'
     );
     showAlert(

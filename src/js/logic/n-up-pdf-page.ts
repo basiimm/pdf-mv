@@ -1,9 +1,10 @@
 import { showLoader, hideLoader, showAlert } from '../ui.js';
-import { downloadFile, formatBytes, hexToRgb } from '../utils/helpers.js';
+import { downloadFile, formatBytes } from '../utils/helpers.js';
 import { createIcons, icons } from 'lucide';
-import { PDFDocument as PDFLibDocument, rgb, PageSizes } from 'pdf-lib';
+import { PDFDocument as PDFLibDocument, PageSizes } from 'pdf-lib';
 import { loadPdfWithPasswordPrompt } from '../utils/password-prompt.js';
 import { loadPdfDocument } from '../utils/load-pdf-document.js';
+import { nUpPdf, NUpPagesPerSheet } from '../engines/n-up-pdf.js';
 
 interface NUpState {
   file: File | null;
@@ -101,11 +102,11 @@ async function nUpTool() {
 
   const n = parseInt(
     (document.getElementById('pages-per-sheet') as HTMLSelectElement).value
-  );
+  ) as NUpPagesPerSheet;
   const pageSizeKey = (
     document.getElementById('output-page-size') as HTMLSelectElement
   ).value as keyof typeof PageSizes;
-  let orientation = (
+  const orientation = (
     document.getElementById('output-orientation') as HTMLSelectElement
   ).value;
   const useMargins = (
@@ -113,93 +114,33 @@ async function nUpTool() {
   ).checked;
   const addBorder = (document.getElementById('add-border') as HTMLInputElement)
     .checked;
-  const borderColor = hexToRgb(
-    (document.getElementById('border-color') as HTMLInputElement).value
-  );
+  const borderColorHex = (
+    document.getElementById('border-color') as HTMLInputElement
+  ).value;
 
   showLoader('Creating N-Up PDF...');
 
   try {
-    const sourceDoc = pageState.pdfDoc;
-    const newDoc = await PDFLibDocument.create();
-    const sourcePages = sourceDoc.getPages();
-
-    const gridDims: Record<number, [number, number]> = {
-      2: [2, 1],
-      4: [2, 2],
-      9: [3, 3],
-      16: [4, 4],
-    };
-    const dims = gridDims[n];
-
-    let [pageWidth, pageHeight] = PageSizes[pageSizeKey];
-
-    if (orientation === 'auto') {
-      const firstPage = sourcePages[0];
-      const isSourceLandscape = firstPage.getWidth() > firstPage.getHeight();
-      orientation =
-        isSourceLandscape && dims[0] > dims[1] ? 'landscape' : 'portrait';
-    }
-
-    if (orientation === 'landscape' && pageWidth < pageHeight) {
-      [pageWidth, pageHeight] = [pageHeight, pageWidth];
-    }
-
-    const margin = useMargins ? 36 : 0;
-    const gutter = useMargins ? 10 : 0;
-
-    const usableWidth = pageWidth - margin * 2;
-    const usableHeight = pageHeight - margin * 2;
-
-    for (let i = 0; i < sourcePages.length; i += n) {
-      showLoader(`Processing sheet ${Math.floor(i / n) + 1}...`);
-      const chunk = sourcePages.slice(i, i + n);
-      const outputPage = newDoc.addPage([pageWidth, pageHeight]);
-
-      const cellWidth = (usableWidth - gutter * (dims[0] - 1)) / dims[0];
-      const cellHeight = (usableHeight - gutter * (dims[1] - 1)) / dims[1];
-
-      for (let j = 0; j < chunk.length; j++) {
-        const sourcePage = chunk[j];
-        const embeddedPage = await newDoc.embedPage(sourcePage);
-
-        const scale = Math.min(
-          cellWidth / embeddedPage.width,
-          cellHeight / embeddedPage.height
-        );
-        const scaledWidth = embeddedPage.width * scale;
-        const scaledHeight = embeddedPage.height * scale;
-
-        const row = Math.floor(j / dims[0]);
-        const col = j % dims[0];
-        const cellX = margin + col * (cellWidth + gutter);
-        const cellY =
-          pageHeight - margin - (row + 1) * cellHeight - row * gutter;
-
-        const x = cellX + (cellWidth - scaledWidth) / 2;
-        const y = cellY + (cellHeight - scaledHeight) / 2;
-
-        outputPage.drawPage(embeddedPage, {
-          x,
-          y,
-          width: scaledWidth,
-          height: scaledHeight,
-        });
-
-        if (addBorder) {
-          outputPage.drawRectangle({
-            x,
-            y,
-            width: scaledWidth,
-            height: scaledHeight,
-            borderColor: rgb(borderColor.r, borderColor.g, borderColor.b),
-            borderWidth: 1,
-          });
-        }
+    const sourceBytes = await pageState.pdfDoc.save();
+    const resultFile = await nUpPdf(
+      new File([new Uint8Array(sourceBytes)], pageState.file.name, {
+        type: 'application/pdf',
+      }),
+      {
+        pagesPerSheet: n,
+        pageSize: pageSizeKey,
+        orientation: orientation as 'auto' | 'portrait' | 'landscape',
+        margins: useMargins,
+        border: addBorder,
+        borderColor: borderColorHex,
+      },
+      {
+        signal: new AbortController().signal,
+        progress: (p) => showLoader(p.label),
       }
-    }
+    );
 
-    const newPdfBytes = await newDoc.save();
+    const newPdfBytes = await resultFile.arrayBuffer();
     downloadFile(
       new Blob([new Uint8Array(newPdfBytes)], { type: 'application/pdf' }),
       pageState.file.name
