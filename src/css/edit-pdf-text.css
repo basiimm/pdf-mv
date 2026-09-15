@@ -1,25 +1,20 @@
 #text-editor-app {
-  --ecbg: var(--s-bg, #161616);
-  --ecpanel: var(--s-surface, #202020);
-  --ecpanel2: var(--s-raised, #292929);
-  --ecline: var(--s-control-border, #505050);
-  --ectext: var(--s-text, #f2f2f2);
-  --ecmuted: var(--s-muted, #b6b6b6);
-  --ecaccent: var(--s-primary-fill, #1a7f37);
-  --ecstage: var(--s-canvas, #101010);
+  --ecbg: var(--ds-bg);
+  --ecpanel: var(--ds-surface);
+  --ecpanel2: var(--ds-raised);
+  --ecline: var(--ds-border-control);
+  --ectext: var(--ds-text);
+  --ecmuted: var(--ds-text-muted);
+  --ecaccent: var(--ds-accent-fill);
+  --ecstage: var(--ds-canvas);
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: var(--ds-z-drawer);
   display: flex;
   flex-direction: column;
   background: var(--ecbg);
   color: var(--ectext);
-  font:
-    13px -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font: var(--ds-text-xs) var(--ds-font-sans);
   overflow: hidden;
 }
 #text-editor-app[hidden] {
@@ -44,13 +39,13 @@
   color: var(--ectext);
   border: 1px solid var(--ecline);
   padding: 4px 10px;
-  border-radius: 6px;
+  border-radius: var(--ds-radius-m);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
   user-select: none;
 }
 #text-editor-app .btn:hover {
-  background: var(--s-selected, #203b29);
+  background: var(--ds-selected);
 }
 #text-editor-app .btn:disabled {
   opacity: 0.4;
@@ -58,7 +53,7 @@
 }
 #text-editor-app .btn.big {
   padding: 10px 20px;
-  font-size: 15px;
+  font-size: var(--ds-text-m);
   background: var(--ecaccent);
   border-color: var(--ecaccent);
 }
@@ -75,7 +70,7 @@
 }
 #text-editor-app .info {
   color: var(--ecmuted);
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
   margin-left: auto;
   max-width: 40vw;
   white-space: nowrap;
@@ -85,7 +80,7 @@
 #text-editor-app .segmented {
   display: inline-flex;
   border: 1px solid var(--ecline);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-m);
   overflow: hidden;
 }
 #text-editor-app .segmented button {
@@ -95,7 +90,7 @@
   border-right: 1px solid var(--ecline);
   padding: 4px 10px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
 }
 #text-editor-app .segmented button:last-child {
   border-right: none;
@@ -139,7 +134,7 @@
   background: var(--ecpanel2);
   color: var(--ectext);
   border: 1px solid var(--ecline);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-m);
   padding: 4px 8px;
   width: 200px;
 }
@@ -150,8 +145,8 @@
 #text-editor-app .spellhit {
   position: absolute;
   pointer-events: none;
-  border-bottom: 2px solid #e0483d;
-  background: rgba(224, 72, 61, 0.14);
+  border-bottom: 2px solid var(--ds-negative);
+  background: color-mix(in srgb, var(--ds-negative) 14%, transparent);
 }
 
 #text-editor-app #findbar {
@@ -167,13 +162,13 @@
   background: var(--ecpanel2);
   color: var(--ectext);
   border: 1px solid var(--ecline);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-m);
   padding: 4px 8px;
   width: 200px;
 }
 #text-editor-app .chk {
   color: var(--ecmuted);
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
 }
 
 #text-editor-app #main {
@@ -202,17 +197,17 @@
   font-weight: 600;
 }
 #text-editor-app #empty .hint {
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
   margin-top: 24px;
 }
 
 #text-editor-app #pageWrap {
   position: relative;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--ds-elevation-2);
 }
 #text-editor-app #page {
   display: block;
-  background: #fff;
+  background: #fff; /* literal: paper */
 }
 #text-editor-app #overlay {
   position: absolute;
@@ -227,7 +222,7 @@
 }
 #text-editor-app .para-box {
   position: absolute;
-  border: 1px dashed rgba(156, 163, 175, 0.85);
+  border: 1px dashed var(--ds-border-control);
   pointer-events: auto;
   cursor: text;
 }
@@ -245,7 +240,7 @@
   position: absolute;
   width: 10px;
   height: 10px;
-  background: #fff;
+  background: var(--ds-on-accent);
   border: 1.5px solid var(--ecaccent);
   border-radius: 50%;
   pointer-events: auto;
@@ -263,14 +258,14 @@
   background: transparent;
   pointer-events: auto;
   overflow: hidden;
-  color: #000;
+  color: #000; /* literal: text sits on the white PDF page paper */
 }
 #text-editor-app .editor > [contenteditable] {
   outline: 1px solid var(--ecaccent);
   outline-offset: -1px;
   width: 100%;
   height: 100%;
-  caret-color: #000;
+  caret-color: #000; /* literal: text sits on the white PDF page paper */
 }
 
 #text-editor-app .editor.pristine [contenteditable] * {
@@ -281,7 +276,7 @@
 }
 #text-editor-app .editor.pristine [contenteditable] ::selection,
 #text-editor-app .editor.pristine [contenteditable]::selection {
-  background: rgb(26 127 55 / 0.28);
+  background: color-mix(in srgb, var(--ds-accent-fill) 28%, transparent);
 }
 
 #text-editor-app .edit-move {
@@ -292,7 +287,7 @@
   background: transparent;
 }
 #text-editor-app .edit-move:hover {
-  background: rgb(26 127 55 / 0.18);
+  background: color-mix(in srgb, var(--ds-accent-fill) 18%, transparent);
 }
 
 #text-editor-app .edit-chrome,
@@ -308,14 +303,14 @@
 #text-editor-app .multi-box {
   position: absolute;
   border: 1.5px solid var(--ecaccent);
-  background: rgb(26 127 55 / 0.06);
+  background: color-mix(in srgb, var(--ds-accent-fill) 6%, transparent);
   pointer-events: auto;
   cursor: move;
 }
 #text-editor-app .marquee {
   position: absolute;
   border: 1px dashed var(--ecaccent);
-  background: rgb(26 127 55 / 0.08);
+  background: color-mix(in srgb, var(--ds-accent-fill) 8%, transparent);
   pointer-events: none;
 }
 
@@ -339,7 +334,7 @@
   overflow-y: auto;
 }
 #text-editor-app #inspector h2 {
-  font-size: 13px;
+  font-size: var(--ds-text-s);
   margin: 0 0 12px;
 }
 #text-editor-app #inspector .row {
@@ -353,7 +348,7 @@
   background: var(--ecpanel2);
   color: var(--ectext);
   border: 1px solid var(--ecline);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-m);
   padding: 4px;
 }
 #text-editor-app .num {
@@ -361,7 +356,7 @@
   background: var(--ecpanel2);
   color: var(--ectext);
   border: 1px solid var(--ecline);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-m);
   padding: 4px;
   text-align: right;
 }
@@ -371,7 +366,7 @@
 #text-editor-app .swatch {
   width: 22px;
   height: 22px;
-  border-radius: 11px;
+  border-radius: 50%;
   border: 1px solid var(--ecline);
   cursor: pointer;
 }
@@ -380,7 +375,7 @@
   height: 26px;
   padding: 0;
   border: 1px solid var(--ecline);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-m);
   background: none;
 }
 #text-editor-app .toggles button {
@@ -389,7 +384,7 @@
   background: var(--ecpanel2);
   color: var(--ectext);
   border: 1px solid var(--ecline);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-m);
   cursor: pointer;
 }
 #text-editor-app .toggles button.on {
@@ -405,7 +400,7 @@
   justify-content: space-between;
   align-items: center;
   color: var(--ecmuted);
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
   margin-bottom: 8px;
 }
 #text-editor-app #inspector[disabled] {
@@ -418,12 +413,12 @@
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: #000c;
-  color: #fff;
+  background: var(--ds-tooltip-bg);
+  color: var(--ds-tooltip-text);
   padding: 10px 18px;
-  border-radius: 8px;
-  font-size: 13px;
-  z-index: 50;
+  border-radius: var(--ds-radius-m);
+  font-size: var(--ds-text-s);
+  z-index: var(--ds-z-toast);
 }
 
 #text-editor-app .docname {
@@ -434,12 +429,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   background: transparent;
-  border: 1px solid rgba(156, 163, 175, 0.4);
-  border-radius: 999px;
-  font:
-    12px/1.4 -apple-system,
-    system-ui,
-    sans-serif;
+  border: 1px solid
+    color-mix(in srgb, var(--ds-border-control) 40%, transparent);
+  border-radius: var(--ds-radius-full);
+  font: var(--ds-text-xs) / var(--ds-leading) var(--ds-font-sans);
   color: inherit;
   opacity: 0.85;
   cursor: pointer;
@@ -450,7 +443,7 @@
 
 #text-editor-app .textsel {
   position: absolute;
-  background: rgb(26 127 55 / 0.28);
+  background: color-mix(in srgb, var(--ds-accent-fill) 28%, transparent);
   pointer-events: none;
 }
 
@@ -469,7 +462,7 @@
 }
 
 #text-editor-app .ph {
-  font-size: 15px;
+  font-size: var(--ds-text-m);
   line-height: 1;
 }
 #text-editor-app .tgroup {
@@ -499,7 +492,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #f59e0b;
+  background: var(--ds-notice);
   flex: 0 0 auto;
 }
 #text-editor-app #toolbar {
@@ -534,7 +527,7 @@
   background: var(--ecpanel2);
   color: var(--ectext);
   border: 1px solid var(--ecline);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-m);
   padding: 0 6px;
 }
 #text-editor-app .chk {
@@ -553,13 +546,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ecmuted);
 }
 #text-editor-app #inspector h2 .ph {
-  font-size: 14px;
+  font-size: var(--ds-text-s);
 }
 #text-editor-app .toggles button {
   display: inline-flex;
@@ -584,7 +577,7 @@
 #text-editor-app #toast {
   border: 1px solid var(--ecline);
   background: var(--ecpanel);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--ds-elevation-2);
 }
 
 #text-editor-app #main {
@@ -601,9 +594,9 @@
   padding: 4px 10px;
   background: var(--ecpanel);
   border: 1px solid var(--ecline);
-  border-radius: 999px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  z-index: 5;
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-elevation-2);
+  z-index: var(--ds-z-sticky);
   backdrop-filter: blur(6px);
 }
 #text-editor-app #main:has(#inspector[hidden]) #viewbar {
@@ -627,7 +620,7 @@
 }
 #text-editor-app #stage.is-scrolling,
 #text-editor-app #inspector.is-scrolling {
-  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  scrollbar-color: var(--ds-scrollbar-thumb) transparent;
 }
 #text-editor-app #stage::-webkit-scrollbar,
 #text-editor-app #inspector::-webkit-scrollbar {
@@ -644,13 +637,13 @@
 #text-editor-app #stage::-webkit-scrollbar-thumb,
 #text-editor-app #inspector::-webkit-scrollbar-thumb {
   background: transparent;
-  border-radius: 8px;
+  border-radius: var(--ds-radius-m);
   border: 3px solid transparent;
   background-clip: padding-box;
 }
 #text-editor-app #stage.is-scrolling::-webkit-scrollbar-thumb,
 #text-editor-app #inspector.is-scrolling::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.45);
+  background: var(--ds-scrollbar-thumb);
   border: 3px solid transparent;
   background-clip: padding-box;
 }
@@ -702,6 +695,7 @@
   padding: 0;
   border: 1px solid var(--ecline);
   border-radius: 50%;
+  /* literal: rainbow color-wheel icon behind the native color input, not a themed color */
   background: conic-gradient(
     #f43f5e,
     #f59e0b,
@@ -741,7 +735,7 @@
 }
 #text-editor-app .rowlabel {
   color: var(--ecmuted);
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
   flex: 1 1 auto;
 }
 #text-editor-app #fMarkerStyle {
@@ -770,9 +764,9 @@
   padding: 5px 10px;
   background: var(--ecpanel);
   border: 1px solid var(--ecline);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  z-index: 5;
+  border-radius: var(--ds-radius-l);
+  box-shadow: var(--ds-elevation-2);
+  z-index: var(--ds-z-sticky);
   backdrop-filter: blur(6px);
 }
 #text-editor-app #main:has(#inspector[hidden]) #contextbar {
@@ -800,7 +794,7 @@
   margin: 0 0 8px;
   padding-top: 12px;
   border-top: 1px solid var(--ecline);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -882,7 +876,7 @@
 #text-editor-app #pageLabel {
   min-width: 52px;
   padding: 2px 6px;
-  border-radius: 6px;
+  border-radius: var(--ds-radius-m);
   outline: none;
   cursor: text;
 }
@@ -913,7 +907,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -931,7 +925,7 @@
   background: var(--ecpanel2);
   color: var(--ectext);
   border: 1px solid var(--ecline);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-m);
   padding: 4px 8px;
   width: auto;
 }
@@ -944,7 +938,7 @@
 }
 #text-editor-app .findstatus {
   color: var(--ecmuted);
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
   white-space: normal;
   line-height: 1.4;
 }
@@ -981,14 +975,14 @@
   box-shadow: none;
   backdrop-filter: none;
   flex: 0 0 auto;
-  z-index: 4;
+  z-index: var(--ds-z-sticky);
 }
 #text-editor-app #viewbar .btn {
   height: 26px;
   width: 26px;
 }
 #text-editor-app #viewbar .label {
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
 }
 #text-editor-app .vbzoom {
   display: flex;
@@ -1007,15 +1001,15 @@
   position: absolute;
   right: 16px;
   bottom: 14px;
-  z-index: 6;
+  z-index: var(--ds-z-sticky);
   padding: 6px 12px;
   background: var(--ecpanel);
   border: 1px solid var(--ecline);
-  border-radius: 8px;
-  font-size: 12px;
+  border-radius: var(--ds-radius-m);
+  font-size: var(--ds-text-xs);
   font-variant-numeric: tabular-nums;
   color: var(--ectext);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--ds-elevation-1);
   opacity: 0;
   transition: opacity 150ms ease;
   pointer-events: none;
@@ -1034,7 +1028,7 @@
   background: var(--ecpanel2);
   color: var(--ectext);
   border: 1px solid var(--ecline);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-m);
   width: 30px;
   height: 30px;
   display: inline-flex;
@@ -1043,7 +1037,7 @@
   cursor: pointer;
 }
 #text-editor-app .toolright button[data-tool]:hover {
-  background: var(--s-selected, #203b29);
+  background: var(--ds-selected);
 }
 #text-editor-app .toolright button[data-tool].on {
   background: var(--ecaccent);
@@ -1053,17 +1047,17 @@
   position: absolute;
   top: 54px;
   right: 12px;
-  z-index: 30;
+  z-index: var(--ds-z-popover);
   width: 300px;
   padding: 14px;
   background: var(--ecpanel);
   border: 1px solid var(--ecline);
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  border-radius: var(--ds-radius-l);
+  box-shadow: var(--ds-elevation-2);
 }
 #text-editor-app #docPanel h3 {
   margin: 0 0 10px;
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1074,7 +1068,7 @@
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 6px 12px;
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
 }
 #text-editor-app #docPanel dt {
   color: var(--ecmuted);
@@ -1086,19 +1080,19 @@
 }
 
 #text-editor-app .editcaret {
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
   margin-left: 2px;
   opacity: 0.7;
 }
 #text-editor-app .ecmenu {
   position: fixed;
-  z-index: 40;
+  z-index: var(--ds-z-popover);
   min-width: 170px;
   padding: 6px;
   background: var(--ecpanel);
   border: 1px solid var(--ecline);
-  border-radius: 12px;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
+  border-radius: var(--ds-radius-l);
+  box-shadow: var(--ds-elevation-2);
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -1111,8 +1105,8 @@
   background: transparent;
   color: var(--ectext);
   border: none;
-  border-radius: 8px;
-  font-size: 13px;
+  border-radius: var(--ds-radius-m);
+  font-size: var(--ds-text-s);
   text-align: left;
   cursor: pointer;
 }
@@ -1120,7 +1114,7 @@
   background: var(--ecpanel2);
 }
 #text-editor-app .ecmenu-item .ph-check {
-  font-size: 13px;
+  font-size: var(--ds-text-s);
   width: 14px;
 }
 #text-editor-app .ecmenu-blank {
@@ -1153,7 +1147,7 @@
   padding: 3px 8px;
   background: var(--ecpanel2);
   border: 1px solid var(--ecline);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-m);
   color: var(--ectext);
 }
 #text-editor-app .pagebox:focus {
@@ -1165,17 +1159,17 @@
   position: absolute;
   right: 12px;
   bottom: 12px;
-  z-index: 6;
+  z-index: var(--ds-z-sticky);
   background: var(--ecpanel);
   border: 1px solid var(--ecline);
-  border-radius: 999px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-elevation-1);
 }
 #text-editor-app #docModalOverlay {
   position: absolute;
   inset: 0;
-  z-index: 45;
-  background: rgba(10, 14, 22, 0.6);
+  z-index: var(--ds-z-dialog);
+  background: var(--ds-backdrop);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1188,15 +1182,15 @@
   padding: 18px 20px;
   background: var(--ecpanel);
   border: 1px solid var(--ecline);
-  border-radius: 14px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  border-radius: var(--ds-radius-l);
+  box-shadow: var(--ds-elevation-2);
 }
 #text-editor-app .docmodal-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 14px;
-  font-size: 14px;
+  font-size: var(--ds-text-s);
   font-weight: 600;
 }
 #text-editor-app #docModal section {
@@ -1206,7 +1200,7 @@
   margin: 0 0 10px;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--ecline);
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1217,7 +1211,7 @@
   display: grid;
   grid-template-columns: 110px 1fr;
   gap: 7px 14px;
-  font-size: 12.5px;
+  font-size: var(--ds-text-xs);
 }
 #text-editor-app #docModal dt {
   color: var(--ecmuted);
@@ -1242,7 +1236,7 @@
   align-items: stretch;
   background: var(--ecpanel2);
   border: 1px solid var(--ecline);
-  border-radius: 7px;
+  border-radius: var(--ds-radius-m);
   overflow: hidden;
   flex: 0 0 auto;
 }
@@ -1275,17 +1269,17 @@
   background: transparent;
   color: var(--ecmuted);
   border: none;
-  border-radius: 3px;
+  border-radius: var(--ds-radius-s);
   padding: 0;
   cursor: pointer;
   user-select: none;
 }
 #text-editor-app .stepbtn .ph {
-  font-size: 9px;
+  font-size: var(--ds-text-xs);
   line-height: 1;
 }
 #text-editor-app .stepbtn:hover {
-  background: var(--s-selected, #203b29);
+  background: var(--ds-selected);
   color: var(--ectext);
 }
 #text-editor-app .stepper:has(.num:disabled) .stepbtn {
@@ -1317,9 +1311,9 @@
   padding: 0 4px;
   background: var(--ecpanel2);
   border: 1px solid var(--ecline);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-m);
   color: var(--ectext);
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -1334,12 +1328,12 @@
 }
 #text-editor-app .pagetotal {
   min-width: 0;
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
 }
 #text-editor-app .ecmenu {
   min-width: 180px;
   padding: 4px;
-  border-radius: 10px;
+  border-radius: var(--ds-radius-l);
   background: var(--ecpanel);
 }
 #text-editor-app .ecmenu hr {
@@ -1350,15 +1344,15 @@
 #text-editor-app .ecmenu-item {
   gap: 8px;
   padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: var(--ds-radius-m);
+  font-size: var(--ds-text-xs);
 }
 #text-editor-app .ecmenu-item.active {
   color: var(--ecaccent);
   font-weight: 600;
 }
 #text-editor-app .ecmenu-item .ph {
-  font-size: 14px;
+  font-size: var(--ds-text-s);
 }
 #text-editor-app .zoomcustom {
   display: flex;
@@ -1367,7 +1361,7 @@
   margin: 2px;
   padding: 5px 10px;
   background: var(--ecpanel2);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-m);
 }
 #text-editor-app .zoomcustom input {
   flex: 1 1 auto;
@@ -1376,7 +1370,7 @@
   border: none;
   outline: none;
   color: var(--ectext);
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
 }
 #text-editor-app .zoomcustom input::-webkit-inner-spin-button,
 #text-editor-app .zoomcustom input::-webkit-outer-spin-button {
@@ -1385,7 +1379,7 @@
 }
 #text-editor-app .zoomcustom span {
   color: var(--ecmuted);
-  font-size: 12px;
+  font-size: var(--ds-text-xs);
 }
 
 @media (max-width: 768px) {
@@ -1425,9 +1419,9 @@
     max-height: 55%;
     border-right: none;
     border-bottom: 1px solid var(--ecline);
-    z-index: 25;
+    z-index: var(--ds-z-drawer);
     background: var(--ecpanel);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    box-shadow: var(--ds-elevation-2);
   }
   #contextbar {
     left: 50% !important;
@@ -1457,13 +1451,13 @@
   .pagebox {
     width: 52px;
     height: 32px;
-    font-size: 16px;
+    font-size: var(--ds-text-m);
   }
   #inspector input,
   #inspector select,
   #findbar input,
   #spellbar input {
-    font-size: 16px;
+    font-size: var(--ds-text-m);
   }
   #inspector .num,
   #inspector #fSize,
@@ -1515,7 +1509,7 @@
 }
 
 #text-editor-app {
-  color-scheme: dark;
+  color-scheme: light dark;
 }
 
 @media (max-width: 768px) {
@@ -1525,11 +1519,10 @@
     max-height: 70%;
     border-bottom: none;
     border-top: 1px solid var(--ecline);
-    border-radius: 16px 16px 0 0;
-    background: #1f2937;
-    background: var(--ecpanel, #1f2937);
-    box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.45);
-    z-index: 27;
+    border-radius: var(--ds-radius-xl) var(--ds-radius-xl) 0 0;
+    background: var(--ecpanel);
+    box-shadow: var(--ds-elevation-2);
+    z-index: var(--ds-z-popover);
     padding: 8px 14px calc(14px + env(safe-area-inset-bottom));
   }
   #findbar::before {
@@ -1538,7 +1531,7 @@
     flex: 0 0 5px;
     width: 44px;
     height: 5px;
-    border-radius: 3px;
+    border-radius: var(--ds-radius-s);
     background: var(--ecline);
     margin: 2px auto 8px;
   }
@@ -1577,14 +1570,14 @@
     height: 28px;
     position: sticky;
     top: 0;
-    z-index: 2;
+    z-index: var(--ds-z-sticky);
     background: inherit;
     touch-action: none;
   }
   #text-editor-app .ecgrab span {
     width: 44px;
     height: 5px;
-    border-radius: 3px;
+    border-radius: var(--ds-radius-s);
     background: var(--ecline);
   }
   #findDone {
@@ -1671,10 +1664,10 @@
   #text-editor-app #viewbar .pagebox {
     width: 56px;
     height: 36px;
-    font-size: 16px;
+    font-size: var(--ds-text-m);
   }
   #text-editor-app #viewbar .label {
-    font-size: 14px;
+    font-size: var(--ds-text-s);
   }
 }
 
@@ -1709,12 +1702,12 @@
   transform: translateX(-50%);
   max-width: calc(100vw - 40px);
   padding: 10px 16px;
-  border-radius: 10px;
-  background: #000c;
-  color: #fff;
-  font-size: 14px;
+  border-radius: var(--ds-radius-l);
+  background: var(--ds-tooltip-bg);
+  color: var(--ds-tooltip-text);
+  font-size: var(--ds-text-s);
   text-align: center;
-  z-index: 50;
+  z-index: var(--ds-z-toast);
   pointer-events: none;
 }
 
@@ -1725,10 +1718,10 @@
   }
   #text-editor-app #viewbar .label,
   #text-editor-app #viewbar .vbzoomlabel .label {
-    font-size: 15px;
+    font-size: var(--ds-text-m);
   }
   #text-editor-app #viewbar .pagetotal {
-    font-size: 15px;
+    font-size: var(--ds-text-m);
   }
 }
 
@@ -1742,7 +1735,7 @@
   transform: rotate(180deg);
 }
 #text-editor-app .ecmenu-icon {
-  font-size: 15px;
+  font-size: var(--ds-text-m);
   opacity: 0.85;
 }
 
@@ -1774,7 +1767,7 @@
   background-image:
     radial-gradient(
       120% 85% at 50% 28%,
-      rgba(148, 163, 184, 0.11),
+      color-mix(in srgb, var(--ds-text-muted) 11%, transparent),
       transparent 62%
     ),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.045'/%3E%3C/svg%3E");
@@ -1787,10 +1780,8 @@
 }
 #text-editor-app #pageWrap {
   margin: auto;
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.4),
-    0 18px 44px -12px rgba(0, 0, 0, 0.6);
-  outline: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: var(--ds-elevation-2);
+  outline: 1px solid color-mix(in srgb, var(--ds-text) 7%, transparent);
 }
 
 @media (max-width: 768px) {
@@ -1846,11 +1837,11 @@
     flex: 0 0 auto;
     height: 34px;
     padding: 0 14px;
-    border-radius: 999px;
+    border-radius: var(--ds-radius-full);
     border: 1px solid var(--ecline);
     background: transparent;
     color: var(--ectext);
-    font-size: 13px;
+    font-size: var(--ds-text-s);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
     cursor: pointer;
@@ -1867,7 +1858,7 @@
   #text-editor-app .dnavbtn {
     width: 42px;
     height: 42px;
-    border-radius: 8px;
+    border-radius: var(--ds-radius-m);
     border: 1px solid var(--ecline);
     background: var(--ecpanel2);
     color: var(--ectext);
@@ -1875,7 +1866,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 14px;
+    font-size: var(--ds-text-s);
   }
   #text-editor-app .dnavbtn.dgo {
     width: auto;
@@ -1892,9 +1883,9 @@
     text-align: center;
     background: var(--ecbg);
     border: 1px solid var(--ecline);
-    border-radius: 8px;
+    border-radius: var(--ds-radius-m);
     color: var(--ectext);
-    font-size: 16px;
+    font-size: var(--ds-text-m);
     font-variant-numeric: tabular-nums;
   }
   #text-editor-app .dpageinp:focus {
@@ -1924,10 +1915,10 @@
     background: var(--ecpanel);
     border: none;
     border-top: 1px solid var(--ecline);
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.35);
+    border-radius: var(--ds-radius-xl) var(--ds-radius-xl) 0 0;
+    box-shadow: var(--ds-elevation-2);
     overflow: visible;
-    z-index: 26;
+    z-index: var(--ds-z-drawer);
   }
   #text-editor-app #inspector[disabled] {
     opacity: 1;
@@ -1977,24 +1968,24 @@
     display: flex;
     align-items: center;
     gap: 7px;
-    font-size: 11px;
+    font-size: var(--ds-text-xs);
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--ecmuted);
   }
   #text-editor-app .dtitle .ph {
-    font-size: 15px;
+    font-size: var(--ds-text-m);
     color: var(--ecaccent);
   }
   #text-editor-app .dclose {
     width: 32px;
     height: 32px;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--ds-radius-m);
     background: transparent;
     color: var(--ecmuted);
-    font-size: 15px;
+    font-size: var(--ds-text-m);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2065,11 +2056,11 @@
   #text-editor-app .dstep {
     width: 58px;
     height: 46px;
-    border-radius: 12px;
+    border-radius: var(--ds-radius-l);
     border: 1px solid var(--ecline);
     background: var(--ecpanel2);
     color: var(--ectext);
-    font-size: 18px;
+    font-size: var(--ds-text-l);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2079,13 +2070,13 @@
   }
   #text-editor-app .dsizer .stepper {
     height: 46px;
-    border-radius: 12px;
+    border-radius: var(--ds-radius-l);
     background: var(--ecbg);
   }
   #text-editor-app .dsizer .stepper .num {
     width: 84px;
     height: 44px;
-    font-size: 19px;
+    font-size: var(--ds-text-m);
     font-weight: 600;
     text-align: center;
   }
@@ -2100,7 +2091,7 @@
     padding: 5px 0;
   }
   #text-editor-app .dlab {
-    font-size: 12px;
+    font-size: var(--ds-text-xs);
     color: var(--ecmuted);
   }
   #text-editor-app .dfield input[type='range'] {
@@ -2113,7 +2104,7 @@
   }
   #text-editor-app .dfield input[type='range']::-webkit-slider-runnable-track {
     height: 4px;
-    border-radius: 2px;
+    border-radius: var(--ds-radius-s);
     background: var(--ecline);
   }
   #text-editor-app .dfield input[type='range']::-webkit-slider-thumb {
@@ -2121,21 +2112,21 @@
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: #fff;
+    background: var(--ds-on-accent);
     border: none;
     margin-top: -9px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--ds-elevation-1);
   }
   #text-editor-app .dfield input[type='range']::-moz-range-track {
     height: 4px;
-    border-radius: 2px;
+    border-radius: var(--ds-radius-s);
     background: var(--ecline);
   }
   #text-editor-app .dfield input[type='range']::-moz-range-thumb {
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: #fff;
+    background: var(--ds-on-accent);
     border: none;
   }
   #text-editor-app .dscope {
@@ -2146,11 +2137,11 @@
   }
   #text-editor-app .dscopebtn {
     height: 44px;
-    border-radius: 10px;
+    border-radius: var(--ds-radius-l);
     border: 1px solid var(--ecline);
     background: var(--ecpanel2);
     color: var(--ectext);
-    font-size: 12.5px;
+    font-size: var(--ds-text-xs);
     font-weight: 600;
   }
   #text-editor-app .dscopebtn.on {
@@ -2171,6 +2162,7 @@
     overflow-x: auto;
     scrollbar-width: none;
     touch-action: pan-x;
+    /* literal: mask-image alpha gradient, not a rendered color */
     -webkit-mask-image: linear-gradient(90deg, #000 92%, transparent);
     mask-image: linear-gradient(90deg, #000 92%, transparent);
   }
@@ -2182,7 +2174,7 @@
     width: 44px;
     height: 42px;
     padding: 0;
-    border-radius: 10px;
+    border-radius: var(--ds-radius-l);
     border: 1px solid var(--ecline);
     background: var(--ecpanel2);
     color: var(--ectext);
@@ -2194,7 +2186,7 @@
       border-color 150ms ease;
   }
   #text-editor-app .dchip .ph {
-    font-size: 18px;
+    font-size: var(--ds-text-l);
   }
   #text-editor-app .dchip.on {
     background: var(--ecaccent);
@@ -2208,13 +2200,13 @@
     border-left: 1px solid var(--ecline);
   }
   #text-editor-app .ddel {
-    color: #f87171;
+    color: var(--ds-negative);
   }
   #text-editor-app .ddim {
     position: fixed;
     inset: 0;
-    z-index: 59;
-    background: rgba(4, 6, 12, 0.55);
+    z-index: var(--ds-z-dialog);
+    background: var(--ds-backdrop);
     opacity: 0;
     pointer-events: none;
     transition: opacity 250ms ease;
@@ -2228,16 +2220,16 @@
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 60;
+    z-index: var(--ds-z-toast);
     background: var(--ecpanel);
     border-top: 1px solid var(--ecline);
-    border-radius: 18px 18px 0 0;
+    border-radius: var(--ds-radius-xl) var(--ds-radius-xl) 0 0;
     transform: translateY(105%);
     transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1);
     max-height: 70%;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--ds-elevation-2);
   }
   #text-editor-app .dsheet.open {
     transform: translateY(calc(-1 * var(--eckb, 0px)));
@@ -2255,7 +2247,7 @@
     display: block;
     width: 44px;
     height: 5px;
-    border-radius: 3px;
+    border-radius: var(--ds-radius-s);
     background: var(--ecline);
     margin: 0 auto;
   }
@@ -2264,13 +2256,13 @@
     align-items: center;
     gap: 8px;
     padding: 2px 18px 12px;
-    font-size: 15px;
+    font-size: var(--ds-text-m);
     font-weight: 600;
     flex: 0 0 auto;
   }
   #text-editor-app .dsheethead .ph {
     color: var(--ecaccent);
-    font-size: 17px;
+    font-size: var(--ds-text-m);
   }
   #text-editor-app .dfontlist {
     overflow-y: auto;
@@ -2286,8 +2278,8 @@
     border: none;
     background: transparent;
     color: var(--ectext);
-    font-size: 18px;
-    border-radius: 10px;
+    font-size: var(--ds-text-l);
+    border-radius: var(--ds-radius-l);
     text-align: left;
   }
   #text-editor-app .dfrow:active {
@@ -2295,7 +2287,7 @@
   }
   #text-editor-app .dfrow .dfchk {
     color: var(--ecaccent);
-    font-size: 16px;
+    font-size: var(--ds-text-m);
     visibility: hidden;
   }
   #text-editor-app .dfrow.on .dfchk {
@@ -2307,7 +2299,7 @@
     margin: 6px 12px;
   }
   #text-editor-app .dfrow.dfsys {
-    font-size: 14px;
+    font-size: var(--ds-text-s);
     color: var(--ecmuted);
     font-family: inherit;
   }
@@ -2354,15 +2346,15 @@
     max-width: none;
     width: auto;
     padding: 12px 16px;
-    font-size: 14px;
+    font-size: var(--ds-text-s);
     line-height: 1.45;
     text-align: left;
     text-wrap: pretty;
-    z-index: 55;
+    z-index: var(--ds-z-toast);
   }
 }
 
 /* Filled editor actions retain readable labels in both appearances. */
 #text-editor-app .btn.big {
-  color: #fff;
+  color: var(--ds-on-accent);
 }

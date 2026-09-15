@@ -85,7 +85,7 @@ This is a **live preview** markdown editor with full plugin support.
 
 - **Bold** and *italic* text
 - ~~Strikethrough~~ text
-- [Links](https://bentopdf.com)
+- [Links](https://pdf.mv)
 - ==Highlighted text== using mark
 - ++Inserted text++ using ins
 - H~2~O for subscript
@@ -339,31 +339,33 @@ export class MarkdownEditor {
         <div class="md-editor-wrapper">
           <div class="md-editor-header">
             <div class="md-editor-actions">
-              <input type="file" accept=".md,.markdown,.txt" id="mdFileInput" style="display: none;" />
-              <button class="md-editor-btn md-editor-btn-secondary" id="mdUpload">
+              <input type="file" accept=".md,.markdown,.txt" id="mdFileInput" hidden />
+              <button class="ds-button" data-variant="secondary" data-size="s" id="mdUpload">
                 <i data-lucide="upload"></i>
                 <span data-i18n="tools:markdownToPdf.btnUpload">Upload</span>
               </button>
-              <div class="theme-toggle">
+              <div class="md-theme-toggle">
                 <i data-lucide="moon" width="16" height="16"></i>
-                <div class="theme-toggle-slider active" id="themeToggle"></div>
+                <label class="ds-check" data-switch>
+                  <input type="checkbox" id="themeToggle" checked />
+                </label>
                 <i data-lucide="sun" width="16" height="16"></i>
               </div>
-              <button class="md-editor-btn md-editor-btn-secondary" id="mdSyncScroll" title="Toggle sync scroll">
+              <button class="ds-button" data-variant="secondary" data-size="s" id="mdSyncScroll" title="Toggle sync scroll">
                 <i data-lucide="git-compare"></i>
                 <span data-i18n="tools:markdownToPdf.btnSyncScroll">Sync Scroll</span>
               </button>
-              <button class="md-editor-btn md-editor-btn-secondary" id="mdSettings">
+              <button class="ds-button" data-variant="secondary" data-size="s" id="mdSettings">
                 <i data-lucide="settings"></i>
                 <span data-i18n="tools:markdownToPdf.btnSettings">Settings</span>
               </button>
-              <button class="md-editor-btn md-editor-btn-primary" id="mdExport">
+              <button class="ds-button" data-variant="accent" data-size="s" id="mdExport">
                 <i data-lucide="download"></i>
                 <span data-i18n="tools:markdownToPdf.btnExportPdf">Export PDF</span>
               </button>
             </div>
           </div>
-          
+
           <div class="md-editor-main">
             <div class="md-editor-pane">
               <div class="md-editor-pane-header">
@@ -380,19 +382,19 @@ export class MarkdownEditor {
           </div>
         </div>
       </div>
-      
+
       <!-- Settings Modal (hidden by default) -->
       <div class="md-editor-modal-overlay" id="mdSettingsModal" style="display: none;">
         <div class="md-editor-modal">
           <div class="md-editor-modal-header">
             <h2 class="md-editor-modal-title" data-i18n="tools:markdownToPdf.settingsTitle">Markdown Settings</h2>
-            <button class="md-editor-modal-close" id="mdCloseSettings">
+            <button class="ds-icon-button ds-button" data-variant="quiet" data-size="s" id="mdCloseSettings">
               <i data-lucide="x" width="20" height="20"></i>
             </button>
           </div>
           <div class="md-editor-settings-group">
             <h3 data-i18n="tools:markdownToPdf.settingsPreset">Preset</h3>
-            <select id="mdPreset">
+            <select class="ds-select" id="mdPreset">
               <option value="default" selected data-i18n="tools:markdownToPdf.presetDefault">Default (GFM-like)</option>
               <option value="commonmark" data-i18n="tools:markdownToPdf.presetCommonmark">CommonMark (strict)</option>
               <option value="zero" data-i18n="tools:markdownToPdf.presetZero">Minimal (no features)</option>
@@ -400,19 +402,19 @@ export class MarkdownEditor {
           </div>
           <div class="md-editor-settings-group">
             <h3 data-i18n="tools:markdownToPdf.settingsOptions">Markdown Options</h3>
-            <label class="md-editor-checkbox">
+            <label class="ds-check md-editor-checkbox">
               <input type="checkbox" id="mdOptHtml" ${this.mdOptions.html ? 'checked' : ''} />
               <span data-i18n="tools:markdownToPdf.optAllowHtml">Allow HTML tags</span>
             </label>
-            <label class="md-editor-checkbox">
+            <label class="ds-check md-editor-checkbox">
               <input type="checkbox" id="mdOptBreaks" ${this.mdOptions.breaks ? 'checked' : ''} />
               <span data-i18n="tools:markdownToPdf.optBreaks">Convert newlines to &lt;br&gt;</span>
             </label>
-            <label class="md-editor-checkbox">
+            <label class="ds-check md-editor-checkbox">
               <input type="checkbox" id="mdOptLinkify" ${this.mdOptions.linkify ? 'checked' : ''} />
               <span data-i18n="tools:markdownToPdf.optLinkify">Auto-convert URLs to links</span>
             </label>
-            <label class="md-editor-checkbox">
+            <label class="ds-check md-editor-checkbox">
               <input type="checkbox" id="mdOptTypographer" ${this.mdOptions.typographer ? 'checked' : ''} />
               <span data-i18n="tools:markdownToPdf.optTypographer">Typographer (smart quotes, etc.)</span>
             </label>
@@ -443,8 +445,7 @@ export class MarkdownEditor {
     const syncScrollBtn = document.getElementById('mdSyncScroll');
     syncScrollBtn?.addEventListener('click', () => {
       this.syncScroll = !this.syncScroll;
-      syncScrollBtn.classList.toggle('md-editor-btn-primary');
-      syncScrollBtn.classList.toggle('md-editor-btn-secondary');
+      syncScrollBtn.dataset.variant = this.syncScroll ? 'accent' : 'secondary';
     });
 
     // Editor scroll sync
@@ -480,7 +481,6 @@ export class MarkdownEditor {
     const editorContainer = document.querySelector('.md-editor');
     themeToggle?.addEventListener('click', () => {
       editorContainer?.classList.toggle('light-mode');
-      themeToggle.classList.toggle('active');
     });
 
     // Settings modal open

@@ -1,0 +1,1056 @@
+/* Shared canvas-tools styles for edit-pdf-text, form-creator, pdf-workflow surfaces. */
+
+/* ============================================================
+   Form Creator
+   ============================================================ */
+.fc-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ds-space-400);
+  background: var(--ds-bg);
+}
+.fc-card {
+  width: 100%;
+  max-width: 1000px;
+  padding: var(--ds-space-500);
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-l);
+  box-shadow: var(--ds-elevation-1);
+}
+.fc-card[data-wide] {
+  max-width: none;
+}
+.fc-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-200);
+  margin-bottom: var(--ds-space-500);
+  color: var(--ds-accent-text);
+  font-weight: var(--ds-weight-medium);
+  font-size: var(--ds-text-s);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.fc-back:hover {
+  text-decoration: underline;
+}
+.fc-title {
+  margin: 0 0 var(--ds-space-100);
+  font: var(--ds-weight-bold) var(--ds-text-xl) / var(--ds-leading-tight)
+    var(--ds-font-sans);
+  color: var(--ds-text);
+}
+.fc-subtitle {
+  margin: 0 0 var(--ds-space-500);
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-s);
+}
+
+/* Upload dropzone */
+.fc-dropzone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 176px;
+  padding: var(--ds-space-500);
+  border: 1.5px dashed var(--ds-border-control);
+  border-radius: var(--ds-radius-l);
+  background: var(--ds-bg);
+  color: var(--ds-text-muted);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color var(--ds-duration-fast) var(--ds-ease-out),
+    background-color var(--ds-duration-fast) var(--ds-ease-out);
+}
+.fc-dropzone:hover,
+.fc-dropzone[data-dragging] {
+  border-color: var(--ds-accent-fill);
+  background: var(--ds-selected);
+}
+.fc-dropzone__icon {
+  font-size: 36px;
+  margin-bottom: var(--ds-space-300);
+  color: var(--ds-text-muted);
+}
+.fc-dropzone__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* OR separator */
+.fc-divider {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin: var(--ds-space-500) 0;
+}
+.fc-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--ds-border);
+}
+.fc-divider span {
+  position: relative;
+  padding: 0 var(--ds-space-400);
+  background: var(--ds-surface);
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-s);
+  font-weight: var(--ds-weight-medium);
+}
+
+/* Sidebar / tool panels */
+.fc-panel {
+  padding: var(--ds-space-400);
+  background: var(--ds-raised);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-l);
+}
+.fc-panel + .fc-panel {
+  margin-top: var(--ds-space-400);
+}
+.fc-panel__title {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-200);
+  margin: 0 0 var(--ds-space-300);
+  font: var(--ds-weight-medium) var(--ds-text-s) / 1 var(--ds-font-sans);
+  color: var(--ds-text);
+}
+.fc-panel__hint {
+  margin: 0;
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-s);
+}
+.fc-field-count {
+  text-align: center;
+}
+.fc-field-count__num {
+  color: var(--ds-accent-text);
+  font-weight: var(--ds-weight-bold);
+  font-size: var(--ds-text-l);
+}
+.fc-field-count__note {
+  margin: var(--ds-space-100) 0 0;
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-xs);
+}
+
+/* Page toolbar */
+.fc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-200);
+  padding: var(--ds-space-300);
+  margin-bottom: var(--ds-space-400);
+  background: var(--ds-raised);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-l);
+  position: sticky;
+  top: var(--ds-space-400);
+  z-index: var(--ds-z-sticky);
+}
+.fc-toolbar__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-200);
+  min-width: 0;
+}
+.fc-toolbar__divider {
+  width: 1px;
+  align-self: stretch;
+  min-height: var(--ds-size-m);
+  margin: 0 var(--ds-space-100);
+  background: var(--ds-border);
+}
+.fc-toolbar__label {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-100);
+  margin-right: var(--ds-space-100);
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-s);
+  font-weight: var(--ds-weight-medium);
+}
+.fc-page-indicator {
+  padding: 0 var(--ds-space-100);
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-s);
+  font-variant-numeric: tabular-nums;
+}
+.fc-mini-input {
+  width: 64px;
+  min-height: var(--ds-size-m);
+  padding: 0 var(--ds-space-200);
+  border: 1px solid var(--ds-border-control);
+  border-radius: var(--ds-radius-m);
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  font-size: var(--ds-text-s);
+}
+.fc-mini-input[data-grid] {
+  width: 44px;
+}
+
+/* Field palette (draggable tool chips) */
+.fc-palette {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--ds-space-200);
+  padding: var(--ds-space-300);
+  margin-bottom: var(--ds-space-400);
+  background: var(--ds-raised);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-l);
+  position: sticky;
+  top: calc(var(--ds-size-xl) + var(--ds-space-500));
+  z-index: var(--ds-z-sticky);
+}
+.fc-palette__label {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-100);
+  margin-right: var(--ds-space-200);
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-s);
+  font-weight: var(--ds-weight-medium);
+}
+.fc-tool-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-200);
+  padding: var(--ds-space-200) var(--ds-space-300);
+  border-radius: var(--ds-radius-full);
+  background: var(--ds-inset);
+  color: var(--ds-text);
+  font-size: var(--ds-text-xs);
+  cursor: grab;
+  user-select: none;
+  transition: background-color var(--ds-duration-fast) var(--ds-ease-out);
+}
+.fc-tool-item:hover,
+.fc-tool-item.fc-active {
+  background: var(--ds-selected);
+  color: var(--ds-accent-text);
+}
+.fc-tool-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Active/toggled-on state for icon buttons (grid toggle, selected tool) */
+.ds-icon-button.fc-active,
+.ds-button.fc-active {
+  background: var(--ds-accent-fill);
+  color: var(--ds-on-accent);
+  border-color: transparent;
+}
+
+/* Alignment grid overlay lines */
+.fc-grid-line-v {
+  border-left: 2px solid var(--ds-accent-fill);
+  opacity: 0.6;
+}
+.fc-grid-line-h {
+  border-top: 2px solid var(--ds-accent-fill);
+  opacity: 0.6;
+}
+
+/* Canvas area */
+.fc-canvas-shell {
+  width: 100%;
+  padding: var(--ds-space-400);
+  margin-bottom: var(--ds-space-400);
+  overflow: auto;
+  background: var(--ds-canvas);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-l);
+}
+.fc-canvas-center {
+  display: flex;
+  justify-content: center;
+}
+.fc-canvas-wrapper {
+  position: relative;
+  box-shadow: var(--ds-elevation-2);
+  border: 1px solid var(--ds-border);
+}
+#pdfCanvas {
+  background: #fff; /* literal: paper */
+  position: relative;
+}
+
+/* On-page field overlays: draggable/resizable boxes placed on the PDF page.
+   Uses accent border + accent-filled handles per spec (not a selected-fill
+   token) so they read clearly against arbitrary page content. */
+.field-container {
+  border-color: var(--ds-border-control);
+  border-style: dashed;
+  background: color-mix(in srgb, var(--ds-accent-fill) 8%, transparent);
+}
+.field-container[data-transparent-bg] {
+  background: transparent;
+}
+.field-container:hover,
+.group:hover .field-container {
+  border-color: color-mix(in srgb, var(--ds-accent-fill) 55%, transparent);
+}
+.field-container.selected {
+  border-style: solid;
+  border-color: var(--ds-accent-fill);
+  border-width: 2px;
+  box-shadow: 0 0 0 1px var(--ds-surface);
+}
+.field-label {
+  padding: 0 var(--ds-space-100);
+  background: var(--ds-tooltip-bg);
+  color: var(--ds-tooltip-text);
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-medium);
+  line-height: 1.6;
+  border-radius: var(--ds-radius-s);
+}
+.resize-handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--ds-accent-fill);
+  border: 1px solid var(--ds-surface);
+  border-radius: var(--ds-radius-s);
+}
+
+/* Download / primary action */
+.fc-download-btn {
+  width: 100%;
+}
+
+/* Error modal */
+.fc-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ds-z-dialog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ds-backdrop);
+}
+.fc-modal {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 var(--ds-space-400);
+  background: var(--ds-raised);
+  color: var(--ds-text);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-elevation-2);
+}
+.fc-modal__body {
+  padding: var(--ds-space-500);
+}
+.fc-modal__title {
+  margin: 0 0 var(--ds-space-200);
+  font: var(--ds-weight-bold) var(--ds-text-l) / var(--ds-leading-tight)
+    var(--ds-font-sans);
+}
+.fc-modal__message {
+  margin: 0 0 var(--ds-space-500);
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-s);
+}
+
+/* Marketing sections (How it works / related tools / FAQ) */
+.fc-step-num {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ds-size-l);
+  height: var(--ds-size-l);
+  border-radius: var(--ds-radius-full);
+  background: var(--ds-accent-fill);
+  color: var(--ds-on-accent);
+  font-weight: var(--ds-weight-bold);
+}
+.fc-related-card {
+  display: block;
+  padding: var(--ds-space-400);
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-l);
+  transition: background-color var(--ds-duration-fast) var(--ds-ease-out);
+}
+.fc-related-card:hover {
+  background: var(--ds-hover);
+}
+.fc-related-card h3 {
+  margin: 0 0 var(--ds-space-100);
+  color: var(--ds-text);
+  font-weight: var(--ds-weight-medium);
+}
+.fc-related-card p {
+  margin: 0;
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-s);
+}
+.fc-faq-item {
+  padding: var(--ds-space-400) var(--ds-space-500);
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-l);
+}
+.fc-faq-item summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--ds-text);
+  font-weight: var(--ds-weight-medium);
+  cursor: pointer;
+  list-style: none;
+}
+.fc-faq-item summary::-webkit-details-marker {
+  display: none;
+}
+.fc-faq-item__body {
+  margin: var(--ds-space-300) 0 0;
+  color: var(--ds-text-muted);
+}
+
+/* Properties panel rows (built dynamically in form-creator.ts) */
+.fc-prop-row {
+  display: grid;
+  gap: var(--ds-space-100);
+}
+.fc-prop-row + .fc-prop-row {
+  margin-top: var(--ds-space-300);
+}
+.fc-prop-label {
+  display: block;
+  margin-bottom: var(--ds-space-100);
+  font: var(--ds-weight-medium) var(--ds-text-xs) / var(--ds-leading)
+    var(--ds-font-sans);
+  color: var(--ds-text-muted);
+}
+.fc-prop-hint {
+  font-size: var(--ds-text-xs);
+  color: var(--ds-text-muted);
+}
+.fc-prop-error {
+  margin: 0;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-negative);
+}
+.fc-prop-error:empty {
+  display: none;
+}
+.fc-prop-group {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-200);
+}
+.fc-prop-divider {
+  border: 0;
+  border-top: 1px solid var(--ds-border);
+  margin: var(--ds-space-400) 0;
+}
+.fc-prop-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ds-space-200);
+  background: var(--ds-inset);
+  border-radius: var(--ds-radius-m);
+}
+.fc-switch {
+  width: 44px;
+  height: 24px;
+  border-radius: var(--ds-radius-full);
+  background: var(--ds-border-control);
+  transition: background-color var(--ds-duration-fast) var(--ds-ease-out);
+  border: 0;
+  cursor: pointer;
+}
+.fc-switch.fc-active {
+  background: var(--ds-accent-fill);
+}
+.fc-switch__thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ds-on-accent);
+  transition: transform var(--ds-duration-fast) var(--ds-ease-out);
+}
+
+.fc-color-input {
+  width: var(--ds-size-l);
+  min-height: var(--ds-size-m);
+  padding: var(--ds-space-100);
+  border: 1px solid var(--ds-border-control);
+  border-radius: var(--ds-radius-m);
+  background: var(--ds-surface);
+  cursor: pointer;
+}
+
+/* ============================================================
+   PDF Workflow
+   ============================================================
+   Category-color-dot mapping (rotates 4 semantic tokens across the
+   6 node categories, since there's no dedicated "category color" token):
+     Input              -> var(--ds-informative)
+     Edit & Annotate     -> var(--ds-notice)
+     Organize & Manage   -> var(--ds-positive)
+     Optimize & Repair    -> var(--ds-accent-text)
+     Secure PDF          -> var(--ds-informative)
+     Output              -> var(--ds-notice)
+   Set via inline `--cat-color` custom property in src/js/workflow/editor.ts. */
+
+/* Canvas: node-editor viewport with a subtle dot grid */
+#rete-container {
+  background-color: var(--ds-canvas);
+  background-image: radial-gradient(var(--ds-border) 1px, transparent 1px);
+  background-size: 20px 20px;
+  cursor: default;
+  user-select: none;
+}
+#rete-container.is-panning {
+  cursor: grabbing;
+}
+#rete-container [data-testid='node'] {
+  cursor: pointer;
+}
+#rete-container [data-testid='node']:active {
+  cursor: grabbing;
+}
+
+/* Left palette (toolbox sidebar) — mirrors .sidebar-link in workspace.css */
+#toolbox-sidebar {
+  user-select: none;
+  background: var(--ds-surface);
+  border-color: var(--ds-border);
+}
+.wf-toolbox-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--ds-size-m);
+  padding: 0 var(--ds-space-100);
+  margin-bottom: var(--ds-space-100);
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-s);
+  color: var(--ds-text-muted);
+  font: var(--ds-weight-medium) var(--ds-text-xs) / 1 var(--ds-font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: color var(--ds-duration-fast) var(--ds-ease-out);
+}
+.wf-toolbox-header:hover {
+  color: var(--ds-text);
+}
+.toolbox-node-item {
+  min-height: var(--ds-size-l);
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-200);
+  width: 100%;
+  padding: 0 var(--ds-space-300);
+  border: 0;
+  border-radius: var(--ds-radius-m);
+  background: transparent;
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-xs);
+  text-align: left;
+  cursor: grab;
+  transition:
+    background-color var(--ds-duration-fast) var(--ds-ease-out),
+    color var(--ds-duration-fast) var(--ds-ease-out);
+}
+.toolbox-node-item:hover {
+  background: var(--ds-hover);
+  color: var(--ds-text);
+}
+.toolbox-node-item svg,
+.toolbox-node-item i {
+  flex-shrink: 0;
+}
+
+/* Node cards — rendered by src/js/workflow/editor.ts (WorkflowNodeElement,
+   a Lit element with light-DOM render root, so page CSS applies directly). */
+.wf-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 280px;
+}
+.wf-card {
+  width: 100%;
+  overflow: hidden;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-l);
+  box-shadow: var(--ds-elevation-1);
+  transition: box-shadow var(--ds-duration-fast) var(--ds-ease-out);
+}
+[data-testid='node'].selected .wf-card {
+  box-shadow: 0 0 0 2px var(--ds-accent-fill);
+}
+.wf-status-track {
+  height: 3px;
+  overflow: hidden;
+  border-radius: var(--ds-radius-l) var(--ds-radius-l) 0 0;
+  background: var(--ds-inset);
+}
+.wf-status-bar {
+  height: 100%;
+  width: 100%;
+  background: var(--ds-border-control);
+  opacity: 0.35;
+}
+.wf-header {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-200);
+  padding: var(--ds-space-200) var(--ds-space-400) var(--ds-space-100);
+}
+.wf-cat-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: var(--ds-radius-full);
+  background: var(--cat-color, var(--ds-text-muted));
+}
+.wf-status-label {
+  flex: 1;
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text-muted);
+}
+.wf-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--ds-radius-s);
+  color: var(--ds-text-muted);
+  cursor: pointer;
+  transition:
+    color var(--ds-duration-fast) var(--ds-ease-out),
+    background-color var(--ds-duration-fast) var(--ds-ease-out);
+}
+.wf-delete-btn:hover {
+  color: var(--ds-negative);
+  background: var(--ds-negative-bg);
+}
+.wf-divider {
+  height: 1px;
+  margin: 0 var(--ds-space-400);
+  background: var(--ds-border);
+}
+.wf-body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ds-space-300);
+  padding: var(--ds-space-300) var(--ds-space-400) var(--ds-space-400);
+}
+.wf-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--cat-color, var(--ds-text-muted));
+}
+.wf-info {
+  flex: 1;
+  min-width: 0;
+}
+.wf-title {
+  font-size: var(--ds-text-s);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-text);
+  line-height: 1.3;
+}
+.wf-desc {
+  margin-top: 2px;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-text-muted);
+  line-height: 1.3;
+}
+
+/* Ports (connection sockets) */
+.wf-sockets {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  gap: var(--ds-space-200);
+}
+.wf-sockets-top {
+  margin-bottom: -7px;
+}
+.wf-sockets-bottom {
+  margin-top: -7px;
+}
+.wf-socket-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wf-socket {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--ds-radius-full);
+  background: var(--ds-border-control);
+  border: 2px solid var(--ds-surface);
+  box-shadow: 0 0 0 1px var(--ds-border-control);
+  cursor: crosshair;
+  transition:
+    transform var(--ds-duration-fast) var(--ds-ease-out),
+    background-color var(--ds-duration-fast) var(--ds-ease-out),
+    box-shadow var(--ds-duration-fast) var(--ds-ease-out);
+}
+.wf-socket:hover {
+  background: var(--ds-accent-fill);
+  box-shadow: 0 0 0 1px var(--ds-accent-fill);
+  transform: scale(1.3);
+}
+
+@keyframes wf-bar-slide {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+@keyframes wf-dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.75);
+  }
+}
+.wf-bar-slide {
+  animation: wf-bar-slide 1.5s ease-in-out infinite;
+}
+.wf-dot-pulse {
+  animation: wf-dot-pulse 1.2s ease-in-out infinite;
+}
+
+/* Modal surfaces: loader, save/load template, alert, password prompt */
+.wf-modal-backdrop {
+  background: var(--ds-backdrop);
+  backdrop-filter: blur(4px);
+}
+.wf-modal-panel {
+  background: var(--ds-raised);
+  color: var(--ds-text);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-elevation-2);
+}
+.wf-template-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-200);
+  padding: var(--ds-space-200) var(--ds-space-300);
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-m);
+  background: var(--ds-bg);
+  transition: background-color var(--ds-duration-fast) var(--ds-ease-out);
+}
+.wf-template-row:hover {
+  background: var(--ds-hover);
+}
+.wf-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-200);
+  padding: var(--ds-space-200) var(--ds-space-300);
+  border-radius: var(--ds-radius-m);
+  background: var(--ds-inset);
+}
+
+/* Boolean control toggle (node settings panel) */
+.wf-toggle {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 44px;
+  height: 24px;
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  background: var(--ds-border-control);
+  cursor: pointer;
+  transition: background-color var(--ds-duration-fast) var(--ds-ease-out);
+}
+.wf-toggle[data-on='true'] {
+  background: var(--ds-accent-fill);
+}
+.wf-toggle-dot {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--ds-radius-full);
+  background: var(--ds-on-accent);
+  box-shadow: var(--ds-elevation-1);
+  pointer-events: none;
+  transition: transform var(--ds-duration-fast) var(--ds-ease-out);
+}
+.wf-toggle[data-on='true'] .wf-toggle-dot {
+  transform: translateX(20px);
+}
+
+/* ============================================================
+   Edit PDF Text
+   ============================================================
+   The in-canvas editor toolbar/dock/inspector (#text-editor-app) is styled
+   entirely in src/css/edit-pdf-text.css via its own --ec* variables, which
+   now alias --ds-* tokens. This section covers only the marketing/uploader
+   chrome around it (landing page, upload dropzone, modals) that shares
+   layout patterns with the other canvas-tool surfaces above. */
+
+.ept-page {
+  background: var(--ds-bg);
+  color: var(--ds-text);
+}
+.ept-uploader {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: var(--ds-space-600) var(--ds-space-400);
+}
+.ept-uploader-card {
+  width: 100%;
+  max-width: 640px;
+  padding: var(--ds-space-500);
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-l);
+  box-shadow: var(--ds-elevation-1);
+}
+.ept-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-200);
+  margin-bottom: var(--ds-space-500);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ds-accent-text);
+  font-weight: var(--ds-weight-medium);
+  font-size: var(--ds-text-s);
+  cursor: pointer;
+}
+.ept-back-link:hover {
+  text-decoration: underline;
+}
+.ept-back-link svg {
+  width: 16px;
+  height: 16px;
+}
+.ept-h1 {
+  margin: 0 0 var(--ds-space-100);
+  font: var(--ds-weight-bold) var(--ds-text-xl) / var(--ds-leading-tight)
+    var(--ds-font-sans);
+  color: var(--ds-text);
+}
+.ept-lead {
+  margin: 0 0 var(--ds-space-500);
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-s);
+}
+.ept-upload-icon {
+  font-size: 36px;
+  margin-bottom: var(--ds-space-100);
+  color: var(--ds-text-muted);
+}
+.ept-drop-hint {
+  margin: 0;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-text-muted);
+}
+#drop-zone.ds-drop-zone {
+  position: relative;
+}
+.ept-file-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Landing sections: how it works / related tools / FAQ */
+.ept-section {
+  margin: 0 auto;
+  padding: var(--ds-space-600) var(--ds-space-400);
+}
+.ept-section--narrow {
+  max-width: 800px;
+}
+.ept-section--wide {
+  max-width: 1120px;
+}
+.ept-section-title {
+  margin: 0 0 var(--ds-space-500);
+  text-align: center;
+  font: var(--ds-weight-bold) var(--ds-text-xl) / var(--ds-leading-tight)
+    var(--ds-font-sans);
+  color: var(--ds-text);
+}
+.ept-steps {
+  display: grid;
+  gap: var(--ds-space-500);
+}
+.ept-step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ds-space-400);
+}
+.ept-step-num {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ds-size-l);
+  height: var(--ds-size-l);
+  border-radius: var(--ds-radius-full);
+  background: var(--ds-accent-fill);
+  color: var(--ds-on-accent);
+  font-weight: var(--ds-weight-bold);
+}
+.ept-step-title {
+  margin: 0 0 var(--ds-space-100);
+  color: var(--ds-text);
+  font-size: var(--ds-text-l);
+  font-weight: var(--ds-weight-medium);
+}
+.ept-step-desc {
+  margin: 0;
+  color: var(--ds-text-muted);
+}
+.ept-related-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--ds-space-400);
+}
+@media (min-width: 640px) {
+  .ept-related-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .ept-related-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+.ept-related-card {
+  display: block;
+  padding: var(--ds-space-400);
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-m);
+  transition: background-color var(--ds-duration-fast) var(--ds-ease-out);
+}
+.ept-related-card:hover {
+  background: var(--ds-hover);
+}
+.ept-related-title {
+  margin: 0 0 var(--ds-space-100);
+  color: var(--ds-text);
+  font-weight: var(--ds-weight-medium);
+}
+.ept-related-desc {
+  margin: 0;
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-s);
+}
+.ept-faq {
+  display: grid;
+  gap: var(--ds-space-300);
+}
+.ept-faq-item p {
+  margin: 0;
+}
+
+/* Loader / alert modals */
+.ept-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ds-z-dialog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ds-backdrop);
+}
+.ept-modal-card {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 var(--ds-space-400);
+  padding: var(--ds-space-500);
+  background: var(--ds-raised);
+  color: var(--ds-text);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-elevation-2);
+}
+.ept-loader-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ds-space-400);
+}
+.ept-loader-text {
+  margin: 0;
+  color: var(--ds-text);
+  font-size: var(--ds-text-m);
+  font-weight: var(--ds-weight-medium);
+}
+.ept-alert-title {
+  margin: 0 0 var(--ds-space-200);
+  font: var(--ds-weight-bold) var(--ds-text-l) / var(--ds-leading-tight)
+    var(--ds-font-sans);
+}
+.ept-alert-message {
+  margin: 0 0 var(--ds-space-500);
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-s);
+}

@@ -25,24 +25,27 @@ export interface WorkflowEditor {
   destroy: () => void;
 }
 
+// Category-color-dot mapping: rotates the 4 semantic tokens available
+// (no dedicated "category color" token exists) across the 6 categories.
+// See also the header comment in src/design-system/canvas-tools.css.
 const categoryColors: Record<string, string> = {
-  Input: '#60a5fa',
-  'Edit & Annotate': '#a5b4fc',
-  'Organize & Manage': '#c4b5fd',
-  'Optimize & Repair': '#fcd34d',
-  'Secure PDF': '#fda4af',
-  Output: '#5eead4',
+  Input: 'var(--ds-informative)',
+  'Edit & Annotate': 'var(--ds-notice)',
+  'Organize & Manage': 'var(--ds-positive)',
+  'Optimize & Repair': 'var(--ds-accent-text)',
+  'Secure PDF': 'var(--ds-informative)',
+  Output: 'var(--ds-notice)',
 };
 
 function getStatusInfo(status: string, connected: boolean) {
   if (status === 'running')
-    return { color: '#eab308', label: 'Running...', animate: true };
+    return { color: 'var(--ds-notice)', label: 'Running...', animate: true };
   if (status === 'completed')
-    return { color: '#22c55e', label: 'Complete', animate: false };
+    return { color: 'var(--ds-positive)', label: 'Complete', animate: false };
   if (status === 'error')
-    return { color: '#ef4444', label: 'Failed', animate: false };
+    return { color: 'var(--ds-negative)', label: 'Failed', animate: false };
   return {
-    color: connected ? '#22c55e' : '#6b7280',
+    color: connected ? 'var(--ds-positive)' : 'var(--ds-text-muted)',
     label: connected ? 'Connected' : 'Not connected',
     animate: false,
   };
@@ -66,27 +69,18 @@ class WorkflowNodeElement extends LitElement {
     const node = this.data;
     const inputs = Object.entries(node.inputs || {});
     const outputs = Object.entries(node.outputs || {});
-    const color = categoryColors[node.category] || '#6b7280';
+    const color = categoryColors[node.category] || 'var(--ds-text-muted)';
     const emitFn = this.emit;
 
     return html`
-      <div
-        style="
-        position: relative; display: flex; flex-direction: column;
-        align-items: center; width: 280px;
-      "
-      >
+      <div class="wf-node" style="--cat-color: ${color};">
         ${inputs.length > 0
           ? html`
-              <div
-                style="display: flex; justify-content: center; gap: 8px; position: relative; z-index: 1; margin-bottom: -7px;"
-              >
+              <div class="wf-sockets wf-sockets-top">
                 ${inputs.map(([key, input]) =>
                   input
                     ? html`
-                        <div
-                          style="display: flex; align-items: center; justify-content: center;"
-                        >
+                        <div class="wf-socket-slot">
                           <rete-ref
                             .data=${{
                               type: 'socket',
@@ -104,45 +98,14 @@ class WorkflowNodeElement extends LitElement {
               </div>
             `
           : null}
-        <div
-          style="
-          background: #1f2937; border: 1px solid #374151;
-          border-radius: 12px; width: 100%; overflow: hidden;
-        "
-        >
-          <div
-            style="height: 3px; border-radius: 10px 10px 0 0; overflow: hidden;"
-          >
-            <div
-              data-wf="bar"
-              style="
-              height: 100%; width: 100%;
-              background: #6b7280; opacity: 0.25;
-            "
-            ></div>
+        <div class="wf-card">
+          <div class="wf-status-track">
+            <div data-wf="bar" class="wf-status-bar"></div>
           </div>
-          <div
-            style="padding: 6px 14px; display: flex; align-items: center; gap: 6px;"
-          >
-            <span
-              data-wf="dot"
-              style="
-              width: 7px; height: 7px; border-radius: 50%; background: #6b7280; flex-shrink: 0;
-            "
-            ></span>
-            <span
-              data-wf="label"
-              style="font-size: 10px; color: #6b7280; font-weight: 500; flex: 1;"
-              >Not connected</span
-            >
-            <span
-              data-wf-delete="${node.id}"
-              style="
-              cursor: pointer; display: flex; align-items: center; justify-content: center;
-              width: 18px; height: 18px; border-radius: 4px;
-              color: #6b7280; transition: all 0.15s;
-            "
-            >
+          <div class="wf-header">
+            <span data-wf="dot" class="wf-cat-dot"></span>
+            <span data-wf="label" class="wf-status-label">Not connected</span>
+            <span data-wf-delete="${node.id}" class="wf-delete-btn">
               <svg
                 width="12"
                 height="12"
@@ -158,39 +121,22 @@ class WorkflowNodeElement extends LitElement {
               </svg>
             </span>
           </div>
-          <div style="height: 1px; background: #374151; margin: 0 14px;"></div>
-          <div
-            style="padding: 10px 14px 12px; display: flex; align-items: flex-start; gap: 10px;"
-          >
-            <i
-              class="ph ${node.icon}"
-              style="font-size: 18px; color: ${color}; flex-shrink: 0; margin-top: 1px; line-height: 1;"
-            ></i>
-            <div style="flex: 1; min-width: 0;">
-              <div
-                style="font-size: 13px; font-weight: 600; color: #f3f4f6; line-height: 1.3;"
-              >
-                ${node.label}
-              </div>
-              <div
-                style="font-size: 11px; color: #9ca3af; margin-top: 2px; line-height: 1.3;"
-              >
-                ${node.description}
-              </div>
+          <div class="wf-divider"></div>
+          <div class="wf-body">
+            <i class="ph ${node.icon} wf-icon"></i>
+            <div class="wf-info">
+              <div class="wf-title">${node.label}</div>
+              <div class="wf-desc">${node.description}</div>
             </div>
           </div>
         </div>
         ${outputs.length > 0
           ? html`
-              <div
-                style="display: flex; justify-content: center; gap: 8px; position: relative; z-index: 1; margin-top: -7px;"
-              >
+              <div class="wf-sockets wf-sockets-bottom">
                 ${outputs.map(([key, output]) =>
                   output
                     ? html`
-                        <div
-                          style="display: flex; align-items: center; justify-content: center;"
-                        >
+                        <div class="wf-socket-slot">
                           <rete-ref
                             .data=${{
                               type: 'socket',
@@ -240,21 +186,21 @@ export function updateNodeDisplay(
   const label = el.querySelector<HTMLElement>('[data-wf="label"]');
 
   if (bar) {
-    bar.className = st.animate ? 'wf-bar-slide' : '';
+    bar.className = st.animate ? 'wf-status-bar wf-bar-slide' : 'wf-status-bar';
     bar.style.background = st.animate
-      ? `linear-gradient(90deg, #1f2937 0%, ${st.color} 50%, #1f2937 100%)`
+      ? `linear-gradient(90deg, var(--ds-inset) 0%, ${st.color} 50%, var(--ds-inset) 100%)`
       : st.color;
     bar.style.opacity =
       status === 'idle' && !connected
-        ? '0.25'
+        ? '0.35'
         : status === 'idle'
-          ? '0.5'
+          ? '0.6'
           : '1';
     bar.style.backgroundSize = st.animate ? '200% 100%' : '';
   }
 
   if (dot) {
-    dot.className = st.animate ? 'wf-dot-pulse' : '';
+    dot.className = st.animate ? 'wf-cat-dot wf-dot-pulse' : 'wf-cat-dot';
     dot.style.background = st.color;
     dot.style.boxShadow = 'none';
   }
@@ -287,13 +233,7 @@ export async function createWorkflowEditor(
         },
         socket() {
           return () => {
-            return html`<div
-              style="
-            width: 14px; height: 14px; border-radius: 50%;
-            background: #6366f1; border: 2px solid #1f2937;
-            box-shadow: 0 0 0 1px #6366f1; cursor: crosshair;
-          "
-            ></div>`;
+            return html`<div class="wf-socket"></div>`;
           };
         },
       },
@@ -371,8 +311,8 @@ export async function createWorkflowEditor(
       '[data-wf-delete]'
     );
     if (!target) return;
-    target.style.color = '#f87171';
-    target.style.background = 'rgba(248,113,113,0.1)';
+    target.style.color = 'var(--ds-negative)';
+    target.style.background = 'var(--ds-negative-bg)';
   };
 
   const onMouseLeave = (e: Event) => {
@@ -380,8 +320,8 @@ export async function createWorkflowEditor(
       '[data-wf-delete]'
     );
     if (!target) return;
-    target.style.color = '#6b7280';
-    target.style.background = 'transparent';
+    target.style.color = '';
+    target.style.background = '';
   };
 
   container.addEventListener('pointerdown', onPointerDown, true);

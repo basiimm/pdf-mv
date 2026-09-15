@@ -6,56 +6,25 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
     />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="light dark" />
 
     <meta
-      name="title"
-      content="Edit PDF Text Online Free - PDF Text Editor | BentoPDF"
-    />
-    <meta
       name="description"
-      content="★ Edit PDF text online free - Click any paragraph and edit it in place with live reflow ★ No signup ★ Privacy-first ★ Works in browser"
+      content="Edit PDF text online free - click any paragraph and edit it in place with live reflow. No signup, privacy-first, works in browser."
     />
-    <meta
-      name="keywords"
-      content="edit pdf text, pdf text editor, change pdf text, rewrite pdf paragraph"
-    />
-    <meta name="author" content="BentoPDF" />
     <meta
       name="robots"
       content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
     />
 
-    <link rel="canonical" href="https://www.bentopdf.com/edit-pdf-text" />
-
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://www.bentopdf.com/edit-pdf-text" />
-    <meta
-      property="og:title"
-      content="Edit PDF Text Online Free - PDF Text Editor | BentoPDF"
-    />
-    <meta
-      property="og:description"
-      content="★ Edit PDF text online free - Click any paragraph and edit it in place with live reflow ★ No signup ★ Privacy-first ★ Works in browser"
-    />
-    <meta property="og:site_name" content="BentoPDF" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://www.bentopdf.com/edit-pdf-text" />
-    <meta name="twitter:title" content="Edit PDF Text Free" />
-    <meta
-      name="twitter:description"
-      content="Edit PDF text in place with live reflow. Free, private, in your browser."
-    />
-    <meta name="twitter:site" content="@BentoPDF" />
-
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Edit PDF Text" />
 
-    <title>Edit PDF Text - BentoPDF</title>
+    <title>Edit PDF Text — PDF.mv</title>
 
     <link href="/src/css/styles.css" rel="stylesheet" />
+    <link href="/src/design-system/canvas-tools.css" rel="stylesheet" />
     <link href="/src/css/edit-pdf-text.css" rel="stylesheet" />
 
     <link rel="manifest" href="/site.webmanifest" />
@@ -81,61 +50,36 @@
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
   </head>
 
-  <body class="antialiased bg-gray-900">
-    {{> navbar }}
-
-    <div
-      id="uploader"
-      class="min-h-screen flex flex-col items-center justify-start py-12 p-4 bg-gray-900"
-    >
-      <div
-        id="tool-uploader"
-        class="bg-gray-800 rounded-xl shadow-xl px-4 py-8 md:p-8 max-w-2xl w-full text-blue-400 border border-gray-700"
-      >
-        <button
-          id="back-to-tools"
-          class="flex items-center gap-2 text-indigo-400 hover:text-indigo-300 mb-6 font-semibold"
-        >
-          <i data-lucide="arrow-left" class="cursor-pointer"></i>
-          <span class="cursor-pointer" data-i18n="tools.backToTools">
-            Back to Tools
-          </span>
+  <body class="antialiased ept-page">
+    <div id="uploader" class="ept-uploader">
+      <div id="tool-uploader" class="ept-uploader-card">
+        <button id="back-to-tools" class="ept-back-link">
+          <i data-lucide="arrow-left"></i>
+          <span data-i18n="tools.backToTools"> Back to Tools </span>
         </button>
 
-        <h1
-          class="text-2xl font-bold text-white mb-2"
-          data-i18n="tools:editPdfText.name"
-        >
-          Edit PDF Text
-        </h1>
-        <p class="text-gray-400 mb-6" data-i18n="tools:editPdfText.subtitle">
+        <h1 class="ept-h1" data-i18n="tools:editPdfText.name">Edit PDF Text</h1>
+        <p class="ept-lead" data-i18n="tools:editPdfText.subtitle">
           Click any paragraph and edit it in place with live reflow, fonts, and
           styling.
         </p>
 
-        <div
-          id="drop-zone"
-          class="relative flex flex-col items-center justify-center w-full h-48 md:h-64 border-2 border-dashed border-gray-600 rounded-xl cursor-pointer bg-gray-900 hover:bg-gray-700 transition-colors duration-300"
-        >
-          <div class="flex flex-col items-center justify-center pt-5 pb-6">
-            <i class="ph ph-upload-simple text-4xl mb-3 text-gray-400"></i>
-            <p class="mb-2 text-sm text-gray-400">
-              <span class="font-semibold" data-i18n="upload.clickToSelect"
-                >Click to select a file</span
-              >
-              <span data-i18n="upload.orDragAndDrop">or drag and drop</span>
-            </p>
-            <p class="text-xs text-gray-500" data-i18n="upload.hints.pdfFile">
-              PDF file
-            </p>
-            <p class="text-xs text-gray-500" data-i18n="upload.filesNeverLeave">
-              Your files never leave your device.
-            </p>
-          </div>
+        <div id="drop-zone" class="ds-drop-zone">
+          <i class="ph ph-upload-simple ept-upload-icon"></i>
+          <p>
+            <strong data-i18n="upload.clickToSelect"
+              >Click to select a file</strong
+            >
+            <span data-i18n="upload.orDragAndDrop">or drag and drop</span>
+          </p>
+          <p class="ept-drop-hint" data-i18n="upload.hints.pdfFile">PDF file</p>
+          <p class="ept-drop-hint" data-i18n="upload.filesNeverLeave">
+            Your files never leave your device.
+          </p>
           <input
             id="file-input"
             type="file"
-            class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+            class="ept-file-input"
             accept="application/pdf"
           />
         </div>
@@ -143,84 +87,60 @@
     </div>
 
     <div id="tool-landing">
-      <section class="max-w-4xl mx-auto px-4 py-12">
-        <h2
-          class="text-2xl md:text-3xl font-bold text-white mb-8 text-center"
-          data-i18n="howItWorks.title"
-        >
+      <section class="ept-section ept-section--narrow">
+        <h2 class="ept-section-title" data-i18n="howItWorks.title">
           How It Works
         </h2>
-        <div class="space-y-6">
-          <div class="flex items-start gap-4">
-            <div
-              class="flex-shrink-0 w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold"
-            >
-              1
-            </div>
-            <div class="flex-1">
+        <div class="ept-steps">
+          <div class="ept-step">
+            <div class="ept-step-num">1</div>
+            <div class="ept-step-body">
               <h3
-                class="text-lg font-semibold text-white mb-1"
+                class="ept-step-title"
                 data-i18n="tools:editPdfText.howToUpload"
               >
                 Upload PDF
               </h3>
-              <p class="text-gray-400">
+              <p class="ept-step-desc">
                 Select or drag and drop the PDF whose text you want to edit
               </p>
             </div>
           </div>
-          <div class="flex items-start gap-4">
-            <div
-              class="flex-shrink-0 w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold"
-            >
-              2
-            </div>
-            <div class="flex-1">
+          <div class="ept-step">
+            <div class="ept-step-num">2</div>
+            <div class="ept-step-body">
               <h3
-                class="text-lg font-semibold text-white mb-1"
+                class="ept-step-title"
                 data-i18n="tools:editPdfText.howToClick"
               >
                 Click a Paragraph
               </h3>
-              <p class="text-gray-400">
+              <p class="ept-step-desc">
                 Every editable paragraph is outlined — click one and type; text
                 reflows live as you edit
               </p>
             </div>
           </div>
-          <div class="flex items-start gap-4">
-            <div
-              class="flex-shrink-0 w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold"
-            >
-              3
-            </div>
-            <div class="flex-1">
+          <div class="ept-step">
+            <div class="ept-step-num">3</div>
+            <div class="ept-step-body">
               <h3
-                class="text-lg font-semibold text-white mb-1"
+                class="ept-step-title"
                 data-i18n="tools:editPdfText.howToRestyle"
               >
                 Restyle Anything
               </h3>
-              <p class="text-gray-400">
+              <p class="ept-step-desc">
                 Change fonts, size, color, alignment and spacing, move or
                 replace images, add new text boxes
               </p>
             </div>
           </div>
-          <div class="flex items-start gap-4">
-            <div
-              class="flex-shrink-0 w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold"
-            >
-              4
-            </div>
-            <div class="flex-1">
-              <h3
-                class="text-lg font-semibold text-white mb-1"
-                data-i18n="common.save"
-              >
-                Save
-              </h3>
-              <p class="text-gray-400">
+          <div class="ept-step">
+            <div class="ept-step-num">4</div>
+            <div class="ept-step-body">
+              <h3 class="ept-step-title" data-i18n="common.save">Save</h3>
+              <p class="ept-step-desc">
                 Download a clean PDF with your edits baked in — everything stays
                 on your device
               </p>
@@ -229,111 +149,75 @@
         </div>
       </section>
 
-      <section class="max-w-6xl mx-auto px-4 py-12">
-        <h2
-          class="text-2xl md:text-3xl font-bold text-white mb-6 text-center"
-          data-i18n="relatedTools.title"
-        >
+      <section class="ept-section ept-section--wide">
+        <h2 class="ept-section-title" data-i18n="relatedTools.title">
           Related PDF Tools
         </h2>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <a
-            href="pdf-editor.html"
-            class="block bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700"
-          >
-            <h3
-              class="text-white font-semibold mb-1"
-              data-i18n="tools:pdfEditor.name"
-            >
+        <div class="ept-related-grid">
+          <a href="pdf-editor.html" class="ept-related-card">
+            <h3 class="ept-related-title" data-i18n="tools:pdfEditor.name">
               PDF Editor
             </h3>
             <p
-              class="text-gray-400 text-sm"
+              class="ept-related-desc"
               data-i18n="tools:editPdfText.relatedPdfEditor"
             >
               Annotate and mark up PDFs
             </p>
           </a>
-          <a
-            href="sign-pdf.html"
-            class="block bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700"
-          >
-            <h3
-              class="text-white font-semibold mb-1"
-              data-i18n="tools:signPdf.name"
-            >
+          <a href="sign-pdf.html" class="ept-related-card">
+            <h3 class="ept-related-title" data-i18n="tools:signPdf.name">
               Sign PDF
             </h3>
             <p
-              class="text-gray-400 text-sm"
+              class="ept-related-desc"
               data-i18n="tools:editPdfText.relatedSignPdf"
             >
               Draw, type or upload a signature
             </p>
           </a>
-          <a
-            href="add-watermark.html"
-            class="block bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700"
-          >
-            <h3
-              class="text-white font-semibold mb-1"
-              data-i18n="tools:addWatermark.name"
-            >
+          <a href="add-watermark.html" class="ept-related-card">
+            <h3 class="ept-related-title" data-i18n="tools:addWatermark.name">
               Add Watermark
             </h3>
             <p
-              class="text-gray-400 text-sm"
+              class="ept-related-desc"
               data-i18n="tools:editPdfText.relatedWatermark"
             >
               Stamp text or images
             </p>
           </a>
-          <a
-            href="add-stamps.html"
-            class="block bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700"
-          >
-            <h3
-              class="text-white font-semibold mb-1"
-              data-i18n="tools:addStamps.name"
-            >
+          <a href="add-stamps.html" class="ept-related-card">
+            <h3 class="ept-related-title" data-i18n="tools:addStamps.name">
               Add Stamps
             </h3>
             <p
-              class="text-gray-400 text-sm"
+              class="ept-related-desc"
               data-i18n="tools:editPdfText.relatedStamps"
             >
               Place stamps on pages
             </p>
           </a>
-          <a
-            href="compress-pdf.html"
-            class="block bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700"
-          >
-            <h3
-              class="text-white font-semibold mb-1"
-              data-i18n="tools:compressPdf.name"
-            >
+          <a href="compress-pdf.html" class="ept-related-card">
+            <h3 class="ept-related-title" data-i18n="tools:compressPdf.name">
               Compress PDF
             </h3>
             <p
-              class="text-gray-400 text-sm"
+              class="ept-related-desc"
               data-i18n="tools:editPdfText.relatedCompress"
             >
               Shrink the file size
             </p>
           </a>
-          <a
-            href="organize-pdf.html"
-            class="block bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700"
-          >
+          <a href="organize-pdf.html" class="ept-related-card">
             <h3
-              class="text-white font-semibold mb-1"
+              class="ept-related-title"
               data-i18n="tools:editPdfText.relatedOrganizeName"
             >
               Organize PDF
             </h3>
             <p
-              class="text-gray-400 text-sm"
+              class="ept-related-desc"
               data-i18n="tools:editPdfText.relatedOrganize"
             >
               Reorder and manage pages
@@ -342,54 +226,51 @@
         </div>
       </section>
 
-      <section class="max-w-4xl mx-auto px-4 py-12">
-        <h2
-          class="text-2xl md:text-3xl font-bold text-white mb-6 text-center"
-          data-i18n="faq.sectionTitle"
-        >
+      <section class="ept-section ept-section--narrow">
+        <h2 class="ept-section-title" data-i18n="faq.sectionTitle">
           Frequently Asked Questions
         </h2>
-        <div class="space-y-4">
-          <details class="bg-gray-800 p-5 rounded-lg border border-gray-700">
-            <summary
-              class="cursor-pointer font-semibold text-white flex items-center justify-between"
-            >
+        <div class="ept-faq">
+          <details class="ds-disclosure ept-faq-item">
+            <summary>
               Does my PDF leave my device?
-              <i data-lucide="chevron-down" class="w-5 h-5"></i>
+              <i data-lucide="chevron-down"></i>
             </summary>
-            <p class="mt-3 text-gray-400">
-              No. The whole editor — including the PDF engine — runs in your
-              browser. Files are never uploaded anywhere.
-            </p>
+            <div class="ds-disclosure__body">
+              <p>
+                No. The whole editor — including the PDF engine — runs in your
+                browser. Files are never uploaded anywhere.
+              </p>
+            </div>
           </details>
-          <details class="bg-gray-800 p-5 rounded-lg border border-gray-700">
-            <summary
-              class="cursor-pointer font-semibold text-white flex items-center justify-between"
-            >
+          <details class="ds-disclosure ept-faq-item">
+            <summary>
               Why are some paragraphs locked?
-              <i data-lucide="chevron-down" class="w-5 h-5"></i>
+              <i data-lucide="chevron-down"></i>
             </summary>
-            <p class="mt-3 text-gray-400">
-              Paragraphs using fragile subset fonts or complex layouts are
-              protected so your document can't be silently corrupted. Everything
-              else stays fully editable.
-            </p>
+            <div class="ds-disclosure__body">
+              <p>
+                Paragraphs using fragile subset fonts or complex layouts are
+                protected so your document can't be silently corrupted.
+                Everything else stays fully editable.
+              </p>
+            </div>
           </details>
-          <details class="bg-gray-800 p-5 rounded-lg border border-gray-700">
-            <summary
-              class="cursor-pointer font-semibold text-white flex items-center justify-between"
-            >
+          <details class="ds-disclosure ept-faq-item">
+            <summary>
               Will the fonts match the original?
-              <i data-lucide="chevron-down" class="w-5 h-5"></i>
+              <i data-lucide="chevron-down"></i>
             </summary>
-            <p class="mt-3 text-gray-400">
-              Yes — the editor reuses the document's embedded fonts where
-              possible, and you can also pull in fonts installed on your device.
-            </p>
+            <div class="ds-disclosure__body">
+              <p>
+                Yes — the editor reuses the document's embedded fonts where
+                possible, and you can also pull in fonts installed on your
+                device.
+              </p>
+            </div>
           </details>
         </div>
       </section>
-      {{> footer }}
     </div>
 
     <div id="text-editor-app" hidden>
@@ -1280,17 +1161,12 @@
       <div id="toast" hidden></div>
     </div>
 
-    <div
-      id="loader-modal"
-      class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
-    >
-      <div
-        class="bg-gray-800 p-8 rounded-lg flex flex-col items-center gap-4 border border-gray-700 shadow-xl"
-      >
+    <div id="loader-modal" class="hidden ept-modal-backdrop">
+      <div class="ept-modal-card ept-loader-card">
         <div class="solid-spinner"></div>
         <p
           id="loader-text"
-          class="text-white text-lg font-medium"
+          class="ept-loader-text"
           data-i18n="loader.processing"
         >
           Processing...
@@ -1298,24 +1174,17 @@
       </div>
     </div>
 
-    <div
-      id="alert-modal"
-      class="fixed inset-0 bg-gray-900 bg-opacity-90 flex items-center justify-center z-50 hidden"
-    >
-      <div
-        class="bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full border border-gray-700"
-      >
-        <h3
-          id="alert-title"
-          class="text-xl font-bold text-white mb-2"
-          data-i18n="alert.title"
-        >
+    <div id="alert-modal" class="hidden ept-modal-backdrop">
+      <div class="ept-modal-card ept-alert-card">
+        <h3 id="alert-title" class="ept-alert-title" data-i18n="alert.title">
           Alert
         </h3>
-        <p id="alert-message" class="text-gray-300 mb-6"></p>
+        <p id="alert-message" class="ept-alert-message"></p>
         <button
           id="alert-ok"
-          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+          class="ds-button"
+          data-variant="accent"
+          data-block
           data-i18n="alert.ok"
         >
           OK
@@ -1333,7 +1202,7 @@
       {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        "name": "Edit PDF Text - BentoPDF",
+        "name": "Edit PDF Text - PDF.mv",
         "applicationCategory": "PDF Tool",
         "operatingSystem": "Any - Web Browser",
         "offers": {

@@ -553,14 +553,14 @@ function initializePage() {
   if (dropZone) {
     dropZone.addEventListener('dragover', (e) => {
       e.preventDefault();
-      dropZone.classList.add('border-indigo-500');
+      dropZone.setAttribute('data-dragging', '');
     });
     dropZone.addEventListener('dragleave', () => {
-      dropZone.classList.remove('border-indigo-500');
+      dropZone.removeAttribute('data-dragging');
     });
     dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
-      dropZone.classList.remove('border-indigo-500');
+      dropZone.removeAttribute('data-dragging');
       const files = e.dataTransfer?.files;
       if (files && files.length > 0) {
         handleFiles(files);
